@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 
 export interface InfoRow {
@@ -21,8 +21,6 @@ export interface CarouselCard {
 }
 
 export interface DetailPageProps {
-  /** Icon to show next to the title */
-  icon?: React.ReactNode
   /** Page title */
   title: string
   /** Breadcrumbs: [{label, href}] */
@@ -69,7 +67,7 @@ function SolarScoreDots({ score }: { score: number }) {
 }
 
 export function GeoDetailPage({
-  icon, title, breadcrumbs, prev, next, listHref, listLabel,
+  title, breadcrumbs, prev, next, listHref, listLabel,
   infoRows, carouselTitle, carouselItems,
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
@@ -110,10 +108,7 @@ export function GeoDetailPage({
 
         {/* Header */}
         <div className="mb-8 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            {icon && <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar/10 text-solar">{icon}</div>}
-            <h1 className="text-2xl font-bold text-[var(--txt)]">{title}</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-[var(--txt)]">{title}</h1>
 
           {/* Button group */}
           <div className="hidden sm:flex items-center shrink-0">
@@ -234,7 +229,6 @@ export function GeoDetailPage({
                 [...Array(3)].map((_, i) => (
                   <CarouselItem key={i} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <div className="w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 flex items-center gap-3">
-                      <SkeletonBar className="h-10 w-10 shrink-0 rounded-lg" />
                       <div className="flex-1 space-y-2">
                         <SkeletonBar className="h-3 w-20" />
                         <SkeletonBar className="h-3 w-28" />
@@ -254,9 +248,6 @@ export function GeoDetailPage({
                     className="block w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
                   >
                     <div className="flex items-center gap-3 h-full">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-solar/10 text-solar">
-                        <MapPin className="h-5 w-5" />
-                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[var(--txt)] truncate">{item.title}</p>
                         <p className="mt-0.5 text-xs text-[var(--muted)]">{item.subtitle}</p>
@@ -303,10 +294,7 @@ export function GeoDetailPage({
                       href={item.href}
                       className="block w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 text-left transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer overflow-hidden"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <Zap className="h-4 w-4 text-solar shrink-0" />
-                        <p className="text-sm font-medium text-[var(--txt)] truncate">{item.title}</p>
-                      </div>
+                      <p className="mb-1 text-sm font-medium text-[var(--txt)] truncate">{item.title}</p>
                       <p className="text-xs text-[var(--muted)] line-clamp-2">{item.subtitle}</p>
                     </Link>
                   </CarouselItem>

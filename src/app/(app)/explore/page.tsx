@@ -85,11 +85,6 @@ export default function ExplorePage() {
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 pt-2 pb-16 sm:pb-10">
 
-          {/* Hero */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
-          </div>
-
           {/* Top counties horizontal scroll */}
           <h2 className="text-xl font-bold text-[var(--txt)] mb-4">
             By County

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { SAMPLE_ZIPS, NY_COUNTIES, getCitiesByCounty } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Hash } from 'lucide-react'
 
 export function generateStaticParams() {
   return SAMPLE_ZIPS.map(z => ({ zip: z.zip }))
@@ -48,7 +47,6 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
 
   return (
     <GeoDetailPage
-      icon={<Hash className="h-5 w-5" />}
       title={`ZIP ${zipData.zip}`}
       breadcrumbs={[
         { label: 'ZIPs', href: '/zips' },

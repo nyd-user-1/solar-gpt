@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { GEA_REGIONS, NY_COUNTIES } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Zap } from 'lucide-react'
 
 export function generateStaticParams() {
   return GEA_REGIONS.map(g => ({ slug: g.slug }))
@@ -53,7 +52,6 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   return (
     <GeoDetailPage
-      icon={<Zap className="h-5 w-5" />}
       title={region.name}
       breadcrumbs={[{ label: 'GEA Regions', href: '/gea-regions' }]}
       prev={prev}

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { STATES, NY_COUNTIES } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Map } from 'lucide-react'
 
 export function generateStaticParams() {
   return STATES.map(s => ({ slug: s.slug }))
@@ -50,7 +49,6 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <GeoDetailPage
-      icon={<Map className="h-5 w-5" />}
       title={state.name}
       breadcrumbs={[{ label: 'States', href: '/states' }]}
       prev={prev}

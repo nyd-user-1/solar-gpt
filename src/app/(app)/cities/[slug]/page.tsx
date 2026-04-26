@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { NY_COUNTIES, getCitiesByCounty } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Building2 } from 'lucide-react'
 
 // Build static city list from all counties
 function getAllCities() {
@@ -54,7 +53,6 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <GeoDetailPage
-      icon={<Building2 className="h-5 w-5" />}
       title={city.name}
       breadcrumbs={[
         { label: 'Cities', href: '/cities' },

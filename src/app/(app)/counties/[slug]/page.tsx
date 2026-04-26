@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { NY_COUNTIES, GEA_REGIONS, getCitiesByCounty } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { MapPin } from 'lucide-react'
 
 export function generateStaticParams() {
   return NY_COUNTIES.map(c => ({ slug: c.slug }))
@@ -51,7 +50,6 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
 
   return (
     <GeoDetailPage
-      icon={<MapPin className="h-5 w-5" />}
       title={`${county.name} County`}
       breadcrumbs={[
         { label: 'Counties', href: '/counties' },
