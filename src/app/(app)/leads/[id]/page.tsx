@@ -54,6 +54,8 @@ export default function LeadDetailPage() {
   const infoRows: { label: string; value: string; highlight?: boolean }[] = [
     { label: 'Phone', value: lead.phone, highlight: true },
     { label: 'Email', value: lead.email, highlight: true },
+    { label: 'Estimated Cost', value: `$${lead.estimated_cost.toLocaleString()}` },
+    { label: 'Annual Savings', value: `$${lead.estimated_savings_annual.toLocaleString()}` },
     { label: 'Address', value: `${lead.address}, ${lead.city}, ${lead.state} ${lead.zip}` },
     { label: 'County', value: `${lead.county} County` },
     { label: 'GEA Region', value: lead.gea_region },
@@ -66,8 +68,6 @@ export default function LeadDetailPage() {
     { label: 'Daily Sun Hours', value: `${lead.avg_daily_sun_hours} hrs` },
     { label: 'Utility Provider', value: lead.utility_provider },
     { label: 'System Size', value: `${lead.system_size_kw} kW` },
-    { label: 'Estimated Cost', value: `$${lead.estimated_cost.toLocaleString()}` },
-    { label: 'Annual Savings', value: `$${lead.estimated_savings_annual.toLocaleString()}` },
     { label: 'Estimated Payback', value: `${estimatedPayback} years` },
     { label: 'Financing Interest', value: lead.financing_interest },
     { label: 'Credit Score Range', value: lead.credit_score_range },
