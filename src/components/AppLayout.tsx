@@ -19,8 +19,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-full overflow-hidden p-0 sm:p-[18px]">
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 sm:static sm:z-auto shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${
-          sidebarOpen ? 'w-full sm:w-[260px] sm:mr-[18px]' : 'w-0'
+        className={`fixed inset-y-0 left-0 z-50 sm:static sm:z-auto shrink-0 transition-all duration-300 ease-in-out overflow-hidden sm:w-[260px] sm:mr-[18px] ${
+          sidebarOpen ? 'w-full' : 'w-0'
         }`}
       >
         <div className="w-full sm:w-[260px] h-full rounded-none sm:rounded-2xl overflow-hidden">
@@ -35,10 +35,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Open sidebar"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-solar hover:bg-[var(--inp-bg)] transition-colors"
+            className="sm:hidden flex h-9 w-9 items-center justify-center rounded-full text-solar hover:bg-[var(--inp-bg)] transition-colors"
           >
             <Sun className="h-5 w-5 fill-solar" />
           </button>
+          <div className="hidden sm:block" />
 
           <div className="flex items-center gap-2 mr-1.5">
             <button
