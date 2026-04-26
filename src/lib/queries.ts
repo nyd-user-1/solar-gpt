@@ -423,6 +423,29 @@ export async function getTopStates(limit = 8): Promise<StateKpi[]> {
   return rows as StateKpi[]
 }
 
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+export type HeatmapPoint = { lat: number; lng: number; weight: number }
+
+export async function getHeatmapPoints(
+  latMin: number, latMax: number, lngMin: number, lngMax: number
+): Promise<HeatmapPoint[]> {
+  const rows = await sql`
+    SELECT lat_avg, lng_avg, count_qualified,
+      count_qualified::float / NULLIF(MAX(count_qualified) OVER (), 0) AS weight_normalized
+    FROM solargpt.v_zip_kpis
+    WHERE lat_avg BETWEEN ${latMin} AND ${latMax}
+      AND lng_avg BETWEEN ${lngMin} AND ${lngMax}
+      AND lat_avg IS NOT NULL AND lng_avg IS NOT NULL
+    LIMIT 5000
+  `
+  return rows.map(r => ({
+    lat: Number((r as { lat_avg: number }).lat_avg),
+    lng: Number((r as { lng_avg: number }).lng_avg),
+    // TODO: tune weight formula after visual review — may want LOG(count_qualified) to compress dense outliers like NYC
+    weight: Number((r as { weight_normalized: number }).weight_normalized),
+  }))
+}
+
 export async function getTopCounties(limit = 8): Promise<CountyKpi[]> {
   const rows = await sql`
     SELECT id, region_name, state_name, cambium_gea,

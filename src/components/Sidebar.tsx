@@ -163,7 +163,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 href={to}
                 onClick={handleNavClick}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors outline-none focus-visible:outline-none',
                   isActive ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
                 )}
               >

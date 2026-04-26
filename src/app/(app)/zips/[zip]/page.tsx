@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getZipByCode, getSiblingZips } from '@/lib/queries'
+import { getZipByCode, getSiblingZips, getHeatmapPoints } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function ZipDetailPage({ params }: { params: Promise<{ zip: string }> }) {
@@ -10,7 +10,10 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
   const zipData = await getZipByCode(zip)
   if (!zipData) notFound()
 
-  const siblings = await getSiblingZips(zipData.state_name, zipData.zip_code, 12)
+  const [siblings, heatmapPoints] = await Promise.all([
+    getSiblingZips(zipData.state_name, zipData.zip_code, 12),
+    getHeatmapPoints(zipData.lat_min, zipData.lat_max, zipData.lng_min, zipData.lng_max),
+  ])
 
   const infoRows = [
     { label: 'Untapped Value / yr', value: fmtUsd(zipData.untapped_annual_value_usd), highlight: true },
@@ -47,6 +50,8 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
       ctaLabel="Get Quote"
       mapCenter={{ lat: zipData.lat_avg, lng: zipData.lng_avg }}
       mapBounds={{ north: zipData.lat_max, south: zipData.lat_min, east: zipData.lng_max, west: zipData.lng_min }}
+      heatmapPoints={heatmapPoints}
+      chatContext={`ZIP ${zipData.zip_code}, ${zipData.state_name}`}
     />
   )
 }

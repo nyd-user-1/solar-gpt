@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getAllGeas, getGeaKpi, getCountiesByGea, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
+import { getAllGeas, getGeaKpi, getCountiesByGea, getHeatmapPoints, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function GeaRegionDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -16,6 +16,8 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
     getCountiesByGea(gea),
   ])
   if (!kpi) notFound()
+
+  const heatmapPoints = await getHeatmapPoints(kpi.lat_min, kpi.lat_max, kpi.lng_min, kpi.lng_max)
 
   const sorted = [...allGeas].sort()
   const idx = sorted.indexOf(gea)
@@ -59,6 +61,8 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
       mapCenter={{ lat: kpi.lat_avg, lng: kpi.lng_avg }}
       mapBounds={{ north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min }}
       mapMarkers={counties.slice(0, 15).map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
+      heatmapPoints={heatmapPoints}
+      chatContext={gea}
     />
   )
 }

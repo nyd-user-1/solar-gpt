@@ -3,9 +3,11 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, MessageCircle } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
+import { ChatDrawer } from '@/components/ChatDrawer'
+import type { HeatmapPoint } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -50,6 +52,10 @@ export interface DetailPageProps {
   mapCenter?: { lat: number; lng: number }
   mapBounds?: { north: number; south: number; east: number; west: number }
   mapMarkers?: MapMarker[]
+  /** Heatmap data points for the solar potential overlay */
+  heatmapPoints?: HeatmapPoint[]
+  /** Context label shown in chat drawer header */
+  chatContext?: string
 }
 
 function SkeletonBar({ className = '' }: { className?: string }) {
@@ -77,11 +83,12 @@ export function GeoDetailPage({
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
   const [query, setQuery] = useState('')
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     setTransitioning(true)
@@ -95,6 +102,7 @@ export function GeoDetailPage({
   }
 
   return (
+    <>
     <div className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
 
@@ -128,6 +136,15 @@ export function GeoDetailPage({
                   <ChevronLeft className="h-4 w-4" />
                 </Link>
                 <span className="absolute left-1/2 -translate-x-1/2 -top-8 px-2 py-1 rounded bg-[var(--txt)] text-[var(--bg)] text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Prev</span>
+              </div>
+              <div className="relative group">
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </button>
+                <span className="absolute left-1/2 -translate-x-1/2 -top-8 px-2 py-1 rounded bg-[var(--txt)] text-[var(--bg)] text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Ask SolarGPT</span>
               </div>
               <div className="relative group">
                 <Link
@@ -168,6 +185,7 @@ export function GeoDetailPage({
               center={mapCenter}
               bounds={mapBounds}
               markers={mapMarkers}
+              heatmapPoints={heatmapPoints}
               className="h-64 sm:h-96 w-full"
             />
           </div>
@@ -325,5 +343,13 @@ export function GeoDetailPage({
 
       </div>
     </div>
+
+    <ChatDrawer
+      open={chatOpen}
+      onClose={() => setChatOpen(false)}
+      title={`SolarGPT — ${title}`}
+      context={chatContext ?? title}
+    />
+    </>
   )
 }

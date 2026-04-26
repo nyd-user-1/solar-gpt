@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getCityBySlug, getSiblingCities, nameToSlug } from '@/lib/queries'
+import { getCityBySlug, getSiblingCities, getHeatmapPoints, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function CityDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -10,7 +10,10 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
   const city = await getCityBySlug(slug)
   if (!city) notFound()
 
-  const siblings = await getSiblingCities(city.state_name, city.id, 12)
+  const [siblings, heatmapPoints] = await Promise.all([
+    getSiblingCities(city.state_name, city.id, 12),
+    getHeatmapPoints(city.lat_min, city.lat_max, city.lng_min, city.lng_max),
+  ])
 
   const infoRows = [
     { label: 'Untapped Value / yr', value: fmtUsd(city.untapped_annual_value_usd), highlight: true },
@@ -46,6 +49,8 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
       ctaLabel="Get Quote"
       mapCenter={{ lat: city.lat_avg, lng: city.lng_avg }}
       mapBounds={{ north: city.lat_max, south: city.lat_min, east: city.lng_max, west: city.lng_min }}
+      heatmapPoints={heatmapPoints}
+      chatContext={`${city.region_name}, ${city.state_name}`}
     />
   )
 }

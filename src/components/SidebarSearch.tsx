@@ -30,8 +30,13 @@ export function SidebarSearch() {
       }
       if (e.key === 'Escape') setOpen(false)
     }
+    const openHandler = () => setOpen(true)
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('solargpt:open-search', openHandler)
+    return () => {
+      window.removeEventListener('keydown', handler)
+      window.removeEventListener('solargpt:open-search', openHandler)
+    }
   }, [])
 
   const fetchResults = useCallback(async (q: string) => {
