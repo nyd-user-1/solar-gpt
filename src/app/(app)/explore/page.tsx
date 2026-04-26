@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { Sun, MapPin, Zap } from 'lucide-react'
+import { MapPin, Zap } from 'lucide-react'
 import { getExploreCounties, getAllGeas, getGeaKpi, type CountyKpi, type GeaKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
@@ -73,14 +73,9 @@ export default async function ExplorePage() {
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 pt-2 pb-16 sm:pb-10">
 
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
-            <p className="text-[var(--muted)] mt-1">Solar opportunity data for New York State</p>
-          </div>
-
-          <h2 className="text-xl font-bold text-[var(--txt)] mb-4 flex items-center gap-2">
-            <Sun className="h-5 w-5 text-solar" />
-            Top Opportunity Counties
+          {/* Top counties horizontal scroll */}
+          <h2 className="text-xl font-bold text-[var(--txt)] mb-4">
+            By County
           </h2>
           <div className="-mx-4 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
@@ -90,9 +85,9 @@ export default async function ExplorePage() {
             </div>
           </div>
 
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4 flex items-center gap-2">
-            <Zap className="h-5 w-5 text-solar" />
-            GEA Regions
+          {/* GEA Regions grid */}
+          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">
+            By GEA Region
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (

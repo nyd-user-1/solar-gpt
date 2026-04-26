@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Zap } from 'lucide-react'
 import { getAllGeas, getGeaKpi, getCountiesByGea, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
@@ -45,7 +44,6 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   return (
     <GeoDetailPage
-      icon={<Zap className="h-5 w-5" />}
       title={gea}
       breadcrumbs={[{ label: 'GEA Regions', href: '/gea-regions' }]}
       prev={prev}

@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Map } from 'lucide-react'
 import { getStateBySlug, getCountiesByState, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
@@ -36,7 +35,6 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <GeoDetailPage
-      icon={<Map className="h-5 w-5" />}
       title={state.state_name}
       breadcrumbs={[{ label: 'States', href: '/states' }]}
       listHref="/states"

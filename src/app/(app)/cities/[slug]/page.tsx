@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Building2 } from 'lucide-react'
 import { getCityBySlug, getSiblingCities, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
@@ -36,7 +35,6 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <GeoDetailPage
-      icon={<Building2 className="h-5 w-5" />}
       title={city.region_name}
       breadcrumbs={[{ label: 'Cities', href: '/cities' }]}
       listHref="/cities"

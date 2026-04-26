@@ -1,14 +1,33 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
-import { SAMPLE_LEADS, STATUS_STYLES, CONTACT_STATUSES } from '@/data/leads'
-import { ArrowLeft, Sun, MapPin, Phone, Mail, Zap, Home, DollarSign } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
+import { useState } from 'react'
+import {
+  ChevronLeft, ChevronRight, ChevronDown,
+  Send, MessageSquare, ScrollText,
+  Phone, Mail,
+  Calendar, Clock,
+} from 'lucide-react'
+import { SAMPLE_LEADS } from '@/data/leads'
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
+
+interface ScoreCard {
+  title: string
+  value: string
+  delta: number
+}
+
+interface OutreachCard {
+  title: string
+  subtitle: string
+  icon: typeof Calendar
+}
 
 export default function LeadDetailPage() {
   const { id } = useParams()
-  const router = useRouter()
+  const [infoExpanded, setInfoExpanded] = useState(true)
+
   const lead = SAMPLE_LEADS.find(l => l.id === Number(id))
 
   if (!lead) {
@@ -22,169 +41,252 @@ export default function LeadDetailPage() {
     )
   }
 
-  const style = STATUS_STYLES[lead.contact_status] ?? STATUS_STYLES['New']
+  const sorted = SAMPLE_LEADS.slice().sort((a, b) => a.id - b.id)
+  const idx = sorted.findIndex(l => l.id === lead.id)
+  const prev = idx > 0 ? sorted[idx - 1] : null
+  const next = idx < sorted.length - 1 ? sorted[idx + 1] : null
+
+  const fullName = `${lead.first_name} ${lead.last_name}`
+  const firstName = lead.first_name
+
   const estimatedPayback = Math.round(lead.estimated_cost / lead.estimated_savings_annual)
-  const roiPct = Math.round((lead.estimated_savings_annual / lead.estimated_cost) * 100 * 10) / 10
+
+  const infoRows: { label: string; value: string; highlight?: boolean }[] = [
+    { label: 'Phone', value: lead.phone, highlight: true },
+    { label: 'Email', value: lead.email, highlight: true },
+    { label: 'Estimated Cost', value: `$${lead.estimated_cost.toLocaleString()}` },
+    { label: 'Annual Savings', value: `$${lead.estimated_savings_annual.toLocaleString()}` },
+    { label: 'Address', value: `${lead.address}, ${lead.city}, ${lead.state} ${lead.zip}` },
+    { label: 'County', value: `${lead.county} County` },
+    { label: 'GEA Region', value: lead.gea_region },
+    { label: 'Roof Type', value: lead.roof_type },
+    { label: 'Roof Age', value: `${lead.roof_age_years} years` },
+    { label: 'Roof Sq Ft', value: `${lead.roof_sqft.toLocaleString()} sq ft` },
+    { label: 'Shading', value: lead.shading },
+    { label: 'Stories', value: `${lead.num_stories} story` },
+    { label: 'Monthly Electric Bill', value: `$${lead.monthly_electric_bill}/mo` },
+    { label: 'Daily Sun Hours', value: `${lead.avg_daily_sun_hours} hrs` },
+    { label: 'Utility Provider', value: lead.utility_provider },
+    { label: 'System Size', value: `${lead.system_size_kw} kW` },
+    { label: 'Estimated Payback', value: `${estimatedPayback} years` },
+    { label: 'Financing Interest', value: lead.financing_interest },
+    { label: 'Credit Score Range', value: lead.credit_score_range },
+    { label: 'Status', value: lead.contact_status },
+  ]
+
+  const scoreCards: ScoreCard[] = [
+    {
+      title: 'Roof condition',
+      value: lead.roof_type,
+      delta: lead.roof_age_years < 10 ? 1 : 0,
+    },
+    {
+      title: 'Bill size',
+      value: `$${lead.monthly_electric_bill}/mo`,
+      delta: lead.monthly_electric_bill >= 250 ? 1 : 0,
+    },
+    {
+      title: 'Sun exposure',
+      value: `${lead.avg_daily_sun_hours} hrs/day`,
+      delta: lead.avg_daily_sun_hours >= 4.5 ? 1 : 0,
+    },
+  ]
+
+  const outreachCards: OutreachCard[] = [
+    {
+      title: 'Drip Campaign',
+      subtitle: 'Scheduled touches reacting to lead activity',
+      icon: Calendar,
+    },
+    {
+      title: 'User History',
+      subtitle: 'Everything this lead has done since their visit',
+      icon: Clock,
+    },
+    {
+      title: 'Follow-up email',
+      subtitle: 'Post-call email with quote details and next steps',
+      icon: Mail,
+    },
+  ]
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-4xl px-5 py-6">
+      <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
 
-        {/* Back + status */}
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--txt)] transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to leads
-          </button>
-          <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', style.bg, style.text)}>
-            <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
-            {lead.contact_status}
-          </span>
-        </div>
+        {/* Breadcrumb */}
+        <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
+          <Link href="/leads" className="hover:text-solar transition-colors">Leads</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-solar font-medium">{fullName}</span>
+        </nav>
 
-        {/* Hero */}
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-solar/10 text-solar text-2xl font-bold shrink-0">
-              {lead.first_name[0]}{lead.last_name[0]}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[var(--txt)]">{lead.first_name} {lead.last_name}</h1>
-              <div className="flex items-center gap-2 mt-1 text-sm text-[var(--muted)]">
-                <MapPin className="h-3.5 w-3.5" />
-                {lead.address}, {lead.city}, {lead.state} {lead.zip}
-              </div>
-              <div className="text-xs text-[var(--muted)] mt-0.5">
-                {lead.county} County · {lead.gea_region}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-[var(--txt)]">{fullName}</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* System estimate */}
-          <div className="col-span-1 md:col-span-2 rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5">
-            <h2 className="text-sm font-semibold text-[var(--txt)] mb-4 flex items-center gap-2">
-              <Sun className="h-4 w-4 text-solar" />
-              Solar System Estimate
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { label: 'System Size', value: `${lead.system_size_kw} kW` },
-                { label: 'Est. Cost', value: `$${lead.estimated_cost.toLocaleString()}` },
-                { label: 'Annual Savings', value: `$${lead.estimated_savings_annual.toLocaleString()}` },
-                { label: 'Payback', value: `${estimatedPayback} yrs` },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-center p-3 rounded-lg bg-[var(--inp-bg)]">
-                  <p className="text-xs text-[var(--muted)] mb-1">{label}</p>
-                  <p className="text-xl font-bold text-[var(--txt)]">{value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center gap-2 rounded-lg bg-solar/5 border border-solar/20 px-4 py-3">
-              <Zap className="h-4 w-4 text-solar shrink-0" />
-              <p className="text-sm text-[var(--txt)]">
-                <span className="font-semibold">{roiPct}% annual ROI</span> · After 30% federal tax credit the net cost is <span className="font-semibold">${Math.round(lead.estimated_cost * 0.7).toLocaleString()}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Contact info */}
-          <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5">
-            <h2 className="text-sm font-semibold text-[var(--txt)] mb-4">Contact</h2>
-            <div className="space-y-3">
-              <a href={`tel:${lead.phone}`} className="flex items-center gap-3 text-sm hover:text-solar transition-colors">
-                <Phone className="h-4 w-4 text-[var(--muted)] shrink-0" />
-                <span className="text-[var(--txt)]">{lead.phone}</span>
-              </a>
-              <a href={`mailto:${lead.email}`} className="flex items-center gap-3 text-sm hover:text-solar transition-colors">
-                <Mail className="h-4 w-4 text-[var(--muted)] shrink-0" />
-                <span className="text-[var(--txt)] truncate">{lead.email}</span>
-              </a>
-            </div>
-            <div className="mt-4 pt-4 border-t border-[var(--border)]">
-              <p className="text-xs text-[var(--muted)] mb-1">Status</p>
-              <select
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--inp-bg)] px-3 py-2 text-sm text-[var(--txt)] outline-none focus:border-solar transition-colors"
-                defaultValue={lead.contact_status}
+          <div className="hidden sm:flex items-center shrink-0">
+            <div className="inline-flex -space-x-px">
+              <Link
+                href={prev ? `/leads/${prev.id}` : '#'}
+                aria-disabled={!prev}
+                aria-label="Previous lead"
+                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-l-full text-[var(--muted)] transition-colors ${prev ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}
               >
-                {CONTACT_STATUSES.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+              <a
+                href={`mailto:${lead.email}`}
+                aria-label={`Email ${firstName}`}
+                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <Send className="h-4 w-4" />
+              </a>
+              <a
+                href={`sms:${lead.phone}`}
+                aria-label={`SMS ${firstName}`}
+                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </a>
+              <Link
+                href="/leads"
+                aria-label="All leads"
+                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <ScrollText className="h-4 w-4" />
+              </Link>
+              <Link
+                href={next ? `/leads/${next.id}` : '#'}
+                aria-disabled={!next}
+                aria-label="Next lead"
+                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-r-full text-[var(--muted)] transition-colors ${next ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Details grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {/* Property details */}
-          <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5">
-            <h2 className="text-sm font-semibold text-[var(--txt)] mb-4 flex items-center gap-2">
-              <Home className="h-4 w-4 text-solar" />
-              Property Details
-            </h2>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-[var(--border)]">
-                {[
-                  { label: 'Roof Type', value: lead.roof_type },
-                  { label: 'Roof Age', value: `${lead.roof_age_years} years` },
-                  { label: 'Roof Sq Ft', value: `${lead.roof_sqft.toLocaleString()} sq ft` },
-                  { label: 'Shading', value: lead.shading },
-                  { label: 'Ownership', value: lead.ownership },
-                  { label: 'Stories', value: `${lead.num_stories} story` },
-                ].map(({ label, value }) => (
-                  <tr key={label}>
-                    <td className="py-2.5 text-[var(--muted)]">{label}</td>
-                    <td className="py-2.5 text-right font-medium text-[var(--txt)]">{value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Energy & financing */}
-          <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5">
-            <h2 className="text-sm font-semibold text-[var(--txt)] mb-4 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-solar" />
-              Energy & Financing
-            </h2>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-[var(--border)]">
-                {[
-                  { label: 'Monthly Electric Bill', value: `$${lead.monthly_electric_bill}/mo`, highlight: true },
-                  { label: 'Daily Sun Hours', value: `${lead.avg_daily_sun_hours} hrs` },
-                  { label: 'Utility Provider', value: lead.utility_provider },
-                  { label: 'Financing Interest', value: lead.financing_interest },
-                  { label: 'Credit Score Range', value: lead.credit_score_range },
-                  { label: 'GEA Region', value: lead.gea_region },
-                ].map(({ label, value, highlight }) => (
-                  <tr key={label}>
-                    <td className="py-2.5 text-[var(--muted)]">{label}</td>
-                    <td className={cn('py-2.5 text-right font-medium', highlight ? 'text-solar' : 'text-[var(--txt)]')}>{value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Lead information */}
+        <div className="mb-10">
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+            <button
+              onClick={() => setInfoExpanded(!infoExpanded)}
+              className="flex w-full items-center justify-between px-4 py-3 bg-[var(--inp-bg)]"
+            >
+              <span className="text-sm font-semibold text-[var(--txt)]">Lead information</span>
+              <ChevronDown className={`h-4 w-4 text-[var(--muted)] transition-transform duration-200 ${infoExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            {infoExpanded && (
+              <table className="w-full text-sm">
+                <tbody>
+                  {infoRows.map((row, i) => (
+                    <tr key={i} className="border-t border-[var(--border)]">
+                      <td className="px-4 py-3 text-[var(--muted)]">{row.label}</td>
+                      <td className={`px-4 py-3 text-right font-medium ${row.highlight ? 'text-solar' : 'text-[var(--txt)]'}`}>
+                        {row.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
-        {/* Location links */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--inp-bg)] p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-[var(--muted)]">
-            View solar data for this area:
-          </p>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <Link href={`/counties/${lead.county.toLowerCase().replace(/\s+/g, '-').replace(/\./g, '')}`} className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--txt)] hover:border-solar hover:text-solar transition-colors">
-              {lead.county} County
-            </Link>
-            <Link href={`/gea-regions/${lead.gea_region.toLowerCase().replace(/\s+/g, '-')}`} className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--txt)] hover:border-solar hover:text-solar transition-colors">
-              {lead.gea_region}
-            </Link>
-            <Link href={`/zips/${lead.zip}`} className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--txt)] hover:border-solar hover:text-solar transition-colors">
-              ZIP {lead.zip}
-            </Link>
+        {/* Score */}
+        <div className="mb-10">
+          <Carousel opts={{ align: 'start' }} className="w-full">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[var(--txt)]">Score</h2>
+              <div className="flex items-center gap-2">
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            </div>
+            <CarouselContent>
+              {scoreCards.map((c) => (
+                <CarouselItem key={c.title} className="basis-full sm:basis-1/2 md:basis-1/3">
+                  <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 min-h-[90px]">
+                    <p className="text-sm font-semibold text-[var(--txt)] mb-1">{c.title}</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {c.value}{' '}
+                      <span className={c.delta > 0 ? 'text-emerald-600 font-semibold' : ''}>
+                        (+{c.delta})
+                      </span>
+                    </p>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+
+        {/* Contact */}
+        <div className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--txt)]">Contact</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <a
+              href={`tel:${lead.phone}`}
+              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--inp-bg)]"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--txt)]">Call {firstName}</p>
+                <p className="text-xs text-[var(--muted)] truncate">{lead.phone}</p>
+              </div>
+              <Phone className="h-4 w-4 text-[var(--muted)] shrink-0 ml-3" />
+            </a>
+            <a
+              href={`sms:${lead.phone}`}
+              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--inp-bg)]"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--txt)]">SMS {firstName}</p>
+                <p className="text-xs text-[var(--muted)] truncate">{lead.phone}</p>
+              </div>
+              <MessageSquare className="h-4 w-4 text-[var(--muted)] shrink-0 ml-3" />
+            </a>
+            <a
+              href={`mailto:${lead.email}`}
+              className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--inp-bg)]"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--txt)]">Email {firstName}</p>
+                <p className="text-xs text-[var(--muted)] truncate">{lead.email}</p>
+              </div>
+              <Mail className="h-4 w-4 text-[var(--muted)] shrink-0 ml-3" />
+            </a>
           </div>
+        </div>
+
+        {/* Outreach */}
+        <div className="mb-10">
+          <Carousel opts={{ align: 'start' }} className="w-full">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[var(--txt)]">Outreach</h2>
+              <div className="flex items-center gap-2">
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            </div>
+            <CarouselContent>
+              {outreachCards.map((c) => {
+                const Icon = c.icon
+                return (
+                  <CarouselItem key={c.title} className="basis-full sm:basis-1/2 md:basis-1/3">
+                    <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 min-h-[90px]">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-semibold text-[var(--txt)]">{c.title}</p>
+                        <Icon className="h-4 w-4 text-[var(--muted)]" />
+                      </div>
+                      <p className="text-xs text-[var(--muted)] line-clamp-2">{c.subtitle}</p>
+                    </div>
+                  </CarouselItem>
+                )
+              })}
+            </CarouselContent>
+          </Carousel>
         </div>
 
       </div>

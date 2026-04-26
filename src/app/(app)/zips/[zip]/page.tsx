@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { Hash } from 'lucide-react'
 import { getZipByCode, getSiblingZips } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
@@ -37,7 +36,6 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
 
   return (
     <GeoDetailPage
-      icon={<Hash className="h-5 w-5" />}
       title={`ZIP ${zipData.zip_code}`}
       breadcrumbs={[{ label: 'ZIPs', href: '/zips' }]}
       listHref="/zips"

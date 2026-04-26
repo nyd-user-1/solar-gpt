@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { MapPin } from 'lucide-react'
 import {
   getCountyBySlug,
   getAdjacentCounties,
@@ -51,7 +50,6 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
 
   return (
     <GeoDetailPage
-      icon={<MapPin className="h-5 w-5" />}
       title={county.region_name}
       breadcrumbs={[
         { label: 'Counties', href: '/counties' },
