@@ -7,11 +7,13 @@ export async function GET(req: NextRequest) {
   // Empty query: return top states for the initial sidebar search view
   if (!q || q.length < 2) {
     const topStates = await sql`
-      SELECT state_name AS name,
-        REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') AS slug,
-        sunlight_grade AS grade
-      FROM solargpt.v_state_kpis
-      ORDER BY untapped_annual_value_usd DESC
+      SELECT v.state_name AS name,
+        REGEXP_REPLACE(lower(v.state_name), '[^a-z0-9]+', '-', 'g') AS slug,
+        v.sunlight_grade AS grade,
+        s.flag_url
+      FROM solargpt.v_state_kpis v
+      LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+      ORDER BY v.untapped_annual_value_usd DESC
       LIMIT 8
     `
     return NextResponse.json({ states: topStates, counties: [], geas: [] })
@@ -21,18 +23,20 @@ export async function GET(req: NextRequest) {
 
   const [stateRows, countyRows, geaRows] = await Promise.all([
     sql`
-      SELECT state_name AS name,
-        REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') AS slug,
-        sunlight_grade AS grade
-      FROM solargpt.v_state_kpis
-      WHERE lower(state_name) LIKE lower(${pattern})
-      ORDER BY untapped_annual_value_usd DESC
+      SELECT v.state_name AS name,
+        REGEXP_REPLACE(lower(v.state_name), '[^a-z0-9]+', '-', 'g') AS slug,
+        v.sunlight_grade AS grade,
+        s.flag_url
+      FROM solargpt.v_state_kpis v
+      LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+      WHERE lower(v.state_name) LIKE lower(${pattern})
+      ORDER BY v.untapped_annual_value_usd DESC
       LIMIT 5
     `,
     sql`
       SELECT region_name AS name, state_name AS state,
         REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') AS slug,
-        sunlight_grade AS grade
+        sunlight_grade AS grade, seal_url
       FROM solargpt.v_county_kpis
       WHERE lower(region_name) LIKE lower(${pattern})
       ORDER BY untapped_annual_value_usd DESC

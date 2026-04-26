@@ -83,7 +83,9 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar/10 text-solar">
-                  <MapPin className="h-5 w-5" />
+                  {county.seal_url
+                    ? <img src={county.seal_url} alt="" className="h-7 w-7 object-contain" />
+                    : <MapPin className="h-5 w-5" />}
                 </div>
                 <div>
                   <p className="font-bold text-[var(--txt)]">{county.region_name}</p>
@@ -141,7 +143,9 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
                 <tr key={county.id} className="hover:bg-[var(--inp-bg)] transition-colors">
                   <td className="px-4 py-3 font-medium text-[var(--txt)]">
                     <Link href={`/counties/${nameToSlug(county.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                      <MapPin className="h-4 w-4 text-solar shrink-0" />
+                      {county.seal_url
+                        ? <img src={county.seal_url} alt="" className="h-5 w-5 object-contain shrink-0" />
+                        : <MapPin className="h-4 w-4 text-solar shrink-0" />}
                       {county.region_name}
                     </Link>
                   </td>

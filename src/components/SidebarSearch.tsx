@@ -10,8 +10,8 @@ import {
 import { cn } from '@/lib/utils'
 
 type SearchResult = {
-  states: { name: string; slug: string; grade: string }[]
-  counties: { name: string; state: string; slug: string; grade: string }[]
+  states: { name: string; slug: string; grade: string; flag_url?: string | null }[]
+  counties: { name: string; state: string; slug: string; grade: string; seal_url?: string | null }[]
   geas: { name: string; slug: string }[]
 }
 
@@ -126,7 +126,9 @@ export function SidebarSearch() {
                       onSelect={() => go(`/states/${s.slug}`)}
                       value={s.name}
                     >
-                      <Map className="h-4 w-4 text-[var(--muted)]" />
+                      {s.flag_url
+                        ? <img src={s.flag_url} alt="" className="h-4 w-4 object-contain shrink-0" />
+                        : <Map className="h-4 w-4 text-[var(--muted)]" />}
                       <span>{s.name}</span>
                       <span className={cn('ml-auto text-xs font-semibold', s.grade === 'A+' || s.grade === 'A' ? 'text-solar' : 'text-[var(--muted)]')}>
                         {s.grade}
@@ -165,7 +167,9 @@ export function SidebarSearch() {
                       onSelect={() => go(`/counties/${c.slug}`)}
                       value={`${c.name} ${c.state}`}
                     >
-                      <MapPin className="h-4 w-4 text-[var(--muted)]" />
+                      {c.seal_url
+                        ? <img src={c.seal_url} alt="" className="h-4 w-4 object-contain shrink-0" />
+                        : <MapPin className="h-4 w-4 text-[var(--muted)]" />}
                       <span>{c.name}</span>
                       <span className="ml-1 text-xs text-[var(--muted)]">{c.state}</span>
                       <span className="ml-auto text-xs font-semibold text-[var(--muted)]">{c.grade}</span>

@@ -40,6 +40,7 @@ export type CountyKpi = {
   yearly_sunlight_kwh_kw_threshold_avg: number
   sunlight_grade: string
   sunlight_stars: number
+  seal_url: string | null
 }
 
 export type StateKpi = {
@@ -228,7 +229,8 @@ export async function getCountiesByState(stateName: string): Promise<CountyKpi[]
 export async function getAllCounties(): Promise<CountyKpi[]> {
   const rows = await sql`
     SELECT id, region_name, state_name, cambium_gea,
-           untapped_annual_value_usd, adoption_rate_pct, sunlight_grade, sunlight_stars
+           untapped_annual_value_usd, adoption_rate_pct, sunlight_grade, sunlight_stars,
+           seal_url
     FROM solargpt.v_county_kpis ORDER BY untapped_annual_value_usd DESC
   `
   return rows as CountyKpi[]
@@ -460,7 +462,8 @@ export async function getTopCounties(limit = 8): Promise<CountyKpi[]> {
       median_annual_savings_usd, median_lifetime_savings_usd,
       median_install_cost_usd, median_payback_years,
       cars_off_road_equivalent, homes_powered_equivalent,
-      percent_covered, percent_qualified, yearly_sunlight_kwh_kw_threshold_avg
+      percent_covered, percent_qualified, yearly_sunlight_kwh_kw_threshold_avg,
+      seal_url
     FROM solargpt.v_county_kpis
     ORDER BY untapped_annual_value_usd DESC
     LIMIT ${limit}
