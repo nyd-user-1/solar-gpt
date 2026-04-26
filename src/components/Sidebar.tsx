@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
-  Sun, Moon, LayoutDashboard, MapPin, Map, Zap,
+  Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,8 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
+  { to: '/explore',      icon: Compass,       label: 'Explore' },
+  { to: '/new-chat',     icon: MessageCircle, label: 'New Chat' },
   { to: '/states',       icon: Map,           label: 'States' },
   { to: '/counties',     icon: MapPin,        label: 'Counties' },
   { to: '/cities',       icon: Building2,     label: 'Cities' },
@@ -130,16 +132,17 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
+          { to: '/explore',     icon: Compass,   label: 'Explore' },
+          { to: '/new-chat',    icon: MessageCircle, label: 'Chat' },
           { to: '/states',      icon: Map,       label: 'States' },
           { to: '/counties',    icon: MapPin,    label: 'Counties' },
-          { to: '/cities',      icon: Building2, label: 'Cities' },
           { to: '/gea-regions', icon: Zap,       label: 'GEA' },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
             href={to}
             onClick={handleNavClick}
-            className={cn('flex flex-col items-center gap-1.5 transition-colors', pathname.startsWith(to) ? 'text-solar' : 'text-[var(--txt)]')}
+            className={cn('flex flex-col items-center gap-1.5 transition-colors', pathname.startsWith(to) ? 'text-[var(--txt)]' : 'text-[var(--muted)]')}
           >
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
               <Icon className="h-6 w-6" />
@@ -162,7 +165,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 onClick={handleNavClick}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
-                  isActive ? 'bg-solar/10 text-solar' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
+                  isActive ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
                 )}
               >
                 <Icon className="h-[18px] w-[18px] flex-shrink-0" />
@@ -186,7 +189,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 onClick={handleNavClick}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',
-                  isActive ? 'bg-solar/10 text-solar' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
+                  isActive ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
                 )}
               >
                 <Icon className="h-5 w-5 flex-shrink-0" />

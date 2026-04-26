@@ -1,19 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { Sun, Image as ImageIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Sun } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
+import { GlobalSearch } from '@/components/GlobalSearch'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
-  const pathname = usePathname()
-  const isExplore = pathname === '/explore'
-
-  const goToExplore = () => {
-    if (!isExplore) router.push('/explore')
-  }
 
   return (
     <div className="flex h-full overflow-hidden p-0 sm:p-[18px]">
@@ -42,15 +37,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden sm:block" />
 
           <div className="flex items-center gap-2 mr-1.5">
-            <button
-              type="button"
-              onClick={goToExplore}
-              aria-label="Explore"
-              title="Explore"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
-            >
-              <ImageIcon className="h-5 w-5" />
-            </button>
+            <GlobalSearch />
             <button
               onClick={() => router.push('/login?mode=login')}
               className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
@@ -70,6 +57,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* Portal mount point for ChatDrawer and other right-side panels */}
+      <div id="chat-panel-root" className="flex shrink-0" />
     </div>
   )
 }

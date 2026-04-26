@@ -377,3 +377,70 @@ export async function getCountiesByGea(gea: string): Promise<CountyKpi[]> {
   `
   return rows as CountyKpi[]
 }
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export type DashboardStats = {
+  total_states: number
+  total_qualified: number
+  total_installs: number
+  total_untapped_annual: number
+  total_untapped_lifetime: number
+  avg_adoption_pct: number
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const rows = await sql`
+    SELECT
+      COUNT(*) AS total_states,
+      SUM(count_qualified) AS total_qualified,
+      SUM(existing_installs_count) AS total_installs,
+      SUM(untapped_annual_value_usd) AS total_untapped_annual,
+      SUM(untapped_lifetime_value_usd) AS total_untapped_lifetime,
+      AVG(adoption_rate_pct) AS avg_adoption_pct
+    FROM solargpt.v_state_kpis
+  `
+  return rows[0] as DashboardStats
+}
+
+export async function getTopStates(limit = 8): Promise<StateKpi[]> {
+  const rows = await sql`
+    SELECT id, state_name, lat_avg, lng_avg, lat_min, lat_max, lng_min, lng_max,
+      count_qualified, existing_installs_count, untapped_annual_value_usd,
+      untapped_lifetime_value_usd, adoption_rate_pct, median_payback_years,
+      median_annual_savings_usd, median_install_cost_usd, cars_off_road_equivalent,
+      homes_powered_equivalent, sunlight_grade, sunlight_stars,
+      untapped_buildings, untapped_pct, kw_total, kw_median,
+      yearly_sunlight_kwh_total, carbon_offset_metric_tons,
+      total_energy_value_usd_yr, untapped_energy_value_usd_yr,
+      carbon_offset_value_usd_yr, untapped_carbon_value_usd_yr,
+      untapped_install_cost_usd, median_annual_kwh_per_roof,
+      median_lifetime_savings_usd, percent_covered, percent_qualified,
+      yearly_sunlight_kwh_kw_threshold_avg, region_name
+    FROM solargpt.v_state_kpis
+    ORDER BY untapped_annual_value_usd DESC
+    LIMIT ${limit}
+  `
+  return rows as StateKpi[]
+}
+
+export async function getTopCounties(limit = 8): Promise<CountyKpi[]> {
+  const rows = await sql`
+    SELECT id, region_name, state_name, cambium_gea,
+      lat_avg, lng_avg, lat_min, lat_max, lng_min, lng_max,
+      count_qualified, existing_installs_count, untapped_annual_value_usd,
+      untapped_lifetime_value_usd, adoption_rate_pct, sunlight_grade, sunlight_stars,
+      untapped_buildings, untapped_pct, kw_total, kw_median,
+      yearly_sunlight_kwh_total, carbon_offset_metric_tons,
+      total_energy_value_usd_yr, untapped_energy_value_usd_yr,
+      carbon_offset_value_usd_yr, untapped_carbon_value_usd_yr,
+      untapped_install_cost_usd, median_annual_kwh_per_roof,
+      median_annual_savings_usd, median_lifetime_savings_usd,
+      median_install_cost_usd, median_payback_years,
+      cars_off_road_equivalent, homes_powered_equivalent,
+      percent_covered, percent_qualified, yearly_sunlight_kwh_kw_threshold_avg
+    FROM solargpt.v_county_kpis
+    ORDER BY untapped_annual_value_usd DESC
+    LIMIT ${limit}
+  `
+  return rows as CountyKpi[]
+}
