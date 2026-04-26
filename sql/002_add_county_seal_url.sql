@@ -23,7 +23,7 @@ UPDATE solargpt.raw_sunroof_county SET seal_url = CASE region_name
   WHEN 'Erie County'         THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Erie_County,_New_York.svg'
   WHEN 'Herkimer County'     THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Herkimer_County,_New_York.svg'
   WHEN 'Jefferson County'    THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Jefferson_County,_New_York.svg'
-  WHEN 'Kings County'        THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Kings_County,_New_York.svg'
+  WHEN 'Kings County'        THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_Brooklyn,_New_York.svg'
   WHEN 'Madison County'      THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Madison_County,_New_York.svg'
   WHEN 'Monroe County'       THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Monroe_County,_New_York.svg'
   WHEN 'Nassau County'       THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_Nassau_County,_New_York.svg'
@@ -41,13 +41,13 @@ UPDATE solargpt.raw_sunroof_county SET seal_url = CASE region_name
   WHEN 'Rockland County'     THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Rockland_County,_New_York.svg'
   WHEN 'Saratoga County'     THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Saratoga_County,_New_York.svg'
   WHEN 'Schenectady County'  THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Schenectady_County,_New_York.svg'
-  WHEN 'Suffolk County'      THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Suffolk_County_New_York_Seal.png'
+  WHEN 'Suffolk County'      THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Suffolk_County_New_York_Flag.png'
   WHEN 'Tioga County'        THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Tioga_County,_New_York.svg'
   WHEN 'Tompkins County'     THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Tompkins_County,_New_York.svg'
   WHEN 'Ulster County'       THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Ulster_County,_New_York.svg'
   WHEN 'Warren County'       THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Warren_County,_New_York.svg'
   WHEN 'Washington County'   THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Washington_County,_New_York.svg'
-  WHEN 'Westchester County'  THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Seal_of_Westchester_County,_New_York.svg'
+  WHEN 'Westchester County'  THEN 'https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_Westchester_County,_New_York.svg'
   ELSE seal_url   -- preserve any existing values
 END
 WHERE state_name = 'New York';
