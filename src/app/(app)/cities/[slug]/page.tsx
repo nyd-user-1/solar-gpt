@@ -44,6 +44,8 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
       carouselItems={carouselItems}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
+      mapCenter={{ lat: city.lat_avg, lng: city.lng_avg }}
+      mapBounds={{ north: city.lat_max, south: city.lat_min, east: city.lng_max, west: city.lng_min }}
     />
   )
 }

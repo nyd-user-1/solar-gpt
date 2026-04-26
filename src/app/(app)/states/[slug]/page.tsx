@@ -45,6 +45,9 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
+      mapCenter={{ lat: state.lat_avg, lng: state.lng_avg }}
+      mapBounds={{ north: state.lat_max, south: state.lat_min, east: state.lng_max, west: state.lng_min }}
+      mapMarkers={counties.slice(0, 10).map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
     />
   )
 }

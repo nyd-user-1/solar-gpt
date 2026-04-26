@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
+import { RegionMap, type MapMarker } from '@/components/RegionMap'
 
 export interface InfoRow {
   label: string
@@ -45,6 +46,10 @@ export interface DetailPageProps {
   /** Optional CTA prompt */
   ctaHref?: string
   ctaLabel?: string
+  /** Optional map — if provided, renders above the info table */
+  mapCenter?: { lat: number; lng: number }
+  mapBounds?: { north: number; south: number; east: number; west: number }
+  mapMarkers?: MapMarker[]
 }
 
 function SkeletonBar({ className = '' }: { className?: string }) {
@@ -72,6 +77,7 @@ export function GeoDetailPage({
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
   ctaHref, ctaLabel,
+  mapCenter, mapBounds, mapMarkers,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -154,6 +160,18 @@ export function GeoDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Map */}
+        {mapCenter && (
+          <div className="mb-8">
+            <RegionMap
+              center={mapCenter}
+              bounds={mapBounds}
+              markers={mapMarkers}
+              className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        )}
 
         {/* Info table */}
         <div className="mb-8">

@@ -45,6 +45,8 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
       carouselItems={carouselItems}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
+      mapCenter={{ lat: zipData.lat_avg, lng: zipData.lng_avg }}
+      mapBounds={{ north: zipData.lat_max, south: zipData.lat_min, east: zipData.lng_max, west: zipData.lng_min }}
     />
   )
 }

@@ -56,6 +56,9 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
+      mapCenter={{ lat: kpi.lat_avg, lng: kpi.lng_avg }}
+      mapBounds={{ north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min }}
+      mapMarkers={counties.slice(0, 15).map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
     />
   )
 }

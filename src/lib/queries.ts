@@ -7,6 +7,10 @@ export type CountyKpi = {
   cambium_gea: string | null
   lat_avg: number
   lng_avg: number
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
   count_qualified: number
   existing_installs_count: number
   untapped_buildings: number
@@ -44,6 +48,10 @@ export type StateKpi = {
   state_name: string
   lat_avg: number
   lng_avg: number
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
   count_qualified: number
   existing_installs_count: number
   untapped_buildings: number
@@ -75,6 +83,10 @@ export type CityKpi = {
   county_fips: string | null
   lat_avg: number
   lng_avg: number
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
   count_qualified: number
   existing_installs_count: number
   untapped_buildings: number
@@ -102,6 +114,10 @@ export type ZipKpi = {
   cambium_gea: string | null
   lat_avg: number
   lng_avg: number
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
   count_qualified: number
   existing_installs_count: number
   untapped_buildings: number
@@ -125,6 +141,10 @@ export type GeaKpi = {
   county_count: number
   lat_avg: number
   lng_avg: number
+  lat_min: number
+  lat_max: number
+  lng_min: number
+  lng_max: number
   count_qualified: number
   existing_installs_count: number
   untapped_buildings: number

@@ -64,6 +64,9 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       carouselItems={carouselItems}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
+      mapCenter={{ lat: county.lat_avg, lng: county.lng_avg }}
+      mapBounds={{ north: county.lat_max, south: county.lat_min, east: county.lng_max, west: county.lng_min }}
+      mapMarkers={cities.map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
     />
   )
 }
