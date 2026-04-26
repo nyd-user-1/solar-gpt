@@ -294,7 +294,12 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
 
 // ── City ──────────────────────────────────────────────────────────────────────
 export async function getAllCities(): Promise<CityKpi[]> {
-  const rows = await sql`SELECT id, region_name, state_name FROM solargpt.v_city_kpis ORDER BY region_name`
+  const rows = await sql`
+    SELECT id, region_name, state_name, count_qualified,
+           untapped_annual_value_usd, adoption_rate_pct, sunlight_grade, sunlight_stars
+    FROM solargpt.v_city_kpis
+    ORDER BY untapped_annual_value_usd DESC
+  `
   return rows as CityKpi[]
 }
 

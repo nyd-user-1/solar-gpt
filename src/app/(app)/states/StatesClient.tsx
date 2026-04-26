@@ -92,7 +92,10 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
   const [grades, setGrades] = useState<string[]>([])
   const [sortCol, setSortCol] = useState<SortCol>('UNTAPPED/YR')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards')
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
+    if (typeof window === 'undefined') return 'list'
+    return (localStorage.getItem('solargpt.viewPreference.states') as 'cards' | 'list') ?? 'list'
+  })
 
   const filtered = useMemo(() => {
     let list = [...states]
@@ -144,13 +147,13 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         <div className="flex items-center gap-1">
           <GradeFilterMenu selected={grades} onChange={setGrades} />
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => { setViewMode('list'); localStorage.setItem('solargpt.viewPreference.states', 'list') }}
             className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}
           >
             <List className="h-5 w-5" />
           </button>
           <button
-            onClick={() => setViewMode('cards')}
+            onClick={() => { setViewMode('cards'); localStorage.setItem('solargpt.viewPreference.states', 'cards') }}
             className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}
           >
             <LayoutGrid className="h-5 w-5" />

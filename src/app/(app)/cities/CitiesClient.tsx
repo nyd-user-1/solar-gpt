@@ -2,41 +2,40 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, MapPin, ChevronDown, ChevronUp, List, LayoutGrid } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { fmtUsd } from '@/lib/utils'
+import { Search, Building2, List, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
+import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
-import type { CountyKpi } from '@/lib/queries'
+import type { CityKpi } from '@/lib/queries'
 
-type SortCol = 'name' | 'value' | 'adoption' | 'grade'
+type SortCol = 'name' | 'value' | 'buildings' | 'grade'
 
-export default function CountiesClient({ counties }: { counties: CountyKpi[] }) {
+export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
   const [sortCol, setSortCol] = useState<SortCol>('value')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
     if (typeof window === 'undefined') return 'list'
-    return (localStorage.getItem('solargpt.viewPreference.counties') as 'list' | 'cards') ?? 'list'
+    return (localStorage.getItem('solargpt.viewPreference.cities') as 'list' | 'cards') ?? 'list'
   })
 
   const filtered = useMemo(() => {
-    let list = [...counties]
+    let list = [...cities]
     if (query) list = list.filter(c =>
       c.region_name.toLowerCase().includes(query.toLowerCase()) ||
       c.state_name.toLowerCase().includes(query.toLowerCase())
     )
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'name')     { av = a.region_name; bv = b.region_name }
-      if (sortCol === 'value')    { av = a.untapped_annual_value_usd; bv = b.untapped_annual_value_usd }
-      if (sortCol === 'adoption') { av = a.adoption_rate_pct ?? 0; bv = b.adoption_rate_pct ?? 0 }
-      if (sortCol === 'grade')    { av = a.sunlight_grade; bv = b.sunlight_grade }
+      if (sortCol === 'name')      { av = a.region_name; bv = b.region_name }
+      if (sortCol === 'value')     { av = a.untapped_annual_value_usd; bv = b.untapped_annual_value_usd }
+      if (sortCol === 'buildings') { av = a.count_qualified; bv = b.count_qualified }
+      if (sortCol === 'grade')     { av = a.sunlight_grade; bv = b.sunlight_grade }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
       return 0
     })
     return list
-  }, [counties, query, sortCol, sortDir])
+  }, [cities, query, sortCol, sortDir])
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -46,9 +45,9 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
       <div className="px-6 pt-8 pb-6">
-        <h1 className="text-2xl font-bold text-[var(--txt)]">Counties</h1>
+        <h1 className="text-2xl font-bold text-[var(--txt)]">Cities & Towns</h1>
         <p className="hidden sm:block text-sm text-[var(--muted)] mt-1">
-          {counties.length.toLocaleString()} counties with solar data
+          {cities.length.toLocaleString()} cities with solar data
         </p>
       </div>
 
@@ -57,17 +56,17 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
           <input
             type="text"
-            placeholder="Search counties…"
+            placeholder="Search cities…"
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => { setViewMode('list'); localStorage.setItem('solargpt.viewPreference.counties', 'list') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+          <button onClick={() => { setViewMode('list'); localStorage.setItem('solargpt.viewPreference.cities', 'list') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
             <List className="h-5 w-5" />
           </button>
-          <button onClick={() => { setViewMode('cards'); localStorage.setItem('solargpt.viewPreference.counties', 'cards') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+          <button onClick={() => { setViewMode('cards'); localStorage.setItem('solargpt.viewPreference.cities', 'cards') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
             <LayoutGrid className="h-5 w-5" />
           </button>
           <div className="ml-auto">
@@ -78,31 +77,29 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
 
       {viewMode === 'cards' && (
         <div className="px-6 pb-8 pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(county => (
+          {filtered.map(city => (
             <Link
-              key={county.id}
-              href={`/counties/${nameToSlug(county.region_name)}`}
+              key={city.id}
+              href={`/cities/${nameToSlug(city.region_name)}`}
               className="flex flex-col rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 transition-all hover:shadow-xl hover:border-solar"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar/10 text-solar">
-                  {county.seal_url
-                    ? <img src={county.seal_url} alt="" className="h-7 w-7 object-contain" />
-                    : <MapPin className="h-5 w-5" />}
+                  <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-bold text-[var(--txt)]">{county.region_name}</p>
-                  <p className="text-xs text-[var(--muted)]">{county.state_name} · {county.cambium_gea}</p>
+                  <p className="font-bold text-[var(--txt)]">{city.region_name}</p>
+                  <p className="text-xs text-[var(--muted)]">{city.state_name} · Grade {city.sunlight_grade}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
                 <div>
                   <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Untapped/yr</p>
-                  <p className="text-lg font-bold text-[var(--txt)]">{fmtUsd(county.untapped_annual_value_usd)}</p>
+                  <p className="text-lg font-bold text-[var(--txt)]">{fmtUsd(city.untapped_annual_value_usd)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Grade</p>
-                  <p className="text-lg font-bold text-solar">{county.sunlight_grade}</p>
+                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Buildings</p>
+                  <p className="text-lg font-bold text-solar">{fmtNum(city.count_qualified)}</p>
                 </div>
               </div>
             </Link>
@@ -116,10 +113,10 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
             <thead>
               <tr>
                 {([
-                  { key: 'name' as SortCol,     label: 'County' },
-                  { key: 'value' as SortCol,    label: 'Untapped/yr' },
-                  { key: 'adoption' as SortCol, label: 'Adoption' },
-                  { key: 'grade' as SortCol,    label: 'Grade' },
+                  { key: 'name' as SortCol,      label: 'City' },
+                  { key: 'value' as SortCol,     label: 'Untapped/yr' },
+                  { key: 'buildings' as SortCol, label: 'Buildings' },
+                  { key: 'grade' as SortCol,     label: 'Grade' },
                 ]).map(col => {
                   const active = sortCol === col.key
                   return (
@@ -137,25 +134,23 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
                   )
                 })}
                 <th className="hidden sm:table-cell px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)]">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">GEA</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">State</span>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {filtered.map(county => (
-                <tr key={county.id} className="hover:bg-[var(--inp-bg)] transition-colors">
+              {filtered.map(city => (
+                <tr key={city.id} className="hover:bg-[var(--inp-bg)] transition-colors">
                   <td className="px-4 py-3 font-medium text-[var(--txt)]">
-                    <Link href={`/counties/${nameToSlug(county.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                      {county.seal_url
-                        ? <img src={county.seal_url} alt="" className="h-5 w-5 object-contain shrink-0" />
-                        : <MapPin className="h-4 w-4 text-solar shrink-0" />}
-                      {county.region_name}
+                    <Link href={`/cities/${nameToSlug(city.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
+                      <Building2 className="h-4 w-4 text-solar shrink-0" />
+                      {city.region_name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(county.untapped_annual_value_usd)}</td>
-                  <td className="px-4 py-3 text-[var(--muted)]">{county.adoption_rate_pct?.toFixed(1) ?? '—'}%</td>
-                  <td className="px-4 py-3 font-bold text-solar">{county.sunlight_grade}</td>
-                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)] text-xs">{county.cambium_gea}</td>
+                  <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(city.untapped_annual_value_usd)}</td>
+                  <td className="px-4 py-3 text-[var(--muted)]">{fmtNum(city.count_qualified)}</td>
+                  <td className="px-4 py-3 font-bold text-solar">{city.sunlight_grade}</td>
+                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)] text-xs">{city.state_name}</td>
                 </tr>
               ))}
             </tbody>
