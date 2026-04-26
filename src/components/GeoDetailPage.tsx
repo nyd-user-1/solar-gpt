@@ -238,17 +238,13 @@ export function GeoDetailPage({
                     href={item.href}
                     className="block w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
                   >
-                    <div className="flex items-center gap-3 h-full">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--txt)] truncate">{item.title}</p>
-                        <p className="mt-0.5 text-xs text-[var(--muted)]">{item.subtitle}</p>
-                      </div>
+                    <div className="flex flex-col items-center justify-center text-center h-full gap-0.5">
+                      <p className="text-sm font-semibold text-[var(--txt)] truncate max-w-full">{item.title}</p>
+                      <p className="text-xs text-[var(--muted)]">{item.subtitle}</p>
                       {item.metric && (
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-solar">{item.metric}</p>
-                          {item.metricLabel && <p className="text-xs text-[var(--muted)]">{item.metricLabel}</p>}
-                        </div>
+                        <p className="mt-1 text-sm font-bold text-solar">{item.metric}</p>
                       )}
+                      {item.metricLabel && <p className="text-xs text-[var(--muted)]">{item.metricLabel}</p>}
                     </div>
                   </Link>
                 </CarouselItem>
@@ -283,7 +279,7 @@ export function GeoDetailPage({
                   <CarouselItem key={item.href} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <Link
                       href={item.href}
-                      className="block w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 text-left transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer overflow-hidden"
+                      className="block w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 text-center transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer overflow-hidden"
                     >
                       <p className="mb-1 text-sm font-medium text-[var(--txt)] truncate">{item.title}</p>
                       <p className="text-xs text-[var(--muted)] line-clamp-2">{item.subtitle}</p>

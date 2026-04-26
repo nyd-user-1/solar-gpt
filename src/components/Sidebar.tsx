@@ -17,11 +17,11 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { to: '/states',       icon: Map,           label: 'States' },
-  { to: '/gea-regions',  icon: Zap,           label: 'GEA Regions' },
   { to: '/counties',     icon: MapPin,        label: 'Counties' },
   { to: '/cities',       icon: Building2,     label: 'Cities' },
   { to: '/leads',        icon: Users,         label: 'Leads' },
   { to: '/funds',        icon: Wallet,        label: 'Funds' },
+  { to: '/gea-regions',  icon: Zap,           label: 'GEA Regions' },
 ]
 
 function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -131,9 +131,9 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
           { to: '/states',      icon: Map,       label: 'States' },
-          { to: '/gea-regions', icon: Zap,       label: 'GEA' },
           { to: '/counties',    icon: MapPin,    label: 'Counties' },
           { to: '/cities',      icon: Building2, label: 'Cities' },
+          { to: '/gea-regions', icon: Zap,       label: 'GEA' },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
