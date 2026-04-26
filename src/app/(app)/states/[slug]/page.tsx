@@ -1,67 +1,49 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
-import { STATES, NY_COUNTIES } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { Map } from 'lucide-react'
-
-export function generateStaticParams() {
-  return STATES.map(s => ({ slug: s.slug }))
-}
+import { getStateBySlug, getCountiesByState, nameToSlug } from '@/lib/queries'
+import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function StateDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const state = STATES.find(s => s.slug === slug)
+  const state = await getStateBySlug(slug)
   if (!state) notFound()
 
-  const sorted = STATES.slice().sort((a, b) => a.name.localeCompare(b.name))
-  const idx = sorted.findIndex(s => s.slug === state.slug)
-  const prev = idx > 0 ? { label: sorted[idx - 1].name, href: `/states/${sorted[idx - 1].slug}` } : null
-  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1].name, href: `/states/${sorted[idx + 1].slug}` } : null
-
-  // counties for this state (NY only has full data)
-  const countySlugs = state.slug === 'new-york' ? NY_COUNTIES.map(c => c.slug) : state.counties
-  const nyCounties = countySlugs
-    .map(slug => NY_COUNTIES.find(c => c.slug === slug))
-    .filter(Boolean) as typeof NY_COUNTIES
-
-  const carouselItems = nyCounties.slice(0, 20).map(c => ({
-    title: c.name,
-    subtitle: `${c.avgInstalls} installs/yr · ${c.avgSystemKw} kW avg`,
-    href: `/counties/${c.slug}`,
-    metric: `☀ ${c.solarScore.toFixed(1)}`,
-    metricLabel: 'solar score',
-  }))
+  const counties = await getCountiesByState(state.state_name)
 
   const infoRows = [
-    { label: 'Total Annual Installs', value: state.avgInstalls.toLocaleString(), highlight: true },
-    { label: 'Solar Score', value: `${state.solarScore.toFixed(1)} / 5` },
-    { label: 'Population', value: state.population.toLocaleString() },
-    { label: 'Counties', value: state.counties.length.toString() },
-    { label: 'Incentive Programs', value: 'NY-Sun, ITC (30%), NYSERDA' },
-    { label: 'Net Metering', value: 'Full retail credit' },
-    { label: 'Avg Payback Period', value: '7–9 years' },
-    { label: 'Peak Sun Hours/Day', value: '4.0–5.2 hrs' },
+    { label: 'Untapped Value / yr', value: fmtUsd(state.untapped_annual_value_usd), highlight: true },
+    { label: 'Lifetime Value (25 yr)', value: fmtUsd(state.untapped_lifetime_value_usd) },
+    { label: 'Sunlight Grade', value: `${state.sunlight_grade}  (${state.sunlight_stars}/5 ☀)` },
+    { label: 'Qualified Buildings', value: fmtNum(state.count_qualified) },
+    { label: 'Existing Installs', value: fmtNum(state.existing_installs_count) },
+    { label: 'Adoption Rate', value: state.adoption_rate_pct != null ? `${state.adoption_rate_pct.toFixed(1)}%` : '—' },
+    { label: 'Median Install Cost', value: fmtUsd(state.median_install_cost_usd) },
+    { label: 'Median Payback', value: state.median_payback_years != null ? `${state.median_payback_years.toFixed(1)} years` : '—' },
+    { label: 'Median Savings / yr', value: fmtUsd(state.median_annual_savings_usd) },
+    { label: 'Counties', value: counties.length.toString() },
   ]
 
-  const prompts = [
-    { title: 'NYSERDA incentives', subtitle: 'Learn about NY-Sun incentive program rebates and how to apply for residential solar', href: '/leads/new' },
-    { title: 'Net metering policy', subtitle: 'Understand New York\'s net metering rules and how excess power credits work', href: '/leads/new' },
-    { title: 'Solar tax credits', subtitle: 'Federal 30% ITC and NY 25% state credit — how to stack both incentives', href: '/leads/new' },
-  ]
+  const carouselItems = counties.slice(0, 20).map(c => ({
+    title: c.region_name,
+    subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
+    href: `/counties/${nameToSlug(c.region_name)}`,
+    metric: fmtUsd(c.untapped_annual_value_usd),
+    metricLabel: 'untapped/yr',
+  }))
 
   return (
     <GeoDetailPage
       icon={<Map className="h-5 w-5" />}
-      title={state.name}
+      title={state.state_name}
       breadcrumbs={[{ label: 'States', href: '/states' }]}
-      prev={prev}
-      next={next}
       listHref="/states"
       listLabel="All States"
       infoRows={infoRows}
-      carouselTitle="Counties"
+      carouselTitle="Top Counties"
       carouselItems={carouselItems}
-      carousel2Title="Learn More"
-      carousel2Items={prompts}
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"

@@ -1,72 +1,69 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
-import { NY_COUNTIES, GEA_REGIONS, getCitiesByCounty } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { MapPin } from 'lucide-react'
-
-export function generateStaticParams() {
-  return NY_COUNTIES.map(c => ({ slug: c.slug }))
-}
+import {
+  getCountyBySlug,
+  getAdjacentCounties,
+  getCitiesByState,
+  nameToSlug,
+} from '@/lib/queries'
+import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function CountyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const county = NY_COUNTIES.find(c => c.slug === slug)
+  const county = await getCountyBySlug(slug)
   if (!county) notFound()
 
-  const sorted = NY_COUNTIES.slice().sort((a, b) => a.name.localeCompare(b.name))
-  const idx = sorted.findIndex(c => c.slug === county.slug)
-  const prev = idx > 0 ? { label: sorted[idx - 1].name, href: `/counties/${sorted[idx - 1].slug}` } : null
-  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1].name, href: `/counties/${sorted[idx + 1].slug}` } : null
+  const [adjacent, cities] = await Promise.all([
+    getAdjacentCounties(county.id, county.state_name),
+    getCitiesByState(county.state_name, 16),
+  ])
 
-  const gea = GEA_REGIONS.find(g => g.slug === county.gea)
-  const cities = getCitiesByCounty(county.slug)
-
-  const carouselItems = cities.map(c => ({
-    title: c.name,
-    subtitle: `Pop. ${c.population.toLocaleString()} · Solar score ${c.solarScore.toFixed(1)}`,
-    href: `/cities/${c.slug}`,
-    metric: `☀ ${c.solarScore.toFixed(1)}`,
-    metricLabel: 'solar score',
-  }))
-
-  // ZIP codes for second carousel
-  const zips = cities.flatMap(c => c.zips.slice(0, 2)).slice(0, 10)
-  const zipItems = zips.map(zip => ({
-    title: zip,
-    subtitle: `${county.name} County · ${county.avgInstalls} installs/yr avg`,
-    href: `/zips/${zip}`,
-    metric: `☀ ${county.solarScore.toFixed(1)}`,
-    metricLabel: 'county avg',
-  }))
+  const prev = adjacent.prev
+    ? { label: adjacent.prev.region_name, href: `/counties/${nameToSlug(adjacent.prev.region_name)}` }
+    : null
+  const next = adjacent.next
+    ? { label: adjacent.next.region_name, href: `/counties/${nameToSlug(adjacent.next.region_name)}` }
+    : null
 
   const infoRows = [
-    { label: 'Avg Installs/yr', value: county.avgInstalls.toLocaleString(), highlight: true },
-    { label: 'Solar Score', value: `${county.solarScore.toFixed(1)} / 5` },
-    { label: 'Avg System Size', value: `${county.avgSystemKw} kW` },
-    { label: 'Avg Installed Cost', value: `$${county.avgCostK}k` },
-    { label: 'GEA Region', value: gea?.name ?? county.gea },
-    { label: 'Population', value: county.population.toLocaleString() },
-    { label: 'Typical Monthly Savings', value: `$${Math.round(county.avgCostK * 100 / 10)}/mo` },
-    { label: 'Estimated Payback', value: `${Math.round(county.avgCostK / (county.avgSystemKw * 0.18))} years` },
+    { label: 'Untapped Value / yr', value: fmtUsd(county.untapped_annual_value_usd), highlight: true },
+    { label: 'Lifetime Value (25 yr)', value: fmtUsd(county.untapped_lifetime_value_usd) },
+    { label: 'Sunlight Grade', value: `${county.sunlight_grade}  (${county.sunlight_stars}/5 ☀)` },
+    { label: 'Qualified Buildings', value: fmtNum(county.count_qualified) },
+    { label: 'Existing Installs', value: fmtNum(county.existing_installs_count) },
+    { label: 'Adoption Rate', value: county.adoption_rate_pct != null ? `${county.adoption_rate_pct.toFixed(1)}%` : '—' },
+    { label: 'Median Install Cost', value: fmtUsd(county.median_install_cost_usd) },
+    { label: 'Median Payback', value: county.median_payback_years != null ? `${county.median_payback_years.toFixed(1)} years` : '—' },
+    { label: 'Median Savings / yr', value: fmtUsd(county.median_annual_savings_usd) },
+    { label: 'GEA Region', value: county.cambium_gea ?? '—' },
   ]
+
+  const carouselItems = cities.map(city => ({
+    title: city.region_name,
+    subtitle: `${fmtNum(city.count_qualified)} solar-ready buildings`,
+    href: `/cities/${nameToSlug(city.region_name)}`,
+    metric: fmtUsd(city.untapped_annual_value_usd),
+    metricLabel: 'untapped/yr',
+  }))
 
   return (
     <GeoDetailPage
       icon={<MapPin className="h-5 w-5" />}
-      title={`${county.name} County`}
+      title={county.region_name}
       breadcrumbs={[
         { label: 'Counties', href: '/counties' },
-        ...(gea ? [{ label: gea.name, href: `/gea-regions/${gea.slug}` }] : []),
+        ...(county.cambium_gea ? [{ label: county.cambium_gea, href: `/gea-regions/${county.cambium_gea.toLowerCase().replace(/_/g, '-')}` }] : []),
       ]}
       prev={prev}
       next={next}
       listHref="/counties"
       listLabel="All Counties"
       infoRows={infoRows}
-      carouselTitle={`Cities & Towns in ${county.name} County`}
+      carouselTitle={`Top Cities in ${county.state_name}`}
       carouselItems={carouselItems}
-      carousel2Title="ZIP Codes"
-      carousel2Items={zipItems}
-      searchPlaceholder="Search cities…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
     />

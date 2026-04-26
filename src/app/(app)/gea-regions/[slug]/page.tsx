@@ -1,70 +1,60 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
-import { GEA_REGIONS, NY_COUNTIES } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { Zap } from 'lucide-react'
-
-export function generateStaticParams() {
-  return GEA_REGIONS.map(g => ({ slug: g.slug }))
-}
+import { getAllGeas, getGeaKpi, getCountiesByGea, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
+import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function GeaRegionDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const region = GEA_REGIONS.find(g => g.slug === slug)
-  if (!region) notFound()
+  const allGeas = await getAllGeas()
+  const gea = slugToGea(slug, allGeas)
+  if (!gea) notFound()
 
-  const sorted = GEA_REGIONS.slice().sort((a, b) => a.name.localeCompare(b.name))
-  const idx = sorted.findIndex(g => g.slug === region.slug)
-  const prev = idx > 0 ? { label: sorted[idx - 1].name, href: `/gea-regions/${sorted[idx - 1].slug}` } : null
-  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1].name, href: `/gea-regions/${sorted[idx + 1].slug}` } : null
+  const [kpi, counties] = await Promise.all([
+    getGeaKpi(gea),
+    getCountiesByGea(gea),
+  ])
+  if (!kpi) notFound()
 
-  const counties = region.counties
-    .map(slug => NY_COUNTIES.find(c => c.slug === slug))
-    .filter(Boolean) as typeof NY_COUNTIES
-
-  const carouselItems = counties.map(c => ({
-    title: `${c.name} County`,
-    subtitle: `${c.avgInstalls} installs/yr · ${c.avgSystemKw} kW avg`,
-    href: `/counties/${c.slug}`,
-    metric: `☀ ${c.solarScore.toFixed(1)}`,
-    metricLabel: 'solar score',
-  }))
-
-  const totalInstalls = counties.reduce((sum, c) => sum + c.avgInstalls, 0)
-  const avgScore = counties.length > 0
-    ? (counties.reduce((sum, c) => sum + c.solarScore, 0) / counties.length)
-    : 0
-
-  const prompts = [
-    { title: 'Best installers in region', subtitle: `Find top-rated solar installation companies serving the ${region.name} area`, href: '/leads/new' },
-    { title: 'NYSERDA programs', subtitle: `NY-Sun incentives available to homeowners in the ${region.name} region`, href: '/leads/new' },
-    { title: 'Grid interconnection', subtitle: `Utility interconnection requirements and timelines for ${region.name}`, href: '/leads/new' },
-  ]
+  const sorted = [...allGeas].sort()
+  const idx = sorted.indexOf(gea)
+  const prev = idx > 0 ? { label: sorted[idx - 1], href: `/gea-regions/${geaToSlug(sorted[idx - 1])}` } : null
+  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1], href: `/gea-regions/${geaToSlug(sorted[idx + 1])}` } : null
 
   const infoRows = [
-    { label: 'Total Installs/yr', value: totalInstalls.toLocaleString(), highlight: true },
-    { label: 'Avg Solar Score', value: `${avgScore.toFixed(1)} / 5` },
-    { label: 'Counties', value: region.counties.length.toString() },
-    { label: 'Community Solar', value: 'Available — contact for details' },
-    { label: 'Primary Utility', value: region.slug === 'long-island' ? 'PSEG Long Island' : region.slug === 'new-york-city' ? 'Con Edison' : 'National Grid / NYSEG' },
-    { label: 'NYSERDA Region', value: region.name },
-    { label: 'Net Metering Policy', value: 'Full retail credit (NY)' },
-    { label: 'Avg Payback Period', value: '7–9 years' },
+    { label: 'Untapped Value / yr', value: fmtUsd(kpi.untapped_annual_value_usd), highlight: true },
+    { label: 'Lifetime Value (25 yr)', value: fmtUsd(kpi.untapped_lifetime_value_usd) },
+    { label: 'Sunlight Grade', value: `${kpi.sunlight_grade}  (${kpi.sunlight_stars}/5 ☀)` },
+    { label: 'Qualified Buildings', value: fmtNum(kpi.count_qualified) },
+    { label: 'Existing Installs', value: fmtNum(kpi.existing_installs_count) },
+    { label: 'Adoption Rate', value: kpi.adoption_rate_pct != null ? `${kpi.adoption_rate_pct.toFixed(1)}%` : '—' },
+    { label: 'Counties', value: kpi.county_count.toString() },
+    { label: 'Cars Off Road Equiv.', value: fmtNum(kpi.cars_off_road_equivalent) },
+    { label: 'Homes Powered Equiv.', value: fmtNum(kpi.homes_powered_equivalent) },
   ]
+
+  const carouselItems = counties.map(c => ({
+    title: c.region_name,
+    subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
+    href: `/counties/${nameToSlug(c.region_name)}`,
+    metric: fmtUsd(c.untapped_annual_value_usd),
+    metricLabel: 'untapped/yr',
+  }))
 
   return (
     <GeoDetailPage
       icon={<Zap className="h-5 w-5" />}
-      title={region.name}
+      title={gea}
       breadcrumbs={[{ label: 'GEA Regions', href: '/gea-regions' }]}
       prev={prev}
       next={next}
       listHref="/gea-regions"
       listLabel="All GEA Regions"
       infoRows={infoRows}
-      carouselTitle={`Counties in ${region.name}`}
+      carouselTitle={`Counties in ${gea}`}
       carouselItems={carouselItems}
-      carousel2Title="Learn More"
-      carousel2Items={prompts}
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"

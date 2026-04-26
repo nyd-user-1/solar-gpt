@@ -1,68 +1,50 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
-import { SAMPLE_ZIPS, NY_COUNTIES, getCitiesByCounty } from '@/data/geo'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { Hash } from 'lucide-react'
-
-export function generateStaticParams() {
-  return SAMPLE_ZIPS.map(z => ({ zip: z.zip }))
-}
+import { getZipByCode, getSiblingZips } from '@/lib/queries'
+import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function ZipDetailPage({ params }: { params: Promise<{ zip: string }> }) {
   const { zip } = await params
-  const zipData = SAMPLE_ZIPS.find(z => z.zip === zip)
+  const zipData = await getZipByCode(zip)
   if (!zipData) notFound()
 
-  const county = NY_COUNTIES.find(c => c.slug === zipData.countySlug)
-  const siblings = SAMPLE_ZIPS.filter(z => z.countySlug === zipData.countySlug && z.zip !== zipData.zip)
-  const cities = getCitiesByCounty(zipData.countySlug)
-
-  const sorted = SAMPLE_ZIPS.slice().sort((a, b) => a.zip.localeCompare(b.zip))
-  const idx = sorted.findIndex(z => z.zip === zipData.zip)
-  const prev = idx > 0 ? { label: sorted[idx - 1].zip, href: `/zips/${sorted[idx - 1].zip}` } : null
-  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1].zip, href: `/zips/${sorted[idx + 1].zip}` } : null
-
-  const carouselItems = siblings.map(z => ({
-    title: z.zip,
-    subtitle: `${z.city}, ${z.county} County`,
-    href: `/zips/${z.zip}`,
-    metric: `☀ ${z.solarScore.toFixed(1)}`,
-    metricLabel: 'solar score',
-  }))
-
-  const cityItems = cities.slice(0, 8).map(c => ({
-    title: c.name,
-    subtitle: `${zipData.county} County · Solar score ${c.solarScore.toFixed(1)}`,
-    href: `/cities/${c.slug}`,
-  }))
+  const siblings = await getSiblingZips(zipData.state_name, zipData.zip_code, 12)
 
   const infoRows = [
-    { label: 'ZIP Code', value: zipData.zip },
-    { label: 'City', value: zipData.city },
-    { label: 'County', value: `${zipData.county} County` },
-    { label: 'Solar Score', value: `${zipData.solarScore.toFixed(1)} / 5`, highlight: true },
-    { label: 'Installs/yr', value: zipData.avgInstalls.toString() },
-    { label: 'Avg System Size', value: `${county?.avgSystemKw ?? 9.0} kW` },
-    { label: 'Avg Installed Cost', value: `$${county?.avgCostK ?? 25}k` },
-    { label: 'Utility Provider', value: zipData.state === 'NY' ? 'National Grid / NYSEG' : 'Contact for info' },
+    { label: 'Untapped Value / yr', value: fmtUsd(zipData.untapped_annual_value_usd), highlight: true },
+    { label: 'Lifetime Value (25 yr)', value: fmtUsd(zipData.untapped_lifetime_value_usd) },
+    { label: 'Sunlight Grade', value: `${zipData.sunlight_grade}  (${zipData.sunlight_stars}/5 ☀)` },
+    { label: 'Qualified Buildings', value: fmtNum(zipData.count_qualified) },
+    { label: 'Existing Installs', value: fmtNum(zipData.existing_installs_count) },
+    { label: 'Adoption Rate', value: zipData.adoption_rate_pct != null ? `${zipData.adoption_rate_pct.toFixed(1)}%` : '—' },
+    { label: 'Median Install Cost', value: fmtUsd(zipData.median_install_cost_usd) },
+    { label: 'Median Payback', value: zipData.median_payback_years != null ? `${zipData.median_payback_years.toFixed(1)} years` : '—' },
+    { label: 'Median Savings / yr', value: fmtUsd(zipData.median_annual_savings_usd) },
+    { label: 'GEA Region', value: zipData.cambium_gea ?? '—' },
+    { label: 'State', value: zipData.state_name },
   ]
+
+  const carouselItems = siblings.map(z => ({
+    title: z.zip_code,
+    subtitle: `${z.state_name} · ${fmtNum(z.count_qualified)} buildings`,
+    href: `/zips/${z.zip_code}`,
+    metric: fmtUsd(z.untapped_annual_value_usd),
+    metricLabel: 'untapped/yr',
+  }))
 
   return (
     <GeoDetailPage
       icon={<Hash className="h-5 w-5" />}
-      title={`ZIP ${zipData.zip}`}
-      breadcrumbs={[
-        { label: 'ZIPs', href: '/zips' },
-        { label: zipData.county, href: `/counties/${zipData.countySlug}` },
-      ]}
-      prev={prev}
-      next={next}
+      title={`ZIP ${zipData.zip_code}`}
+      breadcrumbs={[{ label: 'ZIPs', href: '/zips' }]}
       listHref="/zips"
       listLabel="All ZIPs"
       infoRows={infoRows}
-      carouselTitle={`Other ZIPs in ${zipData.county} County`}
+      carouselTitle={`Other ZIPs in ${zipData.state_name}`}
       carouselItems={carouselItems}
-      carousel2Title="Cities in this County"
-      carousel2Items={cityItems}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
     />
