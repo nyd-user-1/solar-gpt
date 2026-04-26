@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
-import { openai } from '@ai-sdk/openai'
+import { createOpenAI } from '@ai-sdk/openai'
+
+const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY })
 import { streamText } from 'ai'
 import { auth } from '../../../../auth'
 
