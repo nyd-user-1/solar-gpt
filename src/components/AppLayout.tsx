@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Sun, Mail, Image as ImageIcon } from 'lucide-react'
+import { Sun, Image as ImageIcon } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -41,17 +41,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
 
           <div className="flex items-center gap-2 mr-1.5">
-            <a
-              href="mailto:hello@solargpt.com"
-              className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
-              aria-label="Contact us"
-            >
-              <Mail className="h-3.5 w-3.5" />
-            </a>
             <button
               type="button"
               onClick={goToExplore}
-              aria-label="Explore counties"
+              aria-label="Explore"
+              title="Explore"
               className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
             >
               <ImageIcon className="h-5 w-5" />

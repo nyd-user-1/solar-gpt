@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
-  Sun, Moon, LayoutDashboard, MapPin, Map, Globe, Zap,
+  Sun, Moon, LayoutDashboard, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
   Mail, Phone, Wallet, Building2,
 } from 'lucide-react'
@@ -16,7 +16,6 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { to: '/explore',      icon: Globe,         label: 'Explore' },
   { to: '/states',       icon: Map,           label: 'States' },
   { to: '/gea-regions',  icon: Zap,           label: 'GEA Regions' },
   { to: '/counties',     icon: MapPin,        label: 'Counties' },
@@ -131,7 +130,6 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
-          { to: '/explore',     icon: Globe,     label: 'Explore' },
           { to: '/states',      icon: Map,       label: 'States' },
           { to: '/gea-regions', icon: Zap,       label: 'GEA' },
           { to: '/counties',    icon: MapPin,    label: 'Counties' },
