@@ -173,9 +173,18 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
               >
                 {/* Card header */}
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-solar/10 text-solar shrink-0">
-                    <Map className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </div>
+                  {state.flag_url ? (
+                    <img
+                      src={`${state.flag_url}?width=128`}
+                      alt={`${state.state_name} flag`}
+                      className="h-6 w-9 sm:h-9 sm:w-14 rounded-md object-cover shrink-0 border border-[var(--border)]"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-6 w-9 sm:h-9 sm:w-14 items-center justify-center rounded-md bg-solar/10 text-solar shrink-0">
+                      <Map className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </div>
+                  )}
                   <span className="text-xs sm:text-base font-bold text-[var(--txt)] truncate flex-1">{state.state_name}</span>
                   <div className="ml-auto shrink-0">
                     <SolarStars count={state.sunlight_stars} />
@@ -262,7 +271,16 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
                       href={`/states/${nameToSlug(state.state_name)}`}
                       className="inline-flex items-center gap-2 rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-[var(--inp-bg)] transition-colors"
                     >
-                      <Map className="h-4 w-4 text-solar shrink-0" />
+                      {state.flag_url ? (
+                        <img
+                          src={`${state.flag_url}?width=48`}
+                          alt=""
+                          className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Map className="h-5 w-5 text-solar shrink-0" />
+                      )}
                       {state.state_name}
                     </Link>
                   </td>

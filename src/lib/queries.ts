@@ -46,6 +46,7 @@ export type StateKpi = {
   id: number
   region_name: string
   state_name: string
+  flag_url: string | null
   lat_avg: number
   lng_avg: number
   lat_min: number
@@ -195,13 +196,22 @@ export async function getExploreCounties(): Promise<CountyKpi[]> {
 // ── State ─────────────────────────────────────────────────────────────────────
 export async function getStateByName(stateName: string): Promise<StateKpi | null> {
   const rows = await sql`
-    SELECT * FROM solargpt.v_state_kpis WHERE state_name = ${stateName} LIMIT 1
+    SELECT v.*, s.flag_url
+    FROM solargpt.v_state_kpis v
+    LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+    WHERE v.state_name = ${stateName}
+    LIMIT 1
   `
   return (rows[0] as StateKpi) ?? null
 }
 
 export async function getAllStates(): Promise<StateKpi[]> {
-  const rows = await sql`SELECT * FROM solargpt.v_state_kpis ORDER BY state_name`
+  const rows = await sql`
+    SELECT v.*, s.flag_url
+    FROM solargpt.v_state_kpis v
+    LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+    ORDER BY v.state_name
+  `
   return rows as StateKpi[]
 }
 
@@ -333,8 +343,10 @@ export async function getSiblingZips(stateName: string, excludeZip: string, limi
 // ── State ─────────────────────────────────────────────────────────────────────
 export async function getStateBySlug(slug: string): Promise<StateKpi | null> {
   const rows = await sql`
-    SELECT * FROM solargpt.v_state_kpis
-    WHERE REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') = ${slug}
+    SELECT v.*, s.flag_url
+    FROM solargpt.v_state_kpis v
+    LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+    WHERE REGEXP_REPLACE(lower(v.state_name), '[^a-z0-9]+', '-', 'g') = ${slug}
     LIMIT 1
   `
   return (rows[0] as StateKpi) ?? null
