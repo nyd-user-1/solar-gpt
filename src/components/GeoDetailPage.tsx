@@ -181,15 +181,6 @@ export function GeoDetailPage({
                         </td>
                       </tr>
                     ))}
-                    {!infoExpanded && infoRows.length > 4 && (
-                      <tr className="border-t border-[var(--border)]">
-                        <td colSpan={2} className="px-4 py-2 text-center">
-                          <button onClick={() => setInfoExpanded(true)} className="text-xs text-solar hover:underline">
-                            Show {infoRows.length - 4} more
-                          </button>
-                        </td>
-                      </tr>
-                    )}
                   </>
                 )}
               </tbody>
