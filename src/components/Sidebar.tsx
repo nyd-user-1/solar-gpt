@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2, Compass, MessageCircle,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -17,14 +17,15 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { to: '/explore',      icon: Compass,       label: 'Explore' },
-  { to: '/new-chat',     icon: MessageCircle, label: 'New Chat' },
-  { to: '/states',       icon: Map,           label: 'States' },
-  { to: '/counties',     icon: MapPin,        label: 'Counties' },
-  { to: '/cities',       icon: Building2,     label: 'Cities' },
-  { to: '/leads',        icon: Users,         label: 'Leads' },
-  { to: '/funds',        icon: Wallet,        label: 'Funds' },
-  { to: '/gea-regions',  icon: Zap,           label: 'GEA Regions' },
+  { to: '/',             icon: MessageCircle,    label: 'New Chat' },
+  { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
+  { to: '/explore',      icon: Compass,          label: 'Explore' },
+  { to: '/states',       icon: Map,              label: 'States' },
+  { to: '/counties',     icon: MapPin,           label: 'Counties' },
+  { to: '/cities',       icon: Building2,        label: 'Cities' },
+  { to: '/leads',        icon: Users,            label: 'Leads' },
+  { to: '/funds',        icon: Wallet,           label: 'Funds' },
+  { to: '/gea-regions',  icon: Zap,              label: 'GEA Regions' },
 ]
 
 function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -131,8 +132,8 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
+          { to: '/',            icon: MessageCircle, label: 'Chat' },
           { to: '/explore',     icon: Compass,       label: 'Explore' },
-          { to: '/new-chat',    icon: MessageCircle, label: 'Chat' },
           { to: '/states',      icon: Map,           label: 'States' },
           { to: '/counties',    icon: MapPin,        label: 'Counties' },
           { to: '/gea-regions', icon: Zap,           label: 'GEA' },
