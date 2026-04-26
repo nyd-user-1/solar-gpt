@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
+import { SidebarSearch } from '@/components/SidebarSearch'
 
 interface SidebarProps {
   onClose?: () => void
@@ -104,39 +105,37 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
-      {/* Header */}
+      {/* Header — Sun icon closes the sidebar on all screen sizes */}
       <div className="flex items-center gap-1 px-3 py-2">
-        <Link
-          href="/explore"
-          onClick={handleNavClick}
+        <button
+          onClick={onClose}
           className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--inp-bg)]"
         >
-          <Sun className="h-6 w-6 text-solar" />
+          <Sun className="h-6 w-6 text-solar fill-solar/20" />
           <span className="text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setProfileOpen(true)}
-            className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold"
-          >
-            SG
-          </button>
-          {onClose && (
-            <button onClick={onClose} className="sm:hidden rounded-lg p-1.5 text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-              <X className="h-5 w-5" />
-            </button>
-          )}
-        </div>
+        </button>
+        {/* Mobile: profile avatar */}
+        <button
+          onClick={() => setProfileOpen(true)}
+          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold"
+        >
+          SG
+        </button>
+      </div>
+
+      {/* Search — always visible in sidebar */}
+      <div className="px-3 pb-2">
+        <SidebarSearch />
       </div>
 
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
-          { to: '/explore',     icon: Compass,   label: 'Explore' },
+          { to: '/explore',     icon: Compass,       label: 'Explore' },
           { to: '/new-chat',    icon: MessageCircle, label: 'Chat' },
-          { to: '/states',      icon: Map,       label: 'States' },
-          { to: '/counties',    icon: MapPin,    label: 'Counties' },
-          { to: '/gea-regions', icon: Zap,       label: 'GEA' },
+          { to: '/states',      icon: Map,           label: 'States' },
+          { to: '/counties',    icon: MapPin,        label: 'Counties' },
+          { to: '/gea-regions', icon: Zap,           label: 'GEA' },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
@@ -153,8 +152,8 @@ export function Sidebar({ onClose }: SidebarProps) {
       </div>
       <div className="mx-5 border-t border-[var(--border)] sm:hidden" />
 
-      {/* Desktop nav */}
-      <nav className="hidden sm:block px-3">
+      {/* Nav */}
+      <nav className="px-3">
         <div className="space-y-0.5">
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
             const isActive = pathname === to || (to !== '/' && pathname.startsWith(to))
@@ -176,29 +175,8 @@ export function Sidebar({ onClose }: SidebarProps) {
         </div>
       </nav>
 
-      {/* Scrollable area */}
-      <nav className="flex-1 overflow-y-auto px-3 pt-4 sm:pt-0">
-        {/* Mobile nav links */}
-        <div className="sm:hidden space-y-0.5 mt-1">
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
-            const isActive = pathname === to || (to !== '/' && pathname.startsWith(to))
-            return (
-              <Link
-                key={to}
-                href={to}
-                onClick={handleNavClick}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',
-                  isActive ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--txt)] hover:bg-[var(--inp-bg)]'
-                )}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                {label}
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
+      {/* Scrollable area (reserved for future chat history etc.) */}
+      <div className="flex-1 overflow-y-auto" />
 
       {/* Bottom section */}
       <div className="p-3">

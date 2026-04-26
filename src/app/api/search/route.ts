@@ -3,7 +3,19 @@ import { sql } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
-  if (!q || q.length < 2) return NextResponse.json({ states: [], counties: [], geas: [] })
+
+  // Empty query: return top states for the initial sidebar search view
+  if (!q || q.length < 2) {
+    const topStates = await sql`
+      SELECT state_name AS name,
+        REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') AS slug,
+        sunlight_grade AS grade
+      FROM solargpt.v_state_kpis
+      ORDER BY untapped_annual_value_usd DESC
+      LIMIT 8
+    `
+    return NextResponse.json({ states: topStates, counties: [], geas: [] })
+  }
 
   const pattern = `%${q}%`
 
