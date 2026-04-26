@@ -34,12 +34,13 @@ export async function GET(req: NextRequest) {
       LIMIT 5
     `,
     sql`
-      SELECT region_name AS name, state_name AS state,
-        REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') AS slug,
-        sunlight_grade AS grade, seal_url
-      FROM solargpt.v_county_kpis
-      WHERE lower(region_name) LIKE lower(${pattern})
-      ORDER BY untapped_annual_value_usd DESC
+      SELECT v.region_name AS name, v.state_name AS state,
+        REGEXP_REPLACE(lower(v.region_name), '[^a-z0-9]+', '-', 'g') AS slug,
+        v.sunlight_grade AS grade, c.seal_url
+      FROM solargpt.v_county_kpis v
+      LEFT JOIN solargpt.raw_sunroof_county c USING (id)
+      WHERE lower(v.region_name) LIKE lower(${pattern})
+      ORDER BY v.untapped_annual_value_usd DESC
       LIMIT 6
     `,
     sql`
