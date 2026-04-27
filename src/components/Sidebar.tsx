@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { to: '/',             icon: MessageCircle,    label: 'New Chat' },
+  { to: '/free-quote',   icon: Sparkles,         label: 'Free Quote' },
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
   { to: '/states',       icon: Map,              label: 'States' },
