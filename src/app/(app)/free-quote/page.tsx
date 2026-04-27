@@ -461,7 +461,7 @@ export default function FreeQuotePage() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4 text-center px-4">
-          <Sun className="h-12 w-12 text-solar" style={{ animation: 'spin 2s linear infinite' }} />
+          <Sun className="h-12 w-12 text-solar animate-spin" />
           <p className="text-xl font-semibold text-gray-800">Calculating your solar estimate…</p>
           <p className="text-sm text-gray-500 max-w-xs">Analyzing roof potential, local incentives, and energy savings</p>
         </div>
@@ -562,11 +562,14 @@ export default function FreeQuotePage() {
                       <span className="text-xs text-gray-300">Based on</span>
                       <div className="flex-1 border-t border-gray-100" />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
                       {basedOnItems.map(({ label, value }) => (
-                        <div key={label} className="rounded-xl bg-gray-50 px-3 py-2.5">
-                          <p className="text-xs text-gray-400">{label}</p>
-                          <p className="text-sm font-semibold text-gray-800">{value}</p>
+                        <div key={label} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-300 shrink-0" />
+                            <span className="text-gray-400">{label}</span>
+                          </div>
+                          <span className="text-gray-500 font-medium">{value}</span>
                         </div>
                       ))}
                     </div>
