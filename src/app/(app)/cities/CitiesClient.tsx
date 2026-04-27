@@ -3,11 +3,10 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, Building2, List, LayoutGrid } from 'lucide-react'
-import { cn, fmtUsd, fmtNum } from '@/lib/utils'
+import { cn, fmtUsd, fmtNum, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
-import { STATE_ABBRS } from '@/lib/us-states'
 
 type SortCol = SortableKey | 'region'
 
@@ -120,16 +119,17 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             mobile: true,
             render: (row) => {
               const c = row as unknown as CityKpi
-              return <span>{STATE_ABBRS[c.state_name] ?? c.state_name}</span>
+              return <span>{stateAbbr(c.state_name)}</span>
             },
           }]}
+          getRowHref={(row) => {
+            const c = row as unknown as CityKpi
+            return `/cities/${nameToSlug(c.region_name)}`
+          }}
           renderRegion={(row) => {
             const c = row as unknown as CityKpi
             return (
-              <Link href={`/cities/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                <Building2 className="h-4 w-4 text-solar shrink-0" />
-                <span>{c.region_name}</span>
-              </Link>
+              <span className="truncate block hover:text-solar transition-colors">{c.region_name}</span>
             )
           }}
         />
