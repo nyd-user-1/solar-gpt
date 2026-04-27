@@ -42,7 +42,7 @@ interface ColDef {
 
 const COLS: ColDef[] = [
   {
-    key: 'count_qualified', header: 'Suitable Bldgs.', anchor: 'suitable-bldgs', mobile: true,
+    key: 'count_qualified', header: 'Bldgs.', anchor: 'suitable-bldgs', mobile: true,
     tooltip: 'Buildings whose rooftops are suitable for solar panels based on shade, orientation, and roof area.',
     fmt: r => formatNumber(r.count_qualified),
   },
@@ -72,7 +72,7 @@ const COLS: ColDef[] = [
     fmt: r => formatNumber(r.carbon_offset_metric_tons, { suffix: 't' }),
   },
   {
-    key: 'number_of_panels_median', header: 'Avg. Panels', anchor: 'avg-panels', mobile: false,
+    key: 'number_of_panels_median', header: 'Median Panels', anchor: 'avg-panels', mobile: false,
     tooltip: 'Typical number of panels that fit on a qualified rooftop in this region.',
     fmt: r => formatNumber(r.number_of_panels_median),
   },
@@ -93,12 +93,21 @@ const COLS: ColDef[] = [
   },
 ]
 
+interface ExtraCol<T> {
+  key: string
+  header: string
+  mobile?: boolean
+  render: (row: T) => React.ReactNode
+}
+
 interface Props<T extends SolarRow> {
   rows: T[]
   sortCol: SortableKey
   sortDir: 'asc' | 'desc'
   onSort: (key: SortableKey) => void
   renderRegion: (row: T) => React.ReactNode
+  hideCols?: SortableKey[]
+  extraCols?: ExtraCol<T>[]
 }
 
 function ColHeader({ col, active, dir, onSort }: {
@@ -142,7 +151,8 @@ function ColHeader({ col, active, dir, onSort }: {
   )
 }
 
-export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion }: Props<T>) {
+export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, hideCols, extraCols }: Props<T>) {
+  const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
     <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
       <table className="w-full text-left text-sm">
@@ -163,7 +173,18 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                   : <ChevronUp className="h-3 w-3 opacity-0 group-hover:opacity-40" />}
               </button>
             </th>
-            {COLS.map(col => (
+            {extraCols?.map(col => (
+              <th
+                key={col.key}
+                className={cn(
+                  'px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap',
+                  !col.mobile && 'hidden md:table-cell',
+                )}
+              >
+                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{col.header}</span>
+              </th>
+            ))}
+            {visibleCols.map(col => (
               <ColHeader
                 key={col.key}
                 col={col}
@@ -180,7 +201,18 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 bg-inherit">
                 {renderRegion(row)}
               </td>
-              {COLS.map(col => (
+              {extraCols?.map(col => (
+                <td
+                  key={col.key}
+                  className={cn(
+                    'px-3 py-3 text-[var(--muted)] text-xs',
+                    !col.mobile && 'hidden md:table-cell',
+                  )}
+                >
+                  {col.render(row)}
+                </td>
+              ))}
+              {visibleCols.map(col => (
                 <td
                   key={col.key}
                   className={cn(

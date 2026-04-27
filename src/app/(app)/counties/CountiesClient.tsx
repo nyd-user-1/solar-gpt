@@ -114,6 +114,16 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          hideCols={['percent_covered']}
+          extraCols={[{
+            key: 'state',
+            header: 'State',
+            mobile: true,
+            render: (row) => {
+              const c = row as unknown as CountyKpi
+              return <span>{c.state_name}</span>
+            },
+          }]}
           renderRegion={(row) => {
             const c = row as unknown as CountyKpi
             return (
@@ -122,7 +132,6 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
                   ? <img src={c.seal_url} alt="" className="h-5 w-5 object-contain shrink-0" />
                   : <MapPin className="h-4 w-4 text-solar shrink-0" />}
                 <span>{c.region_name}</span>
-                <span className="text-xs text-[var(--muted)] ml-1">{c.state_name}</span>
               </Link>
             )
           }}

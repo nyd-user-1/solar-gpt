@@ -250,7 +250,7 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
            v.kw_total, v.kw_median,
            v.untapped_annual_value_usd, v.adoption_rate_pct,
            v.sunlight_grade, v.sunlight_stars,
-           c.seal_url
+           c.seal_url, c.number_of_panels_median
     FROM solargpt.v_county_kpis v
     LEFT JOIN solargpt.raw_sunroof_county c USING (id)
     ORDER BY v.count_qualified DESC NULLS LAST
