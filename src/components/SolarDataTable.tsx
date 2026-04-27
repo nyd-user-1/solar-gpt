@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { cn, formatNumber, fmtPct, fmtKwMedian } from '@/lib/utils'
 
@@ -57,7 +58,7 @@ const COLS: ColDef[] = [
     fmt: r => fmtPct(r.percent_qualified),
   },
   {
-    key: 'yearly_sunlight_kwh_total', header: 'kWh Total', anchor: 'kwh-total', mobile: true,
+    key: 'yearly_sunlight_kwh_total', header: 'kWh', anchor: 'kwh-total', mobile: true,
     tooltip: 'Total annual electricity all qualified rooftops in this region could generate combined.',
     fmt: r => formatNumber(r.yearly_sunlight_kwh_total, { decimals: 2 }),
   },
@@ -87,7 +88,7 @@ const COLS: ColDef[] = [
     fmt: r => fmtKwMedian(r.kw_median),
   },
   {
-    key: 'existing_installs_count', header: 'Existing Installs', anchor: 'existing-installs', mobile: true,
+    key: 'existing_installs_count', header: 'Installed', anchor: 'existing-installs', mobile: true,
     tooltip: 'Solar systems already installed and operating in this region.',
     fmt: r => formatNumber(r.existing_installs_count),
   },
@@ -108,6 +109,7 @@ interface Props<T extends SolarRow> {
   renderRegion: (row: T) => React.ReactNode
   hideCols?: SortableKey[]
   extraCols?: ExtraCol<T>[]
+  getRowHref?: (row: T) => string
 }
 
 function ColHeader({ col, active, dir, onSort }: {
@@ -151,7 +153,8 @@ function ColHeader({ col, active, dir, onSort }: {
   )
 }
 
-export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, hideCols, extraCols }: Props<T>) {
+export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, hideCols, extraCols, getRowHref }: Props<T>) {
+  const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
     <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
@@ -196,8 +199,17 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)] align-middle">
-          {rows.map(row => (
-            <tr key={row.id} className="hover:bg-[var(--inp-bg)] transition-colors">
+          {rows.map(row => {
+            const href = getRowHref?.(row)
+            return (
+            <tr
+              key={row.id}
+              onClick={href ? () => router.push(href) : undefined}
+              className={cn(
+                'hover:bg-[var(--inp-bg)] transition-colors',
+                href && 'cursor-pointer',
+              )}
+            >
               <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 bg-inherit overflow-hidden">
                 {renderRegion(row)}
               </td>
@@ -224,7 +236,8 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 </td>
               ))}
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>

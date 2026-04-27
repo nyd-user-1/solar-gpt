@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, MapPin, List, LayoutGrid } from 'lucide-react'
-import { cn, fmtUsd, fmtGea } from '@/lib/utils'
+import { cn, fmtUsd, fmtGea, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CountyKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
@@ -114,25 +114,24 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
-          hideCols={['percent_covered']}
+          hideCols={['percent_covered', 'kw_total']}
           extraCols={[{
             key: 'state',
             header: 'State',
             mobile: true,
             render: (row) => {
               const c = row as unknown as CountyKpi
-              return <span>{c.state_name}</span>
+              return <span>{stateAbbr(c.state_name)}</span>
             },
           }]}
+          getRowHref={(row) => {
+            const c = row as unknown as CountyKpi
+            return `/counties/${nameToSlug(c.region_name)}`
+          }}
           renderRegion={(row) => {
             const c = row as unknown as CountyKpi
             return (
-              <Link href={`/counties/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 min-w-0 hover:text-solar transition-colors">
-                {c.seal_url
-                  ? <img src={c.seal_url} alt="" className="h-5 w-5 object-contain shrink-0" />
-                  : <MapPin className="h-4 w-4 text-solar shrink-0" />}
-                <span className="truncate">{c.region_name}</span>
-              </Link>
+              <span className="truncate block hover:text-solar transition-colors">{c.region_name}</span>
             )
           }}
         />
