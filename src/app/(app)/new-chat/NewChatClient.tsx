@@ -73,6 +73,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const [solarLoading, setSolarLoading] = useState(false)
   const [solarError, setSolarError] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -94,8 +95,19 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     return () => document.removeEventListener('mousedown', h)
   }, [modelMenuOpen])
 
+  // Geolocation for address bias
   useEffect(() => {
-    if (addressMode) setTimeout(() => addressInputRef.current?.focus(), 50)
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => {}
+      )
+    }
+  }, [])
+
+  // Focus textarea when entering address mode
+  useEffect(() => {
+    if (addressMode) setTimeout(() => textareaRef.current?.focus(), 50)
   }, [addressMode])
 
   const autoResize = () => {
@@ -120,12 +132,14 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     }, 300)
   }
 
-  const fetchSuggestions = useCallback((value: string) => {
+  const fetchSuggestions = useCallback((value: string, loc?: { lat: number; lng: number } | null) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (value.length < 3) { setSuggestions([]); return }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/places?input=${encodeURIComponent(value)}`)
+        let url = `/api/places?input=${encodeURIComponent(value)}`
+        if (loc) url += `&lat=${loc.lat}&lng=${loc.lng}`
+        const res = await fetch(url)
         const data = await res.json()
         setSuggestions(Array.isArray(data) ? data : [])
       } catch { setSuggestions([]) }
@@ -210,13 +224,18 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
 
   const isEmpty = messages.length === 0
 
-  /* ---- Address input box ---- */
-  const addressInputBox = (
+  const exitAddressMode = () => { setAddressMode(false); setAddressInput(''); setSuggestions([]) }
+
+  const dismissSuggestions = () => setInlineSuggestions(null)
+
+  /* ---- Unified chat / address input ---- */
+  const chatInputBox = (
     <div className="relative">
-      {suggestions.length > 0 && (
-        <div className="absolute bottom-full left-0 mb-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-10">
+      {/* Address suggestions (address mode) */}
+      {addressMode && suggestions.length > 0 && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20 max-h-[320px] overflow-y-auto no-scrollbar">
           {suggestions.map(s => (
-            <button key={s.place_id} onClick={() => selectAddress(s)}
+            <button key={s.place_id} onClick={() => { selectAddress(s); exitAddressMode() }}
               className="flex w-full items-start gap-3 px-4 py-3 text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors text-left border-b border-[var(--border)] last:border-0">
               <MapPin className="h-4 w-4 text-solar shrink-0 mt-0.5" />
               <span>{s.description}</span>
@@ -224,34 +243,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           ))}
         </div>
       )}
-      <div className="flex items-center gap-3 rounded-[28px] border-2 border-solar bg-[var(--surface)] px-4 py-3 shadow-sm">
-        <MapPin className="h-4 w-4 text-solar shrink-0" />
-        <input ref={addressInputRef} type="text" value={addressInput}
-          onChange={e => { setAddressInput(e.target.value); fetchSuggestions(e.target.value) }}
-          onKeyDown={e => {
-            if (e.key === 'Escape') { setAddressMode(false); setSuggestions([]) }
-            if (e.key === 'Enter' && suggestions.length > 0) selectAddress(suggestions[0])
-          }}
-          placeholder="Enter your address…"
-          className="flex-1 bg-transparent text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none" />
-        <button onClick={() => { setAddressMode(false); setAddressInput(''); setSuggestions([]) }}
-          className="text-[var(--muted)] hover:text-[var(--txt)] transition-colors">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <p className="text-center text-[10px] text-[var(--muted2)] mt-2">
-        AI-powered solar intelligence · Data from Google Sunroof &amp; NREL Cambium
-      </p>
-    </div>
-  )
-
-  const dismissSuggestions = () => setInlineSuggestions(null)
-
-  /* ---- Main chat input ---- */
-  const chatInputBox = (
-    <div className="relative">
-      {/* Inline location suggestions */}
-      {inlineSuggestions && (
+      {/* Inline location suggestions (chat mode) */}
+      {!addressMode && inlineSuggestions && (
         <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20 max-h-[320px] overflow-y-auto no-scrollbar">
           {inlineSuggestions.states?.map((s, i) => (
             <button key={`state-${s.slug}`}
@@ -292,7 +285,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           })}
         </div>
       )}
-      <div className="flex flex-col rounded-[28px] border border-[var(--border)] bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-shadow hover:shadow-md gap-1">
+      <div className={`flex flex-col rounded-[28px] border-2 ${addressMode ? 'border-solar' : 'border-[var(--border)]'} bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-all gap-1`}>
 
         {selectedAddress && (
           <div className="flex items-center gap-2 pb-2.5 mb-1 border-b border-[var(--border)]">
@@ -318,13 +311,26 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <span className="text-[var(--txt)]">?</span>
           </div>
         ) : (
-          <textarea ref={textareaRef} rows={1} value={input}
-            onChange={e => handleInputChange(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
-              if (e.key === 'Escape') { setModelMenuOpen(false); dismissSuggestions() }
+          <textarea ref={textareaRef} rows={1}
+            value={addressMode ? addressInput : input}
+            onChange={e => {
+              if (addressMode) {
+                setAddressInput(e.target.value)
+                fetchSuggestions(e.target.value, userLocation)
+              } else {
+                handleInputChange(e.target.value)
+              }
             }}
-            placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
+            onKeyDown={e => {
+              if (addressMode) {
+                if (e.key === 'Escape') { e.preventDefault(); exitAddressMode() }
+                if (e.key === 'Enter' && suggestions.length > 0) { e.preventDefault(); selectAddress(suggestions[0]); exitAddressMode() }
+              } else {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
+                if (e.key === 'Escape') { setModelMenuOpen(false); dismissSuggestions() }
+              }
+            }}
+            placeholder={addressMode ? 'Enter an address…' : selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
             className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
             style={{ minHeight: '40px' }} />
         )}
@@ -336,9 +342,12 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             countyChips={countyChips}
             onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
           />
-          <button onClick={() => { setAddressMode(true) }}
-            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
-            title="Look up an address">
+          <button
+            onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+              addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'
+            }`}
+            title={addressMode ? 'Exit address mode' : 'Look up an address'}>
             <MapPin className="h-4 w-4" />
           </button>
 
@@ -391,7 +400,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     </div>
   )
 
-  const inputBox = addressMode ? addressInputBox : chatInputBox
+  const inputBox = chatInputBox
 
   return (
     <>
