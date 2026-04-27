@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Sun, ArrowUp, Map, Plus, X, MapPin } from 'lucide-react'
+import { Sun, ArrowUp, Map, X, MapPin } from 'lucide-react'
 import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
+import { SolarPlusMenu } from '@/components/SolarPlusMenu'
+import { MarkdownContent } from '@/components/MarkdownContent'
 import type { SolarInsight } from '@/lib/solar-types'
 
 /* ------------------------------------------------------------------ */
@@ -44,13 +46,6 @@ type Message = { id: string; role: 'user' | 'assistant'; content: string }
 type Suggestion = { place_id: string; description: string }
 type SelectedAddress = { description: string; lat: number; lng: number }
 
-const PROMPTS = [
-  'Which US state has the most untapped solar potential?',
-  "What's the average payback period for residential solar?",
-  'How does the NREL Cambium GEA model affect solar pricing?',
-  'Compare solar adoption rates across the top 5 counties',
-]
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -60,7 +55,6 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  const [plusOpen, setPlusOpen] = useState(false)
   const [selectedModelId, setSelectedModelId] = useState('gpt-4o')
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [modelMenuAbove, setModelMenuAbove] = useState(true)
@@ -153,7 +147,6 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     const allMessages = [...messages, userMsg]
     setMessages(allMessages)
     setInput('')
-    setPlusOpen(false)
     setModelMenuOpen(false)
     if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.focus() }
     setLoading(true)
@@ -232,17 +225,6 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   /* ---- Main chat input ---- */
   const chatInputBox = (
     <div className="relative">
-      {plusOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-10">
-          {PROMPTS.map((s, i) => (
-            <button key={i} onClick={() => { setInput(s); setPlusOpen(false); textareaRef.current?.focus() }}
-              className="flex w-full items-start px-4 py-3 text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors text-left border-b border-[var(--border)] last:border-0">
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center gap-1.5 rounded-[28px] border border-[var(--border)] bg-[var(--surface)] pl-2 pr-2 py-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md">
 
         {selectedAddress && (
@@ -255,22 +237,22 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
         )}
 
-        <button onClick={() => setPlusOpen(v => !v)}
-          className={`order-1 sm:order-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${plusOpen ? 'border-[var(--txt)] bg-[var(--inp-bg)] text-[var(--txt)]' : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)]'}`}>
-          {plusOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        </button>
+        <SolarPlusMenu
+          stateChips={stateChips}
+          onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
+        />
 
         <textarea ref={textareaRef} rows={1} value={input}
           onChange={e => { setInput(e.target.value); autoResize() }}
           onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
-            if (e.key === 'Escape') { setPlusOpen(false); setModelMenuOpen(false) }
+            if (e.key === 'Escape') { setModelMenuOpen(false) }
           }}
           placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
           className="order-2 sm:order-1 flex-1 sm:basis-full min-w-0 resize-none bg-transparent px-1 sm:px-0 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
           style={{ minHeight: '40px' }} />
 
-        <button onClick={() => { setPlusOpen(false); setAddressMode(true) }}
+        <button onClick={() => { setAddressMode(true) }}
           className={`order-3 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
           title="Look up an address">
           <MapPin className="h-4 w-4" />
@@ -361,19 +343,23 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                       <Sun className="h-3.5 w-3.5 text-white" />
                     </div>
                   )}
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-[var(--txt)] text-[var(--bg)] rounded-br-sm'
-                      : 'bg-[var(--inp-bg)] text-[var(--txt)] rounded-bl-sm'
-                  }`}>
-                    {msg.content || (
-                      <div className="flex gap-1 py-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:0ms]" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:150ms]" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:300ms]" />
-                      </div>
-                    )}
-                  </div>
+                  {msg.role === 'user' ? (
+                    <div className="max-w-[80%] rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed bg-[var(--txt)] text-[var(--bg)]">
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <div className="flex-1 min-w-0 text-sm pt-0.5">
+                      {msg.content ? (
+                        <MarkdownContent content={msg.content} />
+                      ) : (
+                        <div className="flex gap-1 py-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:0ms]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:150ms]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted)] animate-bounce [animation-delay:300ms]" />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && (
