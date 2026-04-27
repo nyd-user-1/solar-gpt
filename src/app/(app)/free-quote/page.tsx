@@ -267,10 +267,7 @@ function QuoteAssistantContent({
       <div className="relative h-full w-full sm:w-[418px] bg-white sm:rounded-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-4 shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar">
-            <Sun className="h-4 w-4 text-white" />
-          </div>
-          <span className="flex-1 text-base font-semibold text-gray-900">Quote Assistant</span>
+          <span className="flex-1 text-base font-semibold text-gray-900">Solar Assistant</span>
           <button
             type="button"
             onClick={onClose}
@@ -508,14 +505,7 @@ export default function FreeQuotePage() {
               <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sun className="h-5 w-5 text-solar fill-solar/30 shrink-0" />
-                      <span className="text-base font-semibold text-gray-900">Your Estimate is Ready</span>
-                    </div>
-                    <p className="text-xs text-gray-400 truncate">
-                      {estimate.kw} kW system · {date}
-                    </p>
-                    <p className="mt-4 text-4xl font-bold text-gray-900">
+                    <p className="text-4xl font-bold text-gray-900">
                       ${estimate.net.toLocaleString()}
                     </p>
                     <p className="mt-0.5 text-sm text-gray-500">after 30% federal tax credit</p>
