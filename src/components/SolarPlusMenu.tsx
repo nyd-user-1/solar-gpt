@@ -132,10 +132,10 @@ export function SolarPlusMenu({ stateChips, countyChips, onSelect }: Props) {
             setSearch('')
           }
         }}
-        className={`order-1 sm:order-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+        className={`order-1 sm:order-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
           menuOpen
-            ? 'border-[var(--txt)] bg-[var(--inp-bg)] text-[var(--txt)]'
-            : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)]'
+            ? 'bg-[rgba(0,0,0,0.07)] text-[var(--txt)]'
+            : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
         }`}
       >
         {menuOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

@@ -344,8 +344,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           />
           <button
             onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
-            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-              addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+              addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
             }`}
             title={addressMode ? 'Exit address mode' : 'Look up an address'}>
             <MapPin className="h-4 w-4" />
