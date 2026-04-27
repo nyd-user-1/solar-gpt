@@ -75,8 +75,8 @@ export function SidebarSearch() {
         onClick={() => setOpen(true)}
         className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
       >
-        <Search className="h-[18px] w-[18px] shrink-0 text-[var(--muted)]" />
-        <span className="flex-1 text-left text-[var(--muted)]">Search…</span>
+        <Search className="h-[18px] w-[18px] shrink-0" />
+        <span className="flex-1 text-left">Search…</span>
       </button>
     )
   }
@@ -87,17 +87,17 @@ export function SidebarSearch() {
       onClick={() => { setOpen(false); setQuery('') }}
     >
       <div
-        className="w-full max-w-lg mx-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl overflow-hidden"
+        className="w-full max-w-lg mx-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl overflow-hidden flex flex-col max-h-[min(80vh,560px)]"
         onClick={e => e.stopPropagation()}
       >
-        <Command shouldFilter={false}>
+        <Command shouldFilter={false} className="flex flex-col min-h-0">
           <CommandInput
             placeholder="Search states, counties, GEA regions…"
             value={query}
             onValueChange={setQuery}
             autoFocus
           />
-          <CommandList className="max-h-[min(60vh,440px)]">
+          <CommandList className="flex-1 overflow-y-auto">
             {loading && (
               <div className="px-4 py-3 text-xs text-[var(--muted)]">Searching…</div>
             )}

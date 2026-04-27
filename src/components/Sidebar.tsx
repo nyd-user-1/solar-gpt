@@ -106,21 +106,22 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
-      {/* Header — Sun icon closes the sidebar on all screen sizes */}
-      <div className="flex items-center gap-1 px-3 py-2">
-        <button
-          onClick={onClose}
-          className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--inp-bg)]"
-        >
-          <Sun className="h-6 w-6 text-solar fill-solar/20" />
-          <span className="text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
-        </button>
+      {/* Header */}
+      <div className="flex items-center px-4 py-2">
+        <span className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
         {/* Mobile: profile avatar */}
         <button
           onClick={() => setProfileOpen(true)}
-          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold"
+          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold mr-1"
         >
           SG
+        </button>
+        {/* Sun icon — closes sidebar */}
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
+        >
+          <Sun className="h-5 w-5 text-solar fill-solar/20" />
         </button>
       </div>
 
