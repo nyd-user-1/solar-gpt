@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, CheckCircle, MapPin, X, ArrowUp, Sun, Plus } from 'lucide-react'
+import { Bell, CheckCircle, MapPin, X, ArrowUp, Sun, ChevronDown } from 'lucide-react'
 import { MarkdownContent } from '@/components/MarkdownContent'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -61,8 +61,8 @@ function SolarAssistantContent({ open, onClose, quote }: {
     if (open && !injected) {
       setInjected(true)
       const q = [
-        `How did you arrive at this solar estimate of $${Number(quote.net_cost).toLocaleString()} for my home at ${quote.address}?`,
-        `For context: my roof is ${quote.roof_age} old, faces ${quote.roof_direction}, and gets ${quote.roof_shade.toLowerCase()} sun.`,
+        `How did you arrive at this solar estimate for my home at ${quote.address}?`,
+        `My roof is ${quote.roof_age} old, faces ${quote.roof_direction}, and gets ${quote.roof_shade.toLowerCase()} sun.`,
         `My monthly bill is ${quote.monthly_bill} and my main goal is to ${quote.goal.toLowerCase()}.`,
         `What factors most influence this quote?`,
       ].join(' ')
@@ -82,7 +82,7 @@ function SolarAssistantContent({ open, onClose, quote }: {
     setLoading(true)
 
     try {
-      const solarInsight = quote.sunshine_hours || quote.roof_area_sqft || quote.max_panels ? {
+      const solarInsight = (quote.sunshine_hours || quote.roof_area_sqft || quote.max_panels) ? {
         maxSunshineHoursPerYear: quote.sunshine_hours,
         maxAreaSqFt: quote.roof_area_sqft,
         maxPanelsCount: quote.max_panels,
@@ -209,7 +209,6 @@ function StreamingIntro({ quote }: { quote: QuoteData }) {
   useEffect(() => {
     if (started.current) return
     started.current = true
-
     ;(async () => {
       try {
         const res = await fetch(`/api/solar-quotes/${quote.token}/intro`, {
@@ -237,8 +236,8 @@ function StreamingIntro({ quote }: { quote: QuoteData }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className={`h-4 bg-gray-100 rounded animate-pulse ${i === 2 ? 'w-2/3' : 'w-full'}`} />
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className={`h-4 bg-gray-100 rounded animate-pulse ${i === 1 ? 'w-3/4' : 'w-full'}`} />
           ))}
         </div>
       )}
@@ -254,7 +253,6 @@ function StreamingIntro({ quote }: { quote: QuoteData }) {
 function SatelliteMap({ lat, lng, address }: { lat: number; lng: number; address: string }) {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=800x400&maptype=satellite&key=${key}`
-
   return (
     <div className="relative w-full rounded-2xl overflow-hidden mb-6 bg-gray-100" style={{ aspectRatio: '2/1' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -263,6 +261,48 @@ function SatelliteMap({ lat, lng, address }: { lat: number; lng: number; address
         <MapPin className="h-3.5 w-3.5 text-white shrink-0" />
         <span className="text-xs text-white font-medium truncate max-w-[240px]">{address.split(',')[0]}</span>
       </div>
+    </div>
+  )
+}
+
+// ─── Estimate details accordion ───────────────────────────────────────────────
+
+function EstimateAccordion({ quote, date }: { quote: QuoteData; date: string }) {
+  const [open, setOpen] = useState(false)
+
+  const rows: { label: string; value: string }[] = [
+    ...(quote.sunshine_hours != null ? [{ label: 'Sunshine hours/year', value: Number(quote.sunshine_hours).toLocaleString() }] : []),
+    ...(quote.roof_area_sqft != null ? [{ label: 'Usable roof area', value: `${Number(quote.roof_area_sqft).toLocaleString()} sq ft` }] : []),
+    ...(quote.max_panels != null ? [{ label: 'Max panels', value: String(quote.max_panels) }] : []),
+    { label: 'System size', value: `${quote.system_kw} kW` },
+    { label: 'Gross cost', value: `$${Number(quote.gross_cost).toLocaleString()}` },
+    { label: 'Federal tax credit (30%)', value: `-$${Number(quote.itc_amount).toLocaleString()}` },
+    { label: 'Payback period', value: `~${quote.payback_years} years` },
+    { label: '20-year savings', value: `$${Number(quote.savings_20yr).toLocaleString()}` },
+    { label: 'Estimate date', value: date },
+  ]
+
+  return (
+    <div className="mt-3 border-t border-gray-100">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between py-3 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
+      >
+        <span>How this estimate was calculated</span>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="pb-3 space-y-0">
+          {rows.map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between py-1.5 border-t border-gray-50 first:border-0 text-sm">
+              <span className="text-gray-400">{label}</span>
+              <span className="font-medium text-gray-900">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -318,12 +358,6 @@ export default function QuotePage() {
     { name: 'State solar incentive', savings: 'Varies by state', anchor: 'state-solar-incentive' },
   ]
 
-  const basedOnItems = [
-    quote.sunshine_hours != null && { label: 'Sunshine hours/year', value: Number(quote.sunshine_hours).toLocaleString() },
-    quote.roof_area_sqft != null && { label: 'Usable roof area', value: `${Number(quote.roof_area_sqft).toLocaleString()} sq ft` },
-    quote.max_panels != null && { label: 'Max panels', value: String(quote.max_panels) },
-  ].filter(Boolean) as { label: string; value: string }[]
-
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Main content */}
@@ -339,21 +373,19 @@ export default function QuotePage() {
               <SatelliteMap lat={quote.lat} lng={quote.lng} address={quote.address} />
             )}
 
-            {/* Header */}
-            <h1 className="text-2xl font-bold text-gray-900">Here's your solar estimate</h1>
-            <p className="mt-1 text-sm text-gray-400">{quote.address}</p>
+            {/* Header — dynamic name + date */}
+            <h1 className="text-2xl font-bold text-gray-900">{quote.first_name}&apos;s solar estimate</h1>
+            <p className="mt-1 text-sm text-gray-400">{date}</p>
 
             {/* Quote card */}
             <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
+                  {/* Monthly savings as hero number */}
                   <p className="text-4xl font-bold text-gray-900">
-                    ${Number(quote.net_cost).toLocaleString()}
+                    ${quote.monthly_savings}
                   </p>
-                  <p className="mt-0.5 text-sm text-gray-500">after 30% federal tax credit</p>
-                  <p className="mt-1 text-sm font-medium text-green-600">
-                    ~${quote.monthly_savings}/mo estimated savings
-                  </p>
+                  <p className="mt-0.5 text-sm text-gray-500">Est. savings per/mo.</p>
                 </div>
                 <button type="button" onClick={() => setAssistantOpen(true)}
                   className="relative rounded-xl bg-orange-50 px-3 py-2 border border-transparent hover:border-[#e8751c] transition-colors shrink-0"
@@ -364,6 +396,7 @@ export default function QuotePage() {
                 </button>
               </div>
 
+              {/* Applied incentives */}
               <div className="mt-5 space-y-1">
                 {appliedIncentives.map(d => (
                   <Link key={d.name} href={`/glossary#${d.anchor}`}
@@ -377,72 +410,12 @@ export default function QuotePage() {
                 ))}
               </div>
 
-              {basedOnItems.length > 0 && (
-                <>
-                  <div className="my-4 flex items-center gap-3">
-                    <div className="flex-1 border-t border-gray-100" />
-                    <span className="text-xs text-gray-300">Based on</span>
-                    <div className="flex-1 border-t border-gray-100" />
-                  </div>
-                  <div className="space-y-1">
-                    {basedOnItems.map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-300 shrink-0" />
-                          <span className="text-gray-400">{label}</span>
-                        </div>
-                        <span className="text-gray-500 font-medium">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Quote details */}
-            <div className="mt-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {[
-                  { label: 'System size', value: `${quote.system_kw} kW` },
-                  { label: 'Gross cost', value: `$${Number(quote.gross_cost).toLocaleString()}` },
-                  { label: 'Federal tax credit', value: `-$${Number(quote.itc_amount).toLocaleString()}` },
-                  { label: 'Payback period', value: `~${quote.payback_years} years` },
-                  { label: '20-year savings', value: `$${Number(quote.savings_20yr).toLocaleString()}` },
-                  { label: 'Estimate date', value: date },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <p className="text-xs text-gray-400">{label}</p>
-                    <p className="font-medium text-gray-800">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* CTAs */}
-            <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <p className="text-sm text-gray-400 text-center">Ready to get competing installer quotes?</p>
-              <button className="mt-4 w-full rounded-xl py-3 text-base font-semibold text-white transition-colors"
-                style={{ backgroundColor: ACCENT }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = ACCENT_HOVER}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = ACCENT}>
-                Get a Free Consultation
-              </button>
-              <div className="my-5 flex items-center gap-3">
-                <div className="flex-1 border-t border-gray-100" />
-                <span className="text-xs text-gray-300">or</span>
-                <div className="flex-1 border-t border-gray-100" />
-              </div>
-              <p className="text-sm text-gray-400 text-center">Have questions? Talk to a solar advisor.</p>
-              <a href="tel:18005551234"
-                className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-gray-100 px-6 py-3 text-base font-semibold text-gray-800 hover:bg-gray-50 transition-colors">
-                (800) 555-1234
-              </a>
-              <p className="mt-3 text-center text-xs text-gray-400">No obligation · Free estimate · Licensed installers</p>
+              {/* Accordion: estimate details + solar API data */}
+              <EstimateAccordion quote={quote} date={date} />
             </div>
 
             <p className="mt-6 text-center text-xs text-gray-300">
-              This is a sample estimate. Actual costs vary based on roof assessment, permitting, and installer pricing.
-              Unique quote ID: {token}
+              Sample estimate only. Actual costs vary by roof, permitting, and installer. Quote ID: {token}
             </p>
           </div>
         </div>
