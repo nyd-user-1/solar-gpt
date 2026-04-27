@@ -28,7 +28,7 @@ interface DbLead {
 function SatelliteMap({ center, label }: { center: string; label: string }) {
   const src = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(center)}&zoom=18&size=800x400&maptype=satellite&key=${MAPS_KEY}`
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mb-6 bg-[var(--inp-bg)]" style={{ aspectRatio: '2/1' }}>
+    <div className="relative w-full rounded-xl overflow-hidden mb-8 bg-[var(--inp-bg)]" style={{ height: 300 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={`Satellite view of ${label}`} className="w-full h-full object-cover" />
       <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1">
@@ -115,7 +115,7 @@ export default function LeadDetailPage() {
 
     return (
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="px-6 py-6">
+        <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
           {/* Breadcrumb */}
           <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
             <Link href="/leads" className="hover:text-solar transition-colors">Leads</Link>
@@ -242,7 +242,7 @@ export default function LeadDetailPage() {
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
-      <div className="px-6 py-6">
+      <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
         {/* Breadcrumb */}
         <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
           <Link href="/leads" className="hover:text-solar transition-colors">Leads</Link>
