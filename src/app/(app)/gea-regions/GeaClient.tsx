@@ -3,11 +3,9 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, Zap, List, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
-import { cn, fmtUsd, fmtNum } from '@/lib/utils'
+import { cn, fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
-
-const displayGea = (s: string) => s.replace(/_/g, ' ')
 
 type SortCol = 'name' | 'value' | 'counties' | 'adoption'
 
@@ -96,7 +94,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
                     <Zap className="h-3 w-3 text-[var(--muted)]" />
                   </div>
-                  <p className="font-bold text-[var(--txt)] text-sm truncate">{displayGea(gea.cambium_gea)}</p>
+                  <p className="font-bold text-[var(--txt)] text-sm truncate">{fmtGea(gea.cambium_gea)}</p>
                 </div>
 
                 {/* Badge row */}
@@ -160,7 +158,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                   <td className="px-4 py-3 font-medium text-[var(--txt)]">
                     <Link href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
                       <Zap className="h-4 w-4 text-solar shrink-0" />
-                      {displayGea(gea.cambium_gea)}
+                      {fmtGea(gea.cambium_gea)}
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(gea.untapped_annual_value_usd)}</td>

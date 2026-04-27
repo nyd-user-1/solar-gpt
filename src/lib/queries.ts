@@ -1,4 +1,5 @@
 import { sql } from './db'
+import { fmtGea } from './utils'
 
 export type CountyKpi = {
   id: number
@@ -504,6 +505,20 @@ function toRows(
   }))
 }
 
+function toGeaRows(
+  raw: unknown[],
+  hasChildren: boolean,
+): DashboardTableRow[] {
+  return (raw as { name: string; value: unknown; share_pct: unknown }[]).map(r => ({
+    id: r.name,
+    name: fmtGea(r.name),
+    value: Number(r.value ?? 0),
+    changePct: null,
+    sharePct: Math.min(Number(r.share_pct ?? 0), 100),
+    hasChildren,
+  }))
+}
+
 // ── State rows ──────────────────────────────────────────────────────────────
 
 export async function getDashboardStateRows(metric: string): Promise<DashboardTableRow[]> {
@@ -542,31 +557,31 @@ export async function getDashboardGeaRows(metric: string): Promise<DashboardTabl
   switch (metric) {
     case 'untapped_annual_value_usd': {
       const r = await sql`SELECT cambium_gea AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC`
-      return toRows(r as unknown[], true)
+      return toGeaRows(r as unknown[], true)
     }
     case 'adoption_rate_pct': {
       const r = await sql`SELECT cambium_gea AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC`
-      return toRows(r as unknown[], true)
+      return toGeaRows(r as unknown[], true)
     }
     case 'count_qualified': {
       const r = await sql`SELECT cambium_gea AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE count_qualified IS NOT NULL ORDER BY count_qualified DESC`
-      return toRows(r as unknown[], true)
+      return toGeaRows(r as unknown[], true)
     }
     case 'existing_installs_count': {
       const r = await sql`SELECT cambium_gea AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE existing_installs_count IS NOT NULL ORDER BY existing_installs_count DESC`
-      return toRows(r as unknown[], true)
+      return toGeaRows(r as unknown[], true)
     }
     case 'untapped_lifetime_value_usd': {
       const r = await sql`SELECT cambium_gea AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
-      return toRows(r as unknown[], true)
+      return toGeaRows(r as unknown[], true)
     }
     case 'cost_per_mwh': {
       const r = await sql`SELECT cambium_gea AS name, cost_per_mwh AS value, cost_per_mwh*100.0/NULLIF(SUM(cost_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL ORDER BY cost_per_mwh DESC`
-      return toRows(r as unknown[], false)
+      return toGeaRows(r as unknown[], false)
     }
     case 'lrmer_co2_per_mwh': {
       const r = await sql`SELECT cambium_gea AS name, lrmer_co2_per_mwh AS value, lrmer_co2_per_mwh*100.0/NULLIF(SUM(lrmer_co2_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL ORDER BY lrmer_co2_per_mwh DESC`
-      return toRows(r as unknown[], false)
+      return toGeaRows(r as unknown[], false)
     }
     default: return []
   }

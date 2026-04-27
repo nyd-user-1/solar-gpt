@@ -9,7 +9,7 @@ import {
   getHeatmapPoints,
   nameToSlug,
 } from '@/lib/queries'
-import { fmtUsd, fmtNum } from '@/lib/utils'
+import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
 export default async function CountyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -39,7 +39,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     { label: 'Median Install Cost', value: fmtUsd(county.median_install_cost_usd) },
     { label: 'Median Payback', value: county.median_payback_years != null ? `${county.median_payback_years.toFixed(1)} years` : '—' },
     { label: 'Median Savings / yr', value: fmtUsd(county.median_annual_savings_usd) },
-    { label: 'GEA Region', value: county.cambium_gea ?? '—' },
+    { label: 'GEA Region', value: county.cambium_gea ? fmtGea(county.cambium_gea) : '—' },
   ]
 
   const carouselItems = cities.map(city => ({
@@ -55,7 +55,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       title={county.region_name}
       breadcrumbs={[
         { label: 'Counties', href: '/counties' },
-        ...(county.cambium_gea ? [{ label: county.cambium_gea, href: `/gea-regions/${county.cambium_gea.toLowerCase().replace(/_/g, '-')}` }] : []),
+        ...(county.cambium_gea ? [{ label: fmtGea(county.cambium_gea), href: `/gea-regions/${county.cambium_gea.toLowerCase().replace(/_/g, '-')}` }] : []),
       ]}
       prev={prev}
       next={next}

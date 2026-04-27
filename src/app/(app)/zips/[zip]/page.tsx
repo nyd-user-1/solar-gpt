@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { getZipByCode, getSiblingZips, getHeatmapPoints } from '@/lib/queries'
-import { fmtUsd, fmtNum } from '@/lib/utils'
+import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
 export default async function ZipDetailPage({ params }: { params: Promise<{ zip: string }> }) {
   const { zip } = await params
@@ -25,7 +25,7 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
     { label: 'Median Install Cost', value: fmtUsd(zipData.median_install_cost_usd) },
     { label: 'Median Payback', value: zipData.median_payback_years != null ? `${zipData.median_payback_years.toFixed(1)} years` : '—' },
     { label: 'Median Savings / yr', value: fmtUsd(zipData.median_annual_savings_usd) },
-    { label: 'GEA Region', value: zipData.cambium_gea ?? '—' },
+    { label: 'GEA Region', value: zipData.cambium_gea ? fmtGea(zipData.cambium_gea) : '—' },
     { label: 'State', value: zipData.state_name },
   ]
 

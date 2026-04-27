@@ -3,8 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, MapPin, ChevronDown, ChevronUp, List, LayoutGrid } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { fmtUsd } from '@/lib/utils'
+import { cn, fmtUsd, fmtGea } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CountyKpi } from '@/lib/queries'
 
@@ -92,7 +91,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
                 </div>
                 <div>
                   <p className="font-bold text-[var(--txt)]">{county.region_name}</p>
-                  <p className="text-xs text-[var(--muted)]">{county.state_name} · {county.cambium_gea}</p>
+                  <p className="text-xs text-[var(--muted)]">{county.state_name} · {county.cambium_gea ? fmtGea(county.cambium_gea) : ''}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
@@ -155,7 +154,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
                   <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(county.untapped_annual_value_usd)}</td>
                   <td className="px-4 py-3 text-[var(--muted)]">{county.adoption_rate_pct?.toFixed(1) ?? '—'}%</td>
                   <td className="px-4 py-3 font-bold text-solar">{county.sunlight_grade}</td>
-                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)] text-xs">{county.cambium_gea}</td>
+                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)] text-xs">{county.cambium_gea ? fmtGea(county.cambium_gea) : '—'}</td>
                 </tr>
               ))}
             </tbody>

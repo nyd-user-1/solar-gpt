@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { MapPin, Zap } from 'lucide-react'
 import { getExploreCounties, getAllGeas, getGeaKpi, type CountyKpi, type GeaKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
-import { fmtUsd, fmtNum } from '@/lib/utils'
+import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
@@ -49,7 +49,7 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
         <div className="flex items-center gap-1.5 mb-1">
           <Zap className="h-4 w-4 text-white/90" />
-          <p className="text-lg font-bold text-white">{gea}</p>
+          <p className="text-lg font-bold text-white">{fmtGea(gea)}</p>
         </div>
         <p className="text-sm text-white/80">
           {kpi ? `${fmtNum(kpi.county_count)} counties · ${fmtUsd(kpi.untapped_annual_value_usd)}/yr untapped` : 'Loading…'}

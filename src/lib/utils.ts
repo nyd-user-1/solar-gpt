@@ -12,6 +12,10 @@ export function fmtUsd(value: number): string {
   return `$${Math.round(value).toLocaleString()}`
 }
 
+export function fmtGea(name: string): string {
+  return name.replace(/_/g, ' ')
+}
+
 export function fmtNum(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
   if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
