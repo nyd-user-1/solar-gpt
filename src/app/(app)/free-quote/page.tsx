@@ -58,11 +58,10 @@ function defaultFormData(): FormData {
 // ─── Estimate ────────────────────────────────────────────────────────────────
 
 const BILL_MAP: Record<string, number> = {
-  'Under $75': 55,
-  '$75-$125': 100,
-  '$125-$200': 160,
-  '$200-$300': 250,
   '$300+': 320,
+  '$200-$300': 250,
+  '$100-$200': 150,
+  'Under $100': 75,
 }
 
 function calcEstimate(insight: SolarInsight | null, monthlyBill: string) {
@@ -720,7 +719,7 @@ export default function FreeQuotePage() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
                   What's your average monthly electric bill?
                 </h2>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-3">
                   {Object.keys(BILL_MAP).map(o => (
                     <CardOption
                       key={o}
