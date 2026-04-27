@@ -42,7 +42,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+    el.style.height = `${Math.min(el.scrollHeight, 144)}px`
   }
 
   const submit = async (text: string) => {
@@ -127,10 +127,20 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
       )}
 
       {/* Input box */}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm focus-within:border-[var(--border2,#ccc)] transition-colors">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] pl-2 pr-2 py-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md">
+        <button
+          onClick={() => setPlusOpen(v => !v)}
+          className={`order-1 sm:order-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+            plusOpen
+              ? 'border-[var(--txt)] bg-[var(--inp-bg)] text-[var(--txt)]'
+              : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)]'
+          }`}
+        >
+          {plusOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        </button>
         <textarea
           ref={textareaRef}
-          rows={2}
+          rows={1}
           value={input}
           onChange={e => { setInput(e.target.value); autoResize() }}
           onKeyDown={e => {
@@ -138,32 +148,19 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
             if (e.key === 'Escape') setPlusOpen(false)
           }}
           placeholder="Ask about solar potential..."
-          className="w-full resize-none bg-transparent px-5 pt-5 pb-3 text-base text-[var(--txt)] placeholder:text-[var(--muted)] outline-none leading-relaxed"
-          style={{ minHeight: '84px', maxHeight: '200px' }}
+          className="order-2 sm:order-1 flex-1 sm:basis-full min-w-0 resize-none bg-transparent px-1 sm:px-0 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
+          style={{ minHeight: '40px' }}
         />
-        <div className="flex items-center gap-2 px-4 pb-4">
-          <button
-            onClick={() => setPlusOpen(v => !v)}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
-              plusOpen
-                ? 'border-[var(--txt)] bg-[var(--inp-bg)] text-[var(--txt)]'
-                : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)]'
-            }`}
-          >
-            {plusOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </button>
-          <div className="flex-1" />
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
-            <Sun className="h-3.5 w-3.5 text-solar" />
-          </div>
-          <button
-            onClick={() => submit(input)}
-            disabled={!input.trim() || loading || streaming}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
+        <div className="order-3 sm:order-3 flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
+          <Sun className="h-3.5 w-3.5 text-solar" />
         </div>
+        <button
+          onClick={() => submit(input)}
+          disabled={!input.trim() || loading || streaming}
+          className="order-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
       </div>
 
       <p className="text-center text-[10px] text-[var(--muted2)] mt-2">
