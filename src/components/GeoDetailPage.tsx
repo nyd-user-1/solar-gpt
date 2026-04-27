@@ -106,19 +106,6 @@ export function GeoDetailPage({
     <div className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
 
-        {/* Breadcrumbs */}
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            {breadcrumbs.map((crumb, i) => (
-              <span key={crumb.href} className="flex items-center gap-1.5">
-                {i > 0 && <ChevronRight className="h-3 w-3" />}
-                <Link href={crumb.href} className="hover:text-solar transition-colors">{crumb.label}</Link>
-              </span>
-            ))}
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-[var(--txt)]">{title}</span>
-          </nav>
-        )}
 
         {/* Header */}
         <div className="mb-8 flex items-center justify-between gap-2">
