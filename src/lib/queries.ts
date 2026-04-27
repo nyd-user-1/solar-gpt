@@ -446,14 +446,29 @@ export async function getGeaKpi(gea: string): Promise<GeaKpi | null> {
   return (rows[0] as GeaKpi) ?? null
 }
 
+const SPP_LOGO   = 'https://www.spp.org/logo.png'
+const ISONE_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png'
+const NG_LOGO    = 'https://www.northerngrid.net/static/images/LOGO_NorthernGrid_FINAL_v04.png'
+const PJM_LOGO   = 'https://cigre-usnc.org/wp-content/uploads/2016/02/PJM-1-color-and-2-color-logo.png'
+
 const GEA_LOGO_SEEDS: Record<string, string> = {
   'CAISO':             'https://evcvaluation.com/wp-content/uploads/CAISO_Logo_Custom.png',
   'NYISO':             'https://www.nyiso.com/documents/20142/10339375/nyiso-logo-opengraph.png/44f65e34-e632-8f8a-e594-013f2d3ef46b?t=1690894417356',
   'ERCOT':             'https://bkvenergy.com/wp-content/uploads/2023/08/ERCOT-logo-1.webp',
-  'SPP':               'https://www.spp.org/logo.png',
-  'ISO New England':   'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
-  'ISO_NE':            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
-  'ISONE':             'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
+  'SPP':               SPP_LOGO,
+  'SPP_N':             SPP_LOGO,
+  'SPP_S':             SPP_LOGO,
+  'SPP North':         SPP_LOGO,
+  'SPP South':         SPP_LOGO,
+  'ISO New England':   ISONE_LOGO,
+  'ISO_NE':            ISONE_LOGO,
+  'ISONE':             ISONE_LOGO,
+  'NorthernGrid':      NG_LOGO,
+  'Northern Grid':     NG_LOGO,
+  'NORTHERNGRID':      NG_LOGO,
+  'MRO':               NG_LOGO,
+  'PJM':               PJM_LOGO,
+  'PJM RTO':           PJM_LOGO,
 }
 
 export async function getGeaLogos(): Promise<Record<string, string>> {
@@ -470,7 +485,7 @@ export async function getGeaLogos(): Promise<Record<string, string>> {
       await sql`
         INSERT INTO gea_assets (gea_name, logo_url)
         VALUES (${name}, ${url})
-        ON CONFLICT (gea_name) DO NOTHING
+        ON CONFLICT (gea_name) DO UPDATE SET logo_url = EXCLUDED.logo_url
       `
     }
     const rows = await sql`SELECT gea_name, logo_url FROM gea_assets`
