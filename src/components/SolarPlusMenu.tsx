@@ -248,10 +248,7 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
                     {s.flag_url
                       ? <img src={`${s.flag_url}?width=80`} alt="" className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]" />
                       : <Map className="h-5 w-5 text-solar shrink-0" />}
-                    <div className="flex flex-col items-start min-w-0">
-                      <span className="text-sm font-semibold text-[var(--txt)]">{s.name}</span>
-                      <span className="text-xs text-[var(--muted)]">Grade {s.grade} · {s.untapped}/yr</span>
-                    </div>
+                    <span className="text-sm font-semibold text-[var(--txt)]">{s.name}</span>
                   </button>
                 ))}
                 {filteredStates.length === 0 && (
