@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Sun, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
@@ -8,6 +8,18 @@ import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Apply admin-configurable bg color
+  useEffect(() => {
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then((s: Record<string, string>) => {
+        if (s.bg_color) {
+          document.documentElement.style.setProperty('--bg', s.bg_color)
+        }
+      })
+      .catch(() => {})
+  }, [])
   const router = useRouter()
   const pathname = usePathname()
 

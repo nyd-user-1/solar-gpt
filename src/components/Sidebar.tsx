@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -95,11 +95,21 @@ function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }
   )
 }
 
+const ADMIN_EMAIL = 'brendan@nysgpt.com'
+
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
   const [profileOpen, setProfileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(r => r.json())
+      .then((s: { user?: { email?: string } }) => { if (s?.user?.email) setUserEmail(s.user.email) })
+      .catch(() => {})
+  }, [])
 
   const handleNavClick = () => {
     if (onClose && typeof window !== 'undefined' && window.innerWidth < 1024) onClose()
@@ -210,6 +220,24 @@ export function Sidebar({ onClose }: SidebarProps) {
                   <div className="text-xs text-[var(--muted)]">Consumer</div>
                 </div>
               </div>
+              <div className="my-1 border-t border-[var(--border)]" />
+              <Link href="/profile" onClick={() => setAccountOpen(false)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                <User className="h-4 w-4 flex-shrink-0" />
+                Profile
+              </Link>
+              <Link href="/settings" onClick={() => setAccountOpen(false)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                <Settings className="h-4 w-4 flex-shrink-0" />
+                Settings
+              </Link>
+              {userEmail === ADMIN_EMAIL && (
+                <Link href="/admin" onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-solar font-medium hover:bg-[var(--inp-bg)] transition-colors">
+                  <Shield className="h-4 w-4 flex-shrink-0" />
+                  Admin
+                </Link>
+              )}
               <div className="my-1 border-t border-[var(--border)]" />
               <button onClick={toggle} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
                 {theme === 'dark' ? <Sun className="h-4 w-4 flex-shrink-0" /> : <Moon className="h-4 w-4 flex-shrink-0" />}
