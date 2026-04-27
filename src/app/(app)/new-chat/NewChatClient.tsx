@@ -400,7 +400,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
               <div className="w-full max-w-[773px] flex flex-col gap-6">
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-2">
-                    <Sun className="h-7 w-7 text-solar" />
+                    <Sun className="h-8 w-8 text-solar fill-solar" />
                     <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
                   </div>
                 </div>
