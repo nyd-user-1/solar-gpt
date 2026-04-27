@@ -174,18 +174,20 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
                 href={`/states/${nameToSlug(state.state_name)}`}
                 className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:border-solar hover:shadow-lg transition-all"
               >
-                {/* Top — flag zone */}
-                <div className="flex h-36 items-center justify-center bg-[var(--inp-bg)]">
+                {/* Top — flag zone, full-bleed */}
+                <div className="relative h-36 overflow-hidden bg-[var(--inp-bg)]">
                   {state.flag_url ? (
                     <img
-                      src={`${state.flag_url}?width=200`}
+                      src={`${state.flag_url}?width=600`}
                       alt={`${state.state_name} flag`}
-                      className="h-20 w-32 object-cover rounded-lg border border-[var(--border)] shadow-sm"
+                      className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-solar/10">
-                      <Map className="h-9 w-9 text-solar" />
+                    <div className="flex h-full items-center justify-center">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-solar/10">
+                        <Map className="h-9 w-9 text-solar" />
+                      </div>
                     </div>
                   )}
                 </div>
