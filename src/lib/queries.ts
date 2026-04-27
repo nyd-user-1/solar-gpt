@@ -415,19 +415,21 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getTopStates(limit = 8): Promise<StateKpi[]> {
   const rows = await sql`
     SELECT id, state_name, lat_avg, lng_avg, lat_min, lat_max, lng_min, lng_max,
-      count_qualified, existing_installs_count, untapped_annual_value_usd,
-      untapped_lifetime_value_usd, adoption_rate_pct, median_payback_years,
-      median_annual_savings_usd, median_install_cost_usd, cars_off_road_equivalent,
-      homes_powered_equivalent, sunlight_grade, sunlight_stars,
-      untapped_buildings, untapped_pct, kw_total, kw_median,
-      yearly_sunlight_kwh_total, carbon_offset_metric_tons,
-      total_energy_value_usd_yr, untapped_energy_value_usd_yr,
-      carbon_offset_value_usd_yr, untapped_carbon_value_usd_yr,
-      untapped_install_cost_usd, median_annual_kwh_per_roof,
-      median_lifetime_savings_usd, percent_covered, percent_qualified,
-      yearly_sunlight_kwh_kw_threshold_avg, region_name
-    FROM solargpt.v_state_kpis
-    ORDER BY untapped_annual_value_usd DESC
+      v.id, v.state_name, v.lat_avg, v.lng_avg, v.lat_min, v.lat_max, v.lng_min, v.lng_max,
+      v.count_qualified, v.existing_installs_count, v.untapped_annual_value_usd,
+      v.untapped_lifetime_value_usd, v.adoption_rate_pct, v.median_payback_years,
+      v.median_annual_savings_usd, v.median_install_cost_usd, v.cars_off_road_equivalent,
+      v.homes_powered_equivalent, v.sunlight_grade, v.sunlight_stars,
+      v.untapped_buildings, v.untapped_pct, v.kw_total, v.kw_median,
+      v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
+      v.total_energy_value_usd_yr, v.untapped_energy_value_usd_yr,
+      v.carbon_offset_value_usd_yr, v.untapped_carbon_value_usd_yr,
+      v.untapped_install_cost_usd, v.median_annual_kwh_per_roof,
+      v.median_lifetime_savings_usd, v.percent_covered, v.percent_qualified,
+      v.yearly_sunlight_kwh_kw_threshold_avg, v.region_name, s.flag_url
+    FROM solargpt.v_state_kpis v
+    LEFT JOIN solargpt.raw_sunroof_state s USING (id)
+    ORDER BY v.untapped_annual_value_usd DESC
     LIMIT ${limit}
   `
   return rows as StateKpi[]

@@ -180,8 +180,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           <div className="flex flex-col items-center px-4 py-12 min-h-full">
             <div className="w-full max-w-2xl flex flex-col gap-8">
               {/* Logo */}
-              <div className="flex flex-col items-center gap-2">
-                <Sun className="h-12 w-12 text-solar fill-solar/20" />
+              <div className="flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
               </div>
 
