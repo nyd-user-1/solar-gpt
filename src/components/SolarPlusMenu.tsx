@@ -52,14 +52,12 @@ interface Props {
 
 export function SolarPlusMenu({ stateChips, onSelect }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [openAbove, setOpenAbove] = useState(true)
   const [step, setStep] = useState<DrillStep>('categories')
   const [search, setSearch] = useState('')
   const [counties, setCounties] = useState<CountyResult[]>([])
   const [countiesLoading, setCountiesLoading] = useState(false)
 
   const menuRef = useRef<HTMLDivElement>(null)
-  const btnRef = useRef<HTMLButtonElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -125,16 +123,11 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
   return (
     <div className="relative" ref={menuRef}>
       <button
-        ref={btnRef}
         type="button"
         onClick={() => {
           if (menuOpen) {
             closeMenu()
           } else {
-            if (btnRef.current) {
-              const rect = btnRef.current.getBoundingClientRect()
-              setOpenAbove(rect.top > 300)
-            }
             setMenuOpen(true)
             setStep('categories')
             setSearch('')
@@ -151,9 +144,7 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
 
       {/* ---- Category screen ---- */}
       {menuOpen && !isDrawer && (
-        <div className={`absolute left-0 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20 ${
-          openAbove ? 'bottom-full mb-2' : 'top-full mt-2'
-        }`}>
+        <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20">
           <div className="py-1">
             {CATEGORIES.map((cat, i) => (
               <button
@@ -174,9 +165,7 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
 
       {/* ---- Drill-down drawer ---- */}
       {menuOpen && isDrawer && (
-        <div className={`absolute left-0 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20 ${
-          openAbove ? 'bottom-full mb-2' : 'top-full mt-2'
-        }`}>
+        <div className="absolute left-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20">
           {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--border)]">
             <button onClick={goBack} className="text-[var(--muted)] hover:text-[var(--txt)] shrink-0">
