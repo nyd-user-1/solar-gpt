@@ -355,7 +355,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                       {msg.content}
                     </div>
                   ) : (
-                    <div className="flex-1 min-w-0 text-sm pt-0.5">
+                    <div className="flex-1 min-w-0 text-[17px] pt-0.5">
                       {msg.content ? (
                         <MarkdownContent content={msg.content} />
                       ) : (

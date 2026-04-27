@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 const mdComponents: Parameters<typeof ReactMarkdown>[0]['components'] = {
   p: ({ children }) => (
-    <p className="mb-3 last:mb-0 text-[var(--txt)] leading-relaxed">{children}</p>
+    <p className="mb-3 last:mb-0 text-[17px] text-[var(--txt)] leading-relaxed">{children}</p>
   ),
   strong: ({ children }) => (
     <strong className="font-semibold text-[var(--txt)]">{children}</strong>
@@ -15,16 +15,16 @@ const mdComponents: Parameters<typeof ReactMarkdown>[0]['components'] = {
     <em className="italic text-[var(--muted)]">{children}</em>
   ),
   h1: ({ children }) => (
-    <h1 className="text-lg font-bold text-[var(--txt)] mt-4 mb-2 first:mt-0">{children}</h1>
+    <h1 className="text-[22px] font-bold text-[var(--txt)] mt-4 mb-2 first:mt-0">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-bold text-[var(--txt)] mt-4 mb-2 first:mt-0">{children}</h2>
+    <h2 className="text-[20px] font-bold text-[var(--txt)] mt-4 mb-2 first:mt-0">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-bold text-[var(--txt)] mt-3 mb-1.5 first:mt-0">{children}</h3>
+    <h3 className="text-[18px] font-bold text-[var(--txt)] mt-3 mb-1.5 first:mt-0">{children}</h3>
   ),
   h4: ({ children }) => (
-    <h4 className="text-sm font-semibold text-[var(--txt)] mt-2 mb-1 first:mt-0">{children}</h4>
+    <h4 className="text-[17px] font-semibold text-[var(--txt)] mt-2 mb-1 first:mt-0">{children}</h4>
   ),
   ul: ({ children }) => (
     <ul className="list-disc pl-5 mb-3 space-y-1 text-[var(--txt)]">{children}</ul>
@@ -33,7 +33,7 @@ const mdComponents: Parameters<typeof ReactMarkdown>[0]['components'] = {
     <ol className="list-decimal pl-5 mb-3 space-y-1 text-[var(--txt)]">{children}</ol>
   ),
   li: ({ children }) => (
-    <li className="text-[var(--txt)] leading-relaxed">{children}</li>
+    <li className="text-[17px] text-[var(--txt)] leading-relaxed">{children}</li>
   ),
   blockquote: ({ children }) => (
     <blockquote className="border-l-2 border-solar pl-3 my-3 text-[var(--muted)] italic">{children}</blockquote>
