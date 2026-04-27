@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
   const pattern = `%${q}%`
 
-  const [stateRows, countyRows, geaRows] = await Promise.all([
+  const [stateRows, countyRows, cityRows] = await Promise.all([
     sql`
       SELECT v.state_name AS name,
         REGEXP_REPLACE(lower(v.state_name), '[^a-z0-9]+', '-', 'g') AS slug,
@@ -55,18 +55,18 @@ export async function GET(req: NextRequest) {
       LIMIT 6
     `,
     sql`
-      SELECT DISTINCT cambium_gea AS name,
-        lower(replace(cambium_gea, '_', '-')) AS slug
-      FROM solargpt.raw_cambium_county_mapping
-      WHERE lower(cambium_gea) LIKE lower(${pattern})
-      ORDER BY cambium_gea
-      LIMIT 5
+      SELECT v.region_name AS name, v.state_name AS state,
+        v.slug
+      FROM solargpt.v_city_kpis v
+      WHERE lower(v.region_name) LIKE lower(${pattern})
+      ORDER BY v.untapped_annual_value_usd DESC
+      LIMIT 6
     `,
   ])
 
   return NextResponse.json({
     states: stateRows,
     counties: countyRows,
-    geas: geaRows,
+    cities: cityRows,
   })
 }

@@ -6,6 +6,7 @@ import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
 import { SolarPlusMenu } from '@/components/SolarPlusMenu'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import type { SolarInsight } from '@/lib/solar-types'
+import { STATE_ABBRS } from '@/lib/us-states'
 
 /* ------------------------------------------------------------------ */
 /*  Model definitions                                                  */
@@ -44,6 +45,8 @@ type StateChip = { name: string; slug: string; flag_url: string | null; untapped
 type Message = { id: string; role: 'user' | 'assistant'; content: string }
 type Suggestion = { place_id: string; description: string }
 type SelectedAddress = { description: string; lat: number; lng: number }
+type SearchHit = { name: string; state?: string; slug: string; flag_url?: string | null }
+type InlineSuggestions = { states: SearchHit[]; counties: SearchHit[]; cities: SearchHit[] }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -56,6 +59,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   const [streaming, setStreaming] = useState(false)
   const [selectedModelId, setSelectedModelId] = useState('gpt-4o')
   const [selectedStateName, setSelectedStateName] = useState<string | null>(null)
+  const [inlineSuggestions, setInlineSuggestions] = useState<InlineSuggestions | null>(null)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [modelMenuAbove, setModelMenuAbove] = useState(true)
 
@@ -75,6 +79,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   const modelRef = useRef<HTMLDivElement>(null)
   const modelBtnRef = useRef<HTMLButtonElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const selectedModel = MODEL_OPTIONS.find(m => m.id === selectedModelId) ?? MODEL_OPTIONS[0]
 
@@ -97,6 +102,21 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 144)}px`
+  }
+
+  const handleInputChange = (value: string) => {
+    setInput(value)
+    autoResize()
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    if (value.trim().length < 2) { setInlineSuggestions(null); return }
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(value.trim())}`)
+        const data = await res.json()
+        const hasResults = data.states?.length || data.counties?.length || data.cities?.length
+        setInlineSuggestions(hasResults ? data : null)
+      } catch { setInlineSuggestions(null) }
+    }, 300)
   }
 
   const fetchSuggestions = useCallback((value: string) => {
@@ -148,6 +168,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     setMessages(allMessages)
     setInput('')
     setSelectedStateName(null)
+    setInlineSuggestions(null)
     setModelMenuOpen(false)
     if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.focus() }
     setLoading(true)
@@ -223,9 +244,53 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     </div>
   )
 
+  const dismissSuggestions = () => setInlineSuggestions(null)
+
   /* ---- Main chat input ---- */
   const chatInputBox = (
     <div className="relative">
+      {/* Inline location suggestions */}
+      {inlineSuggestions && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden z-20 max-h-[320px] overflow-y-auto no-scrollbar">
+          {inlineSuggestions.states?.map((s, i) => (
+            <button key={`state-${s.slug}`}
+              onClick={() => { setSelectedStateName(s.name); setInput(''); dismissSuggestions() }}
+              className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${i > 0 ? 'border-t border-[var(--border)]' : ''}`}>
+              {s.flag_url
+                ? <img src={`${s.flag_url}?width=80`} alt="" className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]" />
+                : <Map className="h-5 w-5 text-solar shrink-0" />}
+              <span className="flex-1 text-left text-sm font-semibold text-[var(--txt)]">{s.name}</span>
+              <span className="text-xs text-[var(--muted)]">State</span>
+            </button>
+          ))}
+          {inlineSuggestions.counties?.map((c, i) => {
+            const abbr = STATE_ABBRS[c.state ?? ''] ?? c.state
+            const isFirst = i === 0 && !inlineSuggestions.states?.length
+            return (
+              <button key={`county-${c.slug}-${c.state}`}
+                onClick={() => { setInput(`Analyze the solar opportunity in ${c.name}, ${abbr}`); dismissSuggestions(); textareaRef.current?.focus() }}
+                className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${!isFirst ? 'border-t border-[var(--border)]' : ''}`}>
+                <MapPin className="h-4 w-4 text-solar shrink-0" />
+                <span className="flex-1 text-left text-sm font-semibold text-[var(--txt)]">{c.name}, {abbr}</span>
+                <span className="text-xs text-[var(--muted)]">County</span>
+              </button>
+            )
+          })}
+          {inlineSuggestions.cities?.map((c, i) => {
+            const abbr = STATE_ABBRS[c.state ?? ''] ?? c.state
+            const isFirst = i === 0 && !inlineSuggestions.states?.length && !inlineSuggestions.counties?.length
+            return (
+              <button key={`city-${c.slug}-${c.state}`}
+                onClick={() => { setInput(`What is the solar energy potential in ${c.name}, ${abbr}?`); dismissSuggestions(); textareaRef.current?.focus() }}
+                className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${!isFirst ? 'border-t border-[var(--border)]' : ''}`}>
+                <Sun className="h-4 w-4 text-solar shrink-0" />
+                <span className="flex-1 text-left text-sm font-semibold text-[var(--txt)]">{c.name}, {abbr}</span>
+                <span className="text-xs text-[var(--muted)]">City</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
       <div className="flex flex-col rounded-[28px] border border-[var(--border)] bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-shadow hover:shadow-md gap-1">
 
         {selectedAddress && (
@@ -253,10 +318,10 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
         ) : (
           <textarea ref={textareaRef} rows={1} value={input}
-            onChange={e => { setInput(e.target.value); autoResize() }}
+            onChange={e => handleInputChange(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
-              if (e.key === 'Escape') { setModelMenuOpen(false) }
+              if (e.key === 'Escape') { setModelMenuOpen(false); dismissSuggestions() }
             }}
             placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
             className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
