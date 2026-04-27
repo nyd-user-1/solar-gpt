@@ -40,14 +40,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
           <div className="flex items-center gap-2 mr-1.5">
-            {/* Global search trigger */}
-            <button
-              onClick={() => window.dispatchEvent(new Event('solargpt:open-search'))}
-              className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--inp-bg)] pl-3 pr-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--txt)] hover:border-[var(--border2)] transition-colors"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>Search…</span>
-            </button>
             <button
               onClick={() => router.push('/login?mode=login')}
               className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
