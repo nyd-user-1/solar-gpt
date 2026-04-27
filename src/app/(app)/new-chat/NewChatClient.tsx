@@ -55,6 +55,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const [selectedModelId, setSelectedModelId] = useState('gpt-4o')
+  const [selectedStateName, setSelectedStateName] = useState<string | null>(null)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [modelMenuAbove, setModelMenuAbove] = useState(true)
 
@@ -146,6 +147,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
     const allMessages = [...messages, userMsg]
     setMessages(allMessages)
     setInput('')
+    setSelectedStateName(null)
     setModelMenuOpen(false)
     if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.focus() }
     setLoading(true)
@@ -236,15 +238,30 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
         )}
 
-        <textarea ref={textareaRef} rows={1} value={input}
-          onChange={e => { setInput(e.target.value); autoResize() }}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
-            if (e.key === 'Escape') { setModelMenuOpen(false) }
-          }}
-          placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
-          className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
-          style={{ minHeight: '40px' }} />
+        {selectedStateName ? (
+          <div
+            className="w-full py-1 text-[17px] leading-relaxed cursor-text"
+            onClick={() => {
+              setInput(`What is the solar energy potential in ${selectedStateName}?`)
+              setSelectedStateName(null)
+              setTimeout(() => textareaRef.current?.focus(), 0)
+            }}
+          >
+            <span className="text-[var(--txt)]">What is the solar energy potential in </span>
+            <span className="text-solar font-semibold">{selectedStateName}</span>
+            <span className="text-[var(--txt)]">?</span>
+          </div>
+        ) : (
+          <textarea ref={textareaRef} rows={1} value={input}
+            onChange={e => { setInput(e.target.value); autoResize() }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
+              if (e.key === 'Escape') { setModelMenuOpen(false) }
+            }}
+            placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
+            className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
+            style={{ minHeight: '40px' }} />
+        )}
 
         <div className="flex items-center pt-1">
           {/* Left: + then MapPin */}
@@ -292,7 +309,9 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
             )}
           </div>
 
-          <button type="button" onClick={() => submit(input)} disabled={!input.trim() || loading || streaming}
+          <button type="button"
+            onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
+            disabled={(!input.trim() && !selectedStateName) || loading || streaming}
             className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
             <ArrowUp className="h-4 w-4" />
           </button>
@@ -326,14 +345,14 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                   <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                     {stateChips.map(s => (
                       <button key={s.slug} type="button"
-                        onClick={() => { setInput(`What is the solar energy potential in ${s.name}?`); textareaRef.current?.focus() }}
+                        onClick={() => { setSelectedStateName(s.name); setInput('') }}
                         className="group shrink-0 w-[176px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity snap-start">
                         {s.flag_url
                           ? <img src={`${s.flag_url}?width=400`} alt={s.name} className="absolute inset-0 w-full h-full object-cover" />
                           : <div className="absolute inset-0 bg-solar/10 flex items-center justify-center"><Map className="h-8 w-8 text-solar" /></div>}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-2 left-3">
-                          <p className="text-sm font-extrabold text-solar">{s.name}</p>
+                          <p className="text-sm font-bold text-white">{s.name}</p>
                         </div>
                       </button>
                     ))}
