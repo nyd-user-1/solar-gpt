@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { getAllStates, nameToSlug } from '@/lib/queries'
+import { getAllStates, getCountyCatalog, nameToSlug } from '@/lib/queries'
 import NewChatClient from './new-chat/NewChatClient'
 
 const US_STATES = new Set([
@@ -15,7 +15,10 @@ const US_STATES = new Set([
 ])
 
 export default async function HomePage() {
-  const allStates = await getAllStates()
+  const [allStates, countyCatalog] = await Promise.all([
+    getAllStates(),
+    getCountyCatalog(),
+  ])
   const stateChips = allStates
     .filter(s => US_STATES.has(s.state_name))
     .sort((a, b) => (b.count_qualified ?? 0) - (a.count_qualified ?? 0))
@@ -26,5 +29,11 @@ export default async function HomePage() {
       untapped: '',
       grade: s.sunlight_grade,
     }))
-  return <NewChatClient stateChips={stateChips} />
+  const countyChips = countyCatalog.map(c => ({
+    name: c.region_name,
+    state: c.state_name,
+    slug: nameToSlug(c.region_name),
+    seal_url: c.seal_url ?? null,
+  }))
+  return <NewChatClient stateChips={stateChips} countyChips={countyChips} />
 }

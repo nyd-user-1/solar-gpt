@@ -42,6 +42,7 @@ function modelIcon(p: ModelProvider) {
 /* ------------------------------------------------------------------ */
 
 type StateChip = { name: string; slug: string; flag_url: string | null; untapped: string; grade: string }
+type CountyChip = { name: string; state: string; slug: string; seal_url: string | null }
 type Message = { id: string; role: 'user' | 'assistant'; content: string }
 type Suggestion = { place_id: string; description: string }
 type SelectedAddress = { description: string; lat: number; lng: number }
@@ -52,7 +53,7 @@ type InlineSuggestions = { states: SearchHit[]; counties: SearchHit[]; cities: S
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function NewChatClient({ stateChips }: { stateChips: StateChip[] }) {
+export default function NewChatClient({ stateChips, countyChips }: { stateChips: StateChip[]; countyChips: CountyChip[] }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -332,6 +333,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           {/* Left: + then MapPin */}
           <SolarPlusMenu
             stateChips={stateChips}
+            countyChips={countyChips}
             onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
           />
           <button onClick={() => { setAddressMode(true) }}

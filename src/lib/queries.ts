@@ -258,6 +258,22 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
   return rows as CountyKpi[]
 }
 
+export type CountyCatalogEntry = {
+  id: number
+  region_name: string
+  state_name: string
+  seal_url: string | null
+}
+
+export async function getCountyCatalog(): Promise<CountyCatalogEntry[]> {
+  const rows = await sql`
+    SELECT id, region_name, state_name, seal_url
+    FROM solargpt.raw_sunroof_county
+    ORDER BY region_name ASC, state_name ASC
+  `
+  return rows as CountyCatalogEntry[]
+}
+
 export async function getCountyById(id: number): Promise<CountyKpi | null> {
   const rows = await sql`SELECT * FROM solargpt.v_county_kpis WHERE id = ${id} LIMIT 1`
   return (rows[0] as CountyKpi) ?? null

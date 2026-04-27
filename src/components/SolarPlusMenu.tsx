@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Plus, ChevronRight, ArrowLeft, X, Lightbulb, Map, MapPin } from 'lucide-react'
 import { STATE_ABBRS } from '@/lib/us-states'
 
@@ -19,6 +19,17 @@ const SAMPLE_PROMPTS = [
   { title: 'Average Annual Savings', description: 'Typical homeowner solar savings', prompt: 'What is the average annual savings from residential solar across the US?' },
 ]
 
+const COUNTY_STOP_WORDS = new Set(['county', 'parish', 'borough', 'city', 'town'])
+
+function tokenizeQuery(q: string): string[] {
+  const tokens = q
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 2)
+  const meaningful = tokens.filter(t => !COUNTY_STOP_WORDS.has(t))
+  return meaningful.length > 0 ? meaningful : tokens
+}
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -33,16 +44,16 @@ type StateChip = {
   grade: string
 }
 
-type CountyResult = {
+type CountyChip = {
   name: string
   state: string
   slug: string
-  grade: string
   seal_url: string | null
 }
 
 interface Props {
   stateChips: StateChip[]
+  countyChips: CountyChip[]
   onSelect: (text: string) => void
 }
 
@@ -50,15 +61,12 @@ interface Props {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function SolarPlusMenu({ stateChips, onSelect }: Props) {
+export function SolarPlusMenu({ stateChips, countyChips, onSelect }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [step, setStep] = useState<DrillStep>('categories')
   const [search, setSearch] = useState('')
-  const [counties, setCounties] = useState<CountyResult[]>([])
-  const [countiesLoading, setCountiesLoading] = useState(false)
 
   const menuRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     function h(e: MouseEvent) {
@@ -68,31 +76,12 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
     return () => document.removeEventListener('mousedown', h)
   }, [menuOpen])
 
-  const closeMenu = () => { setMenuOpen(false); setStep('categories'); setSearch(''); setCounties([]) }
+  const closeMenu = () => { setMenuOpen(false); setStep('categories'); setSearch('') }
   const goBack = () => { setStep('categories'); setSearch('') }
-
-  const fetchCounties = async (q: string) => {
-    setCountiesLoading(true)
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
-      const data = await res.json()
-      setCounties(data.counties ?? [])
-    } catch { setCounties([]) }
-    finally { setCountiesLoading(false) }
-  }
 
   const handleCategoryClick = (cat: 'prompts' | 'pick-state' | 'pick-county') => {
     setSearch('')
     setStep(cat)
-    if (cat === 'pick-county') fetchCounties('')
-  }
-
-  const handleSearch = (val: string) => {
-    setSearch(val)
-    if (step === 'pick-county') {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => fetchCounties(val), 300)
-    }
   }
 
   const filteredStates = stateChips.filter(s =>
@@ -104,6 +93,16 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
     p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.description.toLowerCase().includes(search.toLowerCase())
   )
+
+  const filteredCounties = useMemo(() => {
+    if (!search) return countyChips
+    const tokens = tokenizeQuery(search)
+    if (tokens.length === 0) return countyChips
+    return countyChips.filter(c => {
+      const haystack = `${c.name} ${c.state}`.toLowerCase()
+      return tokens.every(t => haystack.includes(t))
+    })
+  }, [countyChips, search])
 
   const getStepLabel = () => {
     if (step === 'prompts') return 'Sample Questions'
@@ -174,13 +173,13 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
             <input
               type="text"
               value={search}
-              onChange={e => handleSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               placeholder={`Search ${getStepLabel()}…`}
               autoFocus
               className="flex-1 bg-transparent text-base text-[var(--txt)] outline-none placeholder:text-[var(--muted2)]"
             />
             {search && (
-              <button onClick={() => handleSearch('')} className="text-[var(--muted)] hover:text-[var(--txt)] shrink-0">
+              <button onClick={() => setSearch('')} className="text-[var(--muted)] hover:text-[var(--txt)] shrink-0">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -235,24 +234,22 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
 
             {/* Counties */}
             {step === 'pick-county' && (
-              countiesLoading
-                ? <p className="px-4 py-3 text-xs text-[var(--muted)]">Loading…</p>
-                : counties.length === 0
-                  ? <p className="px-4 py-3 text-xs text-[var(--muted)]">No matches</p>
-                  : counties.map((c, i) => {
-                    const abbr = STATE_ABBRS[c.state] ?? c.state
-                    return (
-                      <button
-                        key={`${c.slug}-${c.state}`}
-                        onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name}, ${abbr}`); closeMenu() }}
-                        className={`flex w-full items-center px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
-                          i > 0 ? 'border-t border-[var(--border)]' : ''
-                        }`}
-                      >
-                        <span className="text-sm font-semibold text-[var(--txt)]">{c.name}, {abbr}</span>
-                      </button>
-                    )
-                  })
+              filteredCounties.length === 0
+                ? <p className="px-4 py-3 text-xs text-[var(--muted)]">No matches</p>
+                : filteredCounties.map((c, i) => {
+                  const abbr = STATE_ABBRS[c.state] ?? c.state
+                  return (
+                    <button
+                      key={`${c.slug}-${c.state}`}
+                      onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name}, ${abbr}`); closeMenu() }}
+                      className={`flex w-full items-center px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
+                        i > 0 ? 'border-t border-[var(--border)]' : ''
+                      }`}
+                    >
+                      <span className="text-sm font-semibold text-[var(--txt)]">{c.name}, {abbr}</span>
+                    </button>
+                  )
+                })
             )}
 
           </div>
