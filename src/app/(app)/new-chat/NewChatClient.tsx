@@ -308,7 +308,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
               {inputBox}
 
               <div>
-                <p className="text-base font-semibold text-[var(--txt)] mb-4">Explore</p>
+                <p className="text-base font-semibold text-[var(--txt)] mb-6">Explore</p>
                 <div className="grid grid-cols-4 gap-3">
                   {stateChips.slice(0, 4).map(s => (
                     <Link
@@ -327,7 +327,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                           <Map className="h-8 w-8 text-solar" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                       <div className="absolute bottom-2 left-3">
                         <p className="text-sm font-bold text-white">{s.name}</p>
                         <p className="text-[11px] text-white/70">{s.untapped}/yr</p>
