@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import { Sun, ArrowUp, Map, X, MapPin } from 'lucide-react'
 import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
 import { SolarPlusMenu } from '@/components/SolarPlusMenu'
@@ -323,7 +322,8 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                   <p className="text-base font-semibold text-[var(--txt)] mb-6">Explore</p>
                   <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                     {stateChips.map(s => (
-                      <Link key={s.slug} href={`/states/${s.slug}`}
+                      <button key={s.slug} type="button"
+                        onClick={() => { setInput(`What is the solar potential in ${s.name}?`); textareaRef.current?.focus() }}
                         className="group shrink-0 w-[176px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity snap-start">
                         {s.flag_url
                           ? <img src={`${s.flag_url}?width=400`} alt={s.name} className="absolute inset-0 w-full h-full object-cover" />
@@ -333,7 +333,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                           <p className="text-sm font-bold text-white">{s.name}</p>
                           <p className="text-[11px] text-white/70">{s.untapped}/yr</p>
                         </div>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </div>
