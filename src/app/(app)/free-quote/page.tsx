@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, Bell, CheckCircle, X, ArrowUp, Sun, Plus, MapPin } from 'lucide-react'
+import { ArrowLeft, Bell, CheckCircle, X, ArrowUp, Sun, MapPin } from 'lucide-react'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import type { SolarInsight } from '@/lib/solar-types'
 
@@ -78,6 +78,13 @@ function calcEstimate(insight: SolarInsight | null, monthlyBill: string) {
 }
 
 type Estimate = ReturnType<typeof calcEstimate>
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 10)
+  if (digits.length < 4) return digits
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
 
 // ─── Progress label ───────────────────────────────────────────────────────────
 
@@ -464,12 +471,21 @@ export default function FreeQuotePage() {
       { name: 'Net metering credit', savings: 'Ongoing savings' },
       { name: 'State solar incentive', savings: 'Varies by state' },
     ]
-    const potentialIncentives = [
-      { name: 'PACE / $0-down financing', savings: 'Available' },
-      { name: 'Property tax exemption', savings: 'Up to 100%' },
-      { name: 'Sales tax exemption', savings: 'Varies' },
-    ]
     const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    const basedOnItems = [
+      solarInsight?.maxSunshineHoursPerYear != null && {
+        label: 'Sunshine hours/year',
+        value: solarInsight.maxSunshineHoursPerYear.toLocaleString(),
+      },
+      solarInsight?.maxAreaSqFt != null && {
+        label: 'Usable roof area',
+        value: `${solarInsight.maxAreaSqFt.toLocaleString()} sq ft`,
+      },
+      solarInsight?.maxPanelsCount != null && {
+        label: 'Max panels',
+        value: String(solarInsight.maxPanelsCount),
+      },
+    ].filter(Boolean) as { label: string; value: string }[]
 
     return (
       <div className="flex flex-1 overflow-hidden">
@@ -479,7 +495,7 @@ export default function FreeQuotePage() {
             <div className="mx-auto max-w-lg">
               <h1 className="text-2xl font-bold text-gray-900">Here's your solar estimate</h1>
               <p className="mt-1 text-sm text-gray-400">
-                {formData.address} · Estimate · {date}
+                {formData.address}
               </p>
 
               {/* Quote card */}
@@ -491,7 +507,7 @@ export default function FreeQuotePage() {
                       <span className="text-base font-semibold text-gray-900">Your Estimate is Ready</span>
                     </div>
                     <p className="text-xs text-gray-400 truncate">
-                      {estimate.kw} kW system · {formData.address.split(',')[0]} · Cash estimate
+                      {estimate.kw} kW system · {date}
                     </p>
                     <p className="mt-4 text-4xl font-bold text-gray-900">
                       ${estimate.net.toLocaleString()}
@@ -532,23 +548,24 @@ export default function FreeQuotePage() {
                   ))}
                 </div>
 
-                {/* Potential incentives */}
-                <div className="my-4 flex items-center gap-3">
-                  <div className="flex-1 border-t border-gray-100" />
-                  <span className="text-xs text-gray-300">Potential Incentives</span>
-                  <div className="flex-1 border-t border-gray-100" />
-                </div>
-                <div className="space-y-1">
-                  {potentialIncentives.map(d => (
-                    <div key={d.name} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Plus className="h-4 w-4 text-gray-300 shrink-0" />
-                        <span className="text-gray-400">{d.name}</span>
-                      </div>
-                      <span className="text-gray-400">{d.savings}</span>
+                {/* Based on — solar API data */}
+                {basedOnItems.length > 0 && (
+                  <>
+                    <div className="my-4 flex items-center gap-3">
+                      <div className="flex-1 border-t border-gray-100" />
+                      <span className="text-xs text-gray-300">Based on</span>
+                      <div className="flex-1 border-t border-gray-100" />
                     </div>
-                  ))}
-                </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {basedOnItems.map(({ label, value }) => (
+                        <div key={label} className="rounded-xl bg-gray-50 px-3 py-2.5">
+                          <p className="text-xs text-gray-400">{label}</p>
+                          <p className="text-sm font-semibold text-gray-800">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* CTA card */}
@@ -580,8 +597,6 @@ export default function FreeQuotePage() {
                   No obligation · Free estimate · Licensed installers
                 </p>
               </div>
-
-              {insight_summary(solarInsight)}
 
               <p className="mt-6 text-center text-xs text-gray-300">
                 This is a sample estimate based on your property data and typical installation costs. Your actual quote will vary. Powered by SolarGPT.
@@ -732,17 +747,18 @@ export default function FreeQuotePage() {
               </div>
             )}
 
-            {/* ROOF SHADE */}
+            {/* ROOF SUN */}
             {currentStep === 'roofShade' && (
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                  How much shade does your roof get?
+                  How much sun does your roof get?
                 </h2>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'None', sub: 'Full sun all day' },
-                    { val: 'Partial', sub: 'Some trees or nearby obstructions' },
-                    { val: 'Mostly shaded', sub: 'Heavy shade for much of the day' },
+                    { val: 'Full Sun', sub: 'All day sun exposure' },
+                    { val: 'Mostly Sunny', sub: 'Minor obstructions' },
+                    { val: 'Partial Sun', sub: 'Some shade from trees or buildings' },
+                    { val: 'Mostly Shaded', sub: 'Heavy shade most of the day' },
                   ].map(({ val, sub }) => (
                     <CardOption
                       key={val}
@@ -874,7 +890,7 @@ export default function FreeQuotePage() {
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={e => update('phone', e.target.value)}
+                      onChange={e => update('phone', formatPhone(e.target.value))}
                       placeholder="(555) 555-5555"
                       className="mt-1 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 outline-none focus:border-[#e8751c]"
                     />
@@ -914,31 +930,3 @@ export default function FreeQuotePage() {
   )
 }
 
-// ─── Inline solar data summary (shown on result if we have real API data) ─────
-
-function insight_summary(insight: SolarInsight | null) {
-  if (!insight) return null
-  const items = [
-    insight.maxSunshineHoursPerYear && { label: 'Sunshine hours/year', value: insight.maxSunshineHoursPerYear.toLocaleString() },
-    insight.maxAreaSqFt && { label: 'Usable roof area', value: `${insight.maxAreaSqFt.toLocaleString()} sq ft` },
-    insight.maxPanelsCount && { label: 'Max panels', value: String(insight.maxPanelsCount) },
-    insight.savings20yr && { label: '20-year savings', value: `$${insight.savings20yr.toLocaleString()}` },
-    insight.paybackYears && { label: 'Payback period', value: `${insight.paybackYears} years` },
-  ].filter(Boolean) as { label: string; value: string }[]
-
-  if (!items.length) return null
-
-  return (
-    <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Google Solar API Data</p>
-      <div className="grid grid-cols-2 gap-3">
-        {items.map(({ label, value }) => (
-          <div key={label} className="bg-gray-50 rounded-xl px-3 py-2.5">
-            <p className="text-xs text-gray-400">{label}</p>
-            <p className="text-sm font-semibold text-gray-800">{value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
