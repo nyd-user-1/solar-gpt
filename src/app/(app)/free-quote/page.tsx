@@ -419,21 +419,26 @@ export default function FreeQuotePage() {
     }, 300)
   }, [])
 
-  const selectAddress = useCallback(async (s: PlaceSuggestion) => {
+  const selectAddress = useCallback((s: PlaceSuggestion) => {
     setFormData(prev => ({ ...prev, address: s.description, placeId: s.place_id }))
     setSuggestions([])
-    try {
-      const geoRes = await fetch(`/api/places/geocode?place_id=${s.place_id}`)
-      const geo = await geoRes.json()
-      if (geo.lat && geo.lng) {
-        setFormData(prev => ({ ...prev, lat: geo.lat, lng: geo.lng }))
-        setSolarLoading(true)
-        const solarRes = await fetch(`/api/solar?lat=${geo.lat}&lng=${geo.lng}`)
-        const solarData = await solarRes.json()
-        if (!solarData.error) setSolarInsight(solarData as SolarInsight)
-      }
-    } catch { /* non-blocking */ } finally { setSolarLoading(false) }
-  }, [])
+    // Advance immediately — Solar API runs in background
+    goNext()
+    ;(async () => {
+      try {
+        const geoRes = await fetch(`/api/places/geocode?place_id=${s.place_id}`)
+        const geo = await geoRes.json()
+        if (geo.lat && geo.lng) {
+          setFormData(prev => ({ ...prev, lat: geo.lat, lng: geo.lng }))
+          setSolarLoading(true)
+          const solarRes = await fetch(`/api/solar?lat=${geo.lat}&lng=${geo.lng}`)
+          const solarData = await solarRes.json()
+          if (!solarData.error) setSolarInsight(solarData as SolarInsight)
+        }
+      } catch { /* non-blocking */ } finally { setSolarLoading(false) }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIdx])
 
   const estimate = calcEstimate(solarInsight, formData.monthlyBill)
 
