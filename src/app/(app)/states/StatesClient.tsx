@@ -192,16 +192,11 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
 
                 {/* Bottom — details */}
                 <div className="p-4">
-                  {/* Icon + name row */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
-                      <Sun className="h-3 w-3 text-[var(--muted)]" />
-                    </div>
-                    <p className="font-bold text-[var(--txt)] text-sm truncate">{state.state_name}</p>
-                  </div>
+                  {/* Name row — no icon */}
+                  <p className="font-bold text-[var(--txt)] text-lg truncate mb-2">{state.state_name}</p>
 
                   {/* Badge row */}
-                  <div className="flex items-center gap-1.5 mb-6">
+                  <div className="flex items-center gap-1.5 mb-5">
                     <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
                       {state.sunlight_grade}
                     </span>
@@ -210,14 +205,16 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
                     </span>
                   </div>
 
-                  {/* Metric label + CTA */}
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Untapped/yr</p>
-                    <span className="rounded-lg bg-[var(--txt)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--bg)]">
+                  {/* Value + CTA */}
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Untapped/yr</p>
+                    </div>
+                    <span className="rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">
                       Explore →
                     </span>
                   </div>
-                  <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
                 </div>
               </Link>
             ))}
