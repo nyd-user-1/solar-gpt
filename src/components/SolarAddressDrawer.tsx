@@ -108,7 +108,8 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
               const roofRows = [
                 insight.maxSunshineHoursPerYear != null && {
                   icon: Sun, label: 'Sunshine hours/year',
-                  value: insight.maxSunshineHoursPerYear.toLocaleString(),
+                  value: `${insight.maxSunshineHoursPerYear.toLocaleString()} hrs`,
+                  note: '1 hr = 1 kWh/kW',
                 },
                 insight.maxAreaSqFt != null && {
                   icon: Maximize2, label: 'Usable roof area',
@@ -122,7 +123,7 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
                   icon: Zap, label: 'Annual output (est.)',
                   value: `${((insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh! / 1000).toFixed(1)} MWh/yr`,
                 },
-              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string }[]
+              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; note?: string }[]
 
               const estimateRows = [
                 insight.recommendedKw != null && {
@@ -161,11 +162,14 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
                       Roof Analysis
                     </p>
                     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden divide-y divide-[var(--border)]">
-                      {roofRows.map(({ icon: Icon, label, value }) => (
+                      {roofRows.map(({ icon: Icon, label, value, note }) => (
                         <div key={label} className="flex items-center gap-3 px-4 py-3">
                           <Icon className="h-4 w-4 text-solar shrink-0" />
                           <span className="flex-1 text-sm text-[var(--muted)]">{label}</span>
-                          <span className="text-sm font-semibold text-[var(--txt)] tabular-nums">{value}</span>
+                          <div className="text-right">
+                            <span className="text-sm font-semibold text-[var(--txt)] tabular-nums">{value}</span>
+                            {note && <p className="text-[10px] text-[var(--muted2)] mt-0.5">{note}</p>}
+                          </div>
                         </div>
                       ))}
                     </div>
