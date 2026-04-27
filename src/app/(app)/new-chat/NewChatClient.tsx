@@ -331,7 +331,6 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-2 left-3">
                           <p className="text-sm font-bold text-white">{s.name}</p>
-                          <p className="text-[11px] text-white/70">{s.untapped}/yr</p>
                         </div>
                       </button>
                     ))}
