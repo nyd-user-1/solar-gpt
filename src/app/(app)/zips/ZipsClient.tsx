@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { Search, Hash } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 import type { ZipKpi } from '@/lib/queries'
 
@@ -60,14 +59,17 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
         sortDir={sortDir}
         onSort={handleSort}
+        getRowHref={(row) => {
+          const z = row as unknown as ZipKpi
+          return `/zips/${z.zip_code}`
+        }}
         renderRegion={(row) => {
           const z = row as unknown as ZipKpi
           return (
-            <Link href={`/zips/${z.zip_code}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-              <Hash className="h-4 w-4 text-solar shrink-0" />
+            <span className="flex items-center gap-2 min-w-0 hover:text-solar transition-colors">
               <span>{z.zip_code}</span>
-              <span className="text-xs text-[var(--muted)] ml-1">{z.state_name}</span>
-            </Link>
+              <span className="text-xs text-[var(--muted)] shrink-0">{z.state_name}</span>
+            </span>
           )
         }}
       />

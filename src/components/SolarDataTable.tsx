@@ -206,11 +206,11 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               key={row.id}
               onClick={href ? () => router.push(href) : undefined}
               className={cn(
-                'hover:bg-[var(--inp-bg)] transition-colors',
+                'group/row transition-colors hover:bg-[var(--inp-bg)]',
                 href && 'cursor-pointer',
               )}
             >
-              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 bg-inherit overflow-hidden">
+              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] overflow-hidden bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors">
                 {renderRegion(row)}
               </td>
               {extraCols?.map(col => (

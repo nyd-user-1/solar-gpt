@@ -112,14 +112,17 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          getRowHref={(row) => {
+            const c = row as unknown as CityKpi
+            return `/cities/${nameToSlug(c.region_name)}`
+          }}
           renderRegion={(row) => {
             const c = row as unknown as CityKpi
             return (
-              <Link href={`/cities/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                <Building2 className="h-4 w-4 text-solar shrink-0" />
-                <span>{c.region_name}</span>
-                <span className="text-xs text-[var(--muted)] ml-1">{c.state_name}</span>
-              </Link>
+              <span className="flex items-center gap-2 min-w-0 hover:text-solar transition-colors">
+                <span className="truncate">{c.region_name}</span>
+                <span className="text-xs text-[var(--muted)] shrink-0">{c.state_name}</span>
+              </span>
             )
           }}
         />

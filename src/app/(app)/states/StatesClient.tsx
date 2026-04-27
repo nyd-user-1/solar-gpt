@@ -229,13 +229,14 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          getRowHref={(row) => {
+            const s = row as unknown as StateKpi
+            return `/states/${nameToSlug(s.state_name)}`
+          }}
           renderRegion={(row) => {
             const s = row as unknown as StateKpi
             return (
-              <Link
-                href={`/states/${nameToSlug(s.state_name)}`}
-                className="inline-flex items-center gap-2 rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-[var(--inp-bg)] transition-colors"
-              >
+              <span className="inline-flex items-center gap-2 hover:text-solar transition-colors">
                 {s.flag_url ? (
                   <img
                     src={`${s.flag_url}?width=48`}
@@ -247,7 +248,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
                   <Map className="h-5 w-5 text-solar shrink-0" />
                 )}
                 {s.state_name}
-              </Link>
+              </span>
             )
           }}
         />
