@@ -127,7 +127,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
       )}
 
       {/* Input box */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] pl-2 pr-2 py-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-[28px] border border-[var(--border)] bg-[var(--surface)] pl-2 pr-2 py-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md">
         <button
           onClick={() => setPlusOpen(v => !v)}
           className={`order-1 sm:order-2 flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
