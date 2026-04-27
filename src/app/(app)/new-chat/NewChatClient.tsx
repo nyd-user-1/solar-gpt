@@ -237,11 +237,6 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
         )}
 
-        <SolarPlusMenu
-          stateChips={stateChips}
-          onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
-        />
-
         <textarea ref={textareaRef} rows={1} value={input}
           onChange={e => { setInput(e.target.value); autoResize() }}
           onKeyDown={e => {
@@ -252,13 +247,21 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
           style={{ minHeight: '40px' }} />
 
-        <div className="flex items-center gap-1.5 pt-1">
+        <div className="flex items-center pt-1">
+          {/* Left: + then MapPin */}
+          <SolarPlusMenu
+            stateChips={stateChips}
+            onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
+          />
           <button onClick={() => { setAddressMode(true) }}
-            className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
             title="Look up an address">
             <MapPin className="h-4 w-4" />
           </button>
 
+          <div className="flex-1" />
+
+          {/* Right: model selector + send */}
           <div className="relative shrink-0" ref={modelRef}>
             <button ref={modelBtnRef} type="button"
               onClick={() => {
@@ -273,7 +276,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
               {modelIcon(selectedModel.provider)}
             </button>
             {modelMenuOpen && (
-              <div className={`absolute left-0 w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden py-1 z-20 ${modelMenuAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+              <div className={`absolute right-0 w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden py-1 z-20 ${modelMenuAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                 {MODEL_OPTIONS.map(m => (
                   <button key={m.id} onClick={() => { setSelectedModelId(m.id); setModelMenuOpen(false) }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--inp-bg)] transition-colors">
@@ -291,7 +294,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
 
           <button type="button" onClick={() => submit(input)} disabled={!input.trim() || loading || streaming}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
+            className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
             <ArrowUp className="h-4 w-4" />
           </button>
         </div>
