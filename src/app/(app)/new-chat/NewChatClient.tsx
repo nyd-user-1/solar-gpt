@@ -337,7 +337,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                   <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4">
                     {stateChips.map(s => (
                       <Link key={s.slug} href={`/states/${s.slug}`}
-                        className="group shrink-0 w-[181px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity snap-start">
+                        className="group shrink-0 w-[184px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity snap-start">
                         {s.flag_url
                           ? <img src={`${s.flag_url}?width=400`} alt={s.name} className="absolute inset-0 w-full h-full object-cover" />
                           : <div className="absolute inset-0 bg-solar/10 flex items-center justify-center"><Map className="h-8 w-8 text-solar" /></div>}
