@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server'
 import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
+import type { SolarInsight } from '@/lib/solar-types'
 
 const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY })
 
-const SYSTEM_PROMPT = `You are SolarGPT, an AI solar market analyst built on the most comprehensive US rooftop solar dataset available.
+const BASE_SYSTEM_PROMPT = `You are SolarGPT, an AI solar market analyst built on the most comprehensive US rooftop solar dataset available.
 
 Your database covers:
 - All 50 US states with state-level solar opportunity KPIs
@@ -29,12 +30,43 @@ Speak like a sharp solar market analyst. Be concise. Lead with the numbers that 
 
 Data sources: Google Sunroof Project (roof-level analysis) · NREL Cambium 2022 (long-run marginal costs & emissions factors)`
 
+function buildSystemPrompt(address?: string, solarInsight?: SolarInsight | null): string {
+  if (!address && !solarInsight) return BASE_SYSTEM_PROMPT
+
+  const lines: string[] = [BASE_SYSTEM_PROMPT, '']
+
+  if (address) {
+    lines.push(`The user is asking about a specific property: ${address}`)
+  }
+
+  if (solarInsight) {
+    lines.push('Google Solar API data for this property:')
+    if (solarInsight.maxSunshineHoursPerYear != null)
+      lines.push(`- Usable sunlight: ${solarInsight.maxSunshineHoursPerYear.toLocaleString()} hours/year`)
+    if (solarInsight.maxAreaSqFt != null)
+      lines.push(`- Available roof area: ${solarInsight.maxAreaSqFt.toLocaleString()} sq ft`)
+    if (solarInsight.recommendedKw != null)
+      lines.push(`- Recommended system size: ${solarInsight.recommendedKw} kW`)
+    if (solarInsight.maxPanelsCount != null)
+      lines.push(`- Maximum panels: ${solarInsight.maxPanelsCount}`)
+    if (solarInsight.savings20yr != null)
+      lines.push(`- Estimated 20-year net savings: $${solarInsight.savings20yr.toLocaleString()}`)
+    if (solarInsight.paybackYears != null)
+      lines.push(`- Estimated payback period: ${solarInsight.paybackYears} years`)
+    if (solarInsight.imageryQuality)
+      lines.push(`- Imagery quality: ${solarInsight.imageryQuality}`)
+    lines.push('Use this data to give a personalized, specific analysis of the property\'s solar potential.')
+  }
+
+  return lines.join('\n')
+}
+
 export async function POST(req: NextRequest) {
-  const { messages } = await req.json()
+  const { messages, address, solarInsight } = await req.json()
 
   const result = streamText({
     model: openai('gpt-4o-mini'),
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(address, solarInsight),
     messages,
   })
 
