@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { ArrowLeft, Bell, CheckCircle, X, ArrowUp, Sun, MapPin } from 'lucide-react'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import type { SolarInsight } from '@/lib/solar-types'
@@ -470,9 +471,9 @@ export default function FreeQuotePage() {
 
   if (step === 'result') {
     const appliedIncentives = [
-      { name: 'Federal Solar Tax Credit (ITC)', savings: '30% off' },
-      { name: 'Net metering credit', savings: 'Ongoing savings' },
-      { name: 'State solar incentive', savings: 'Varies by state' },
+      { name: 'Federal Solar Tax Credit (ITC)', savings: '30% off', anchor: 'federal-itc' },
+      { name: 'Net metering credit', savings: 'Ongoing savings', anchor: 'net-metering' },
+      { name: 'State solar incentive', savings: 'Varies by state', anchor: 'state-solar-incentive' },
     ]
     const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     const basedOnItems = [
@@ -531,16 +532,17 @@ export default function FreeQuotePage() {
                 {/* Applied incentives */}
                 <div className="mt-5 space-y-1">
                   {appliedIncentives.map(d => (
-                    <div
+                    <Link
                       key={d.name}
+                      href={`/glossary#${d.anchor}`}
                       className="group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                        <span className="text-gray-800">{d.name}</span>
+                        <span className="text-gray-800 group-hover:underline underline-offset-2">{d.name}</span>
                       </div>
                       <span className="font-medium text-green-600">{d.savings}</span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
 
