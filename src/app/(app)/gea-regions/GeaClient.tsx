@@ -7,6 +7,8 @@ import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
 
+const displayGea = (s: string) => s.replace(/_/g, ' ')
+
 type SortCol = 'name' | 'value' | 'counties' | 'adoption'
 
 export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
@@ -85,7 +87,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                   <Zap className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[var(--txt)] truncate group-hover:text-solar transition-colors">{gea.cambium_gea}</p>
+                  <p className="font-bold text-[var(--txt)] truncate group-hover:text-solar transition-colors">{displayGea(gea.cambium_gea)}</p>
                   <p className="text-xs text-[var(--muted)] mt-0.5">{gea.county_count} counties · Grade {gea.sunlight_grade}</p>
                 </div>
               </div>
@@ -149,7 +151,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                   <td className="px-4 py-3 font-medium text-[var(--txt)]">
                     <Link href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
                       <Zap className="h-4 w-4 text-solar shrink-0" />
-                      {gea.cambium_gea}
+                      {displayGea(gea.cambium_gea)}
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(gea.untapped_annual_value_usd)}</td>

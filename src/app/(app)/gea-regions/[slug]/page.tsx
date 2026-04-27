@@ -19,10 +19,12 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   const heatmapPoints = await getHeatmapPoints(kpi.lat_min, kpi.lat_max, kpi.lng_min, kpi.lng_max)
 
+  const displayGea = (s: string) => s.replace(/_/g, ' ')
+
   const sorted = [...allGeas].sort()
   const idx = sorted.indexOf(gea)
-  const prev = idx > 0 ? { label: sorted[idx - 1], href: `/gea-regions/${geaToSlug(sorted[idx - 1])}` } : null
-  const next = idx < sorted.length - 1 ? { label: sorted[idx + 1], href: `/gea-regions/${geaToSlug(sorted[idx + 1])}` } : null
+  const prev = idx > 0 ? { label: displayGea(sorted[idx - 1]), href: `/gea-regions/${geaToSlug(sorted[idx - 1])}` } : null
+  const next = idx < sorted.length - 1 ? { label: displayGea(sorted[idx + 1]), href: `/gea-regions/${geaToSlug(sorted[idx + 1])}` } : null
 
   const infoRows = [
     { label: 'Untapped Value / yr', value: fmtUsd(kpi.untapped_annual_value_usd), highlight: true },
@@ -46,14 +48,14 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   return (
     <GeoDetailPage
-      title={gea}
+      title={displayGea(gea)}
       breadcrumbs={[{ label: 'GEA Regions', href: '/gea-regions' }]}
       prev={prev}
       next={next}
       listHref="/gea-regions"
       listLabel="All GEA Regions"
       infoRows={infoRows}
-      carouselTitle={`Counties in ${gea}`}
+      carouselTitle={`Counties in ${displayGea(gea)}`}
       carouselItems={carouselItems}
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"

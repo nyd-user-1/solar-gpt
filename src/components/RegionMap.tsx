@@ -34,7 +34,7 @@ function HeatmapToggle({ visible, onToggle }: { visible: boolean; onToggle: () =
   return (
     <button
       onClick={onToggle}
-      className={`absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-md transition-colors ${
+      className={`absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-md transition-colors ${
         visible
           ? 'bg-orange-500 text-white hover:bg-orange-600'
           : 'bg-white text-gray-700 hover:bg-gray-100'
