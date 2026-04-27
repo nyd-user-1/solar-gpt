@@ -175,7 +175,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
         {isEmpty ? (
           /* Empty state — QuoteTorch layout */
           <div className="flex flex-col items-center justify-center min-h-full px-4 py-8">
-            <div className="w-full max-w-2xl flex flex-col gap-6">
+            <div className="w-full max-w-[773px] flex flex-col gap-6">
               {/* Logo */}
               <div className="flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
@@ -218,7 +218,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
           </div>
         ) : (
           /* Active chat */
-          <div className="flex flex-col gap-4 px-4 py-6 max-w-2xl mx-auto w-full">
+          <div className="flex flex-col gap-4 px-4 py-6 max-w-[773px] mx-auto w-full">
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
                 {msg.role === 'assistant' && (
@@ -263,7 +263,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
       {/* Bottom input (active state only) */}
       {!isEmpty && (
         <div className="shrink-0 px-4 pb-4 pt-2">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-[773px]">
             {inputBox}
           </div>
         </div>
