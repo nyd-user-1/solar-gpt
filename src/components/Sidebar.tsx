@@ -29,7 +29,9 @@ const NAV_ITEMS = [
   { to: '/gea-regions',  icon: Zap,              label: 'GEA Regions' },
 ]
 
-function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+type MeData = { name?: string; email?: string; isAdmin?: boolean } | null
+
+function ProfileDrawer({ open, onClose, me }: { open: boolean; onClose: () => void; me: MeData }) {
   const { theme, toggle } = useTheme()
 
   if (!open) return null
@@ -45,9 +47,11 @@ function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           </button>
         </div>
         <div className="flex flex-col items-center py-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-solar text-white text-2xl font-bold">SG</div>
-          <div className="mt-3 text-xl font-semibold text-[var(--txt)]">SolarGPT User</div>
-          <div className="text-sm text-[var(--muted)]">Consumer</div>
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-solar text-white text-2xl font-bold">
+            {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
+          </div>
+          <div className="mt-3 text-xl font-semibold text-[var(--txt)]">{me?.name ?? 'SolarGPT User'}</div>
+          <div className="text-sm text-[var(--muted)]">{me?.email ?? 'Consumer'}</div>
           <button className="mt-3 rounded-full border border-[var(--border)] px-5 py-1.5 text-sm font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">Edit profile</button>
         </div>
         <div className="px-5">
@@ -102,12 +106,12 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { theme, toggle } = useTheme()
   const [profileOpen, setProfileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [me, setMe] = useState<{ name?: string; email?: string; isAdmin?: boolean } | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/session')
+    fetch('/api/me')
       .then(r => r.json())
-      .then((s: { user?: { email?: string } }) => { if (s?.user?.email) setUserEmail(s.user.email) })
+      .then((d: { user?: { name?: string; email?: string; isAdmin?: boolean } }) => { if (d?.user) setMe(d.user) })
       .catch(() => {})
   }, [])
 
@@ -125,7 +129,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           onClick={() => setProfileOpen(true)}
           className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold mr-1"
         >
-          SG
+          {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
         </button>
         {/* Sun icon — closes sidebar */}
         <button
@@ -203,11 +207,11 @@ export function Sidebar({ onClose }: SidebarProps) {
             )}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">
-              SG
+              {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-[var(--txt)] truncate">SolarGPT User</div>
-              <div className="text-xs text-[var(--muted)]">Consumer</div>
+              <div className="text-sm font-medium text-[var(--txt)] truncate">{me?.name ?? 'SolarGPT User'}</div>
+              <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
             </div>
           </button>
 
@@ -216,8 +220,8 @@ export function Sidebar({ onClose }: SidebarProps) {
               <div className="flex items-center gap-3 px-4 py-3 bg-[var(--inp-bg)] rounded-t-xl mx-0.5 mt-0.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">SG</div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-[var(--txt)]">SolarGPT User</div>
-                  <div className="text-xs text-[var(--muted)]">Consumer</div>
+                  <div className="text-sm font-semibold text-[var(--txt)]">{me?.name ?? 'SolarGPT User'}</div>
+                  <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
                 </div>
               </div>
               <div className="my-1 border-t border-[var(--border)]" />
@@ -231,7 +235,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 <Settings className="h-4 w-4 flex-shrink-0" />
                 Settings
               </Link>
-              {userEmail === ADMIN_EMAIL && (
+              {me?.isAdmin && (
                 <Link href="/admin" onClick={() => setAccountOpen(false)}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-solar font-medium hover:bg-[var(--inp-bg)] transition-colors">
                   <Shield className="h-4 w-4 flex-shrink-0" />
@@ -265,7 +269,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         </div>
       </div>
 
-      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} me={me} />
     </aside>
   )
 }

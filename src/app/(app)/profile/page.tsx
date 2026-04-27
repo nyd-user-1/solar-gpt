@@ -3,21 +3,21 @@
 import { useEffect, useState } from 'react'
 import { Sun, Mail, Calendar, Zap } from 'lucide-react'
 
-interface Session {
-  user?: { name?: string; email?: string; image?: string }
+interface Me {
+  name?: string; email?: string; image?: string; isAdmin?: boolean; createdAt?: string
 }
 
 export default function ProfilePage() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [me, setMe] = useState<Me | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(setSession).catch(() => {})
+    fetch('/api/me').then(r => r.json()).then((d: { user: Me }) => setMe(d.user)).catch(() => {})
   }, [])
 
-  const user = session?.user
+  const user = me
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'SG'
+    : '?'
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -30,7 +30,7 @@ export default function ProfilePage() {
             {initials}
           </div>
           <div className="text-center">
-            <p className="text-xl font-semibold text-[var(--txt)]">{user?.name ?? 'SolarGPT User'}</p>
+            <p className="text-xl font-semibold text-[var(--txt)]">{user?.name ?? '—'}</p>
             <p className="text-sm text-[var(--muted)]">{user?.email ?? '—'}</p>
           </div>
           <span className="rounded-full bg-[var(--inp-bg)] px-4 py-1 text-xs font-medium text-[var(--muted)]">
@@ -61,14 +61,18 @@ export default function ProfilePage() {
                 <Calendar className="h-4 w-4 text-[var(--muted)] shrink-0" />
                 <div>
                   <p className="text-xs text-[var(--muted)]">Member since</p>
-                  <p className="text-sm font-medium text-[var(--txt)]">2026</p>
+                  <p className="text-sm font-medium text-[var(--txt)]">
+                    {user?.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                      : '2026'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Zap className="h-4 w-4 text-[var(--muted)] shrink-0" />
                 <div>
                   <p className="text-xs text-[var(--muted)]">Role</p>
-                  <p className="text-sm font-medium text-[var(--txt)]">Consumer</p>
+                  <p className="text-sm font-medium text-[var(--txt)]">{user?.isAdmin ? 'Admin' : 'Consumer'}</p>
                 </div>
               </div>
             </div>

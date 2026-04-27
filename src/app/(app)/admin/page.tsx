@@ -6,10 +6,10 @@ import { Shield, Save, RotateCcw } from 'lucide-react'
 const ADMIN_EMAIL = 'brendan@nysgpt.com'
 const DEFAULT_BG = '#fff3c1'
 
-interface Session { user?: { name?: string; email?: string } }
+interface Me { name?: string; email?: string; isAdmin?: boolean }
 
 export default function AdminPage() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
   const [bgColor, setBgColor] = useState(DEFAULT_BG)
   const [saving, setSaving] = useState(false)
@@ -17,10 +17,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/session').then(r => r.json()),
+      fetch('/api/me').then(r => r.json()),
       fetch('/api/admin/settings').then(r => r.json()),
-    ]).then(([sess, settings]) => {
-      setSession(sess)
+    ]).then(([meData, settings]) => {
+      setMe(meData.user)
       if (settings.bg_color) setBgColor(settings.bg_color)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -57,7 +57,7 @@ export default function AdminPage() {
     )
   }
 
-  if (session?.user?.email !== ADMIN_EMAIL) {
+  if (!me?.isAdmin) {
     return (
       <div className="flex flex-1 items-center justify-center flex-col gap-3 text-center px-4">
         <Shield className="h-10 w-10 text-[var(--muted)]" />
@@ -74,7 +74,7 @@ export default function AdminPage() {
           <Shield className="h-6 w-6 text-solar" />
           <h1 className="text-2xl font-bold text-[var(--txt)]">Admin Panel</h1>
           <span className="rounded-full bg-solar/10 px-3 py-0.5 text-xs font-semibold text-solar">
-            {session.user?.email}
+            {me.email}
           </span>
         </div>
 

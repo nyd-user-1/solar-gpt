@@ -5,17 +5,15 @@ import { Moon, Sun, Bell, Shield, LogOut } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { signOut } from 'next-auth/react'
 
-interface Session {
-  user?: { name?: string; email?: string }
-}
+interface Me { name?: string; email?: string }
 
 export default function SettingsPage() {
   const { theme, toggle } = useTheme()
-  const [session, setSession] = useState<Session | null>(null)
+  const [me, setMe] = useState<Me | null>(null)
   const [notifications, setNotifications] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(setSession).catch(() => {})
+    fetch('/api/me').then(r => r.json()).then((d: { user: Me }) => setMe(d.user)).catch(() => {})
   }, [])
 
   return (
@@ -75,7 +73,7 @@ export default function SettingsPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] px-5 pt-4 pb-2">Account</p>
             <div className="px-5 py-3 border-b border-[var(--border)]">
               <p className="text-xs text-[var(--muted)]">Signed in as</p>
-              <p className="text-sm font-medium text-[var(--txt)]">{session?.user?.email ?? '—'}</p>
+              <p className="text-sm font-medium text-[var(--txt)]">{me?.email ?? '—'}</p>
             </div>
             <button
               className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-[var(--inp-bg)] transition-colors"
