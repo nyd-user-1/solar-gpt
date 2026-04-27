@@ -42,6 +42,8 @@ export type CountyKpi = {
   sunlight_grade: string
   sunlight_stars: number
   seal_url: string | null
+  number_of_panels_total?: number | null
+  number_of_panels_median?: number | null
 }
 
 export type StateKpi = {
@@ -76,6 +78,10 @@ export type StateKpi = {
   homes_powered_equivalent: number
   sunlight_grade: string
   sunlight_stars: number
+  percent_covered?: number | null
+  percent_qualified?: number | null
+  number_of_panels_total?: number | null
+  number_of_panels_median?: number | null
 }
 
 export type CityKpi = {
@@ -108,6 +114,10 @@ export type CityKpi = {
   homes_powered_equivalent: number
   sunlight_grade: string
   sunlight_stars: number
+  percent_covered?: number | null
+  percent_qualified?: number | null
+  number_of_panels_total?: number | null
+  number_of_panels_median?: number | null
 }
 
 export type ZipKpi = {
@@ -137,6 +147,10 @@ export type ZipKpi = {
   median_payback_years: number | null
   sunlight_grade: string
   sunlight_stars: number
+  percent_covered?: number | null
+  percent_qualified?: number | null
+  number_of_panels_total?: number | null
+  number_of_panels_median?: number | null
 }
 
 export type GeaKpi = {
@@ -230,11 +244,17 @@ export async function getCountiesByState(stateName: string): Promise<CountyKpi[]
 export async function getAllCounties(): Promise<CountyKpi[]> {
   const rows = await sql`
     SELECT v.id, v.region_name, v.state_name, v.cambium_gea,
-           v.untapped_annual_value_usd, v.adoption_rate_pct, v.sunlight_grade, v.sunlight_stars,
+           v.count_qualified, v.existing_installs_count,
+           v.percent_covered, v.percent_qualified,
+           v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
+           v.kw_total, v.kw_median,
+           v.number_of_panels_total, v.number_of_panels_median,
+           v.untapped_annual_value_usd, v.adoption_rate_pct,
+           v.sunlight_grade, v.sunlight_stars,
            c.seal_url
     FROM solargpt.v_county_kpis v
     LEFT JOIN solargpt.raw_sunroof_county c USING (id)
-    ORDER BY v.untapped_annual_value_usd DESC
+    ORDER BY v.count_qualified DESC NULLS LAST
   `
   return rows as CountyKpi[]
 }
@@ -296,10 +316,14 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
 // ── City ──────────────────────────────────────────────────────────────────────
 export async function getAllCities(): Promise<CityKpi[]> {
   const rows = await sql`
-    SELECT id, region_name, state_name, count_qualified,
-           untapped_annual_value_usd, adoption_rate_pct, sunlight_grade, sunlight_stars
+    SELECT id, region_name, state_name, count_qualified, existing_installs_count,
+           yearly_sunlight_kwh_total, carbon_offset_metric_tons,
+           kw_total, kw_median,
+           number_of_panels_total, number_of_panels_median,
+           untapped_annual_value_usd, adoption_rate_pct,
+           sunlight_grade, sunlight_stars
     FROM solargpt.v_city_kpis
-    ORDER BY untapped_annual_value_usd DESC
+    ORDER BY count_qualified DESC NULLS LAST
   `
   return rows as CityKpi[]
 }
@@ -331,7 +355,17 @@ export async function getSiblingCities(stateName: string, excludeId: number, lim
 
 // ── ZIP ───────────────────────────────────────────────────────────────────────
 export async function getAllZips(): Promise<ZipKpi[]> {
-  const rows = await sql`SELECT id, zip_code, state_name FROM solargpt.v_zip_kpis ORDER BY zip_code`
+  const rows = await sql`
+    SELECT id, zip_code, state_name, count_qualified, existing_installs_count,
+           yearly_sunlight_kwh_total, carbon_offset_metric_tons,
+           kw_total, kw_median, percent_covered, percent_qualified,
+           number_of_panels_total, number_of_panels_median,
+           untapped_annual_value_usd, adoption_rate_pct,
+           sunlight_grade, sunlight_stars
+    FROM solargpt.v_zip_kpis
+    ORDER BY count_qualified DESC NULLS LAST
+    LIMIT 2000
+  `
   return rows as ZipKpi[]
 }
 

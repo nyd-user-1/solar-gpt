@@ -6,8 +6,9 @@ import { Search, ChevronDown, ChevronUp, List, LayoutGrid, Plus, Check, Sun, Map
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { StateKpi } from '@/lib/queries'
+import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 
-type SortCol = 'STATE' | 'UNTAPPED/YR' | 'LIFETIME' | 'GRADE' | 'ADOPTION'
+type SortCol = SortableKey | 'region'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
 
@@ -90,7 +91,7 @@ function SolarStars({ count }: { count: number }) {
 export default function StatesClient({ states }: { states: StateKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
-  const [sortCol, setSortCol] = useState<SortCol>('UNTAPPED/YR')
+  const [sortCol, setSortCol] = useState<SortCol>('count_qualified')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
     if (typeof window === 'undefined') return 'list'
@@ -103,11 +104,8 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
     if (grades.length > 0) list = list.filter(s => grades.includes(s.sunlight_grade))
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'STATE')      { av = a.state_name; bv = b.state_name }
-      if (sortCol === 'UNTAPPED/YR') { av = a.untapped_annual_value_usd; bv = b.untapped_annual_value_usd }
-      if (sortCol === 'LIFETIME')   { av = a.untapped_lifetime_value_usd; bv = b.untapped_lifetime_value_usd }
-      if (sortCol === 'GRADE')      { av = a.sunlight_grade; bv = b.sunlight_grade }
-      if (sortCol === 'ADOPTION')   { av = a.adoption_rate_pct ?? 0; bv = b.adoption_rate_pct ?? 0 }
+      if (sortCol === 'region') { av = a.state_name; bv = b.state_name }
+      else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
       return 0
@@ -227,85 +225,35 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         </div>
       )}
 
-      {/* List / table view — carriers table pattern */}
+      {/* List / table view — 11-column SolarDataTable */}
       {viewMode === 'list' && (
-        <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
-          <table className="w-full min-w-[700px] text-left text-sm">
-            <thead>
-              <tr>
-                {(['STATE', 'UNTAPPED/YR', 'LIFETIME', 'GRADE', 'ADOPTION'] as SortCol[]).map(h => {
-                  const active = sortCol === h
-                  const hidden = ['LIFETIME', 'GRADE', 'ADOPTION'].includes(h)
-                  return (
-                    <th
-                      key={h}
-                      className={cn(
-                        'px-4 py-3 sticky top-0 z-10 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)]',
-                        hidden && 'hidden sm:table-cell'
-                      )}
-                    >
-                      <button
-                        onClick={() => toggleSort(h)}
-                        className={cn(
-                          'group inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--txt)]',
-                          active ? 'text-[var(--txt)]' : 'text-[var(--muted)]'
-                        )}
-                      >
-                        {h}
-                        {active
-                          ? sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
-                          : <ChevronUp className="h-3 w-3 opacity-0 group-hover:opacity-40" />
-                        }
-                      </button>
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)] align-middle">
-              {filtered.map(state => (
-                <tr
-                  key={state.id}
-                  className="cursor-pointer hover:bg-[var(--inp-bg)] transition-colors"
-                >
-                  <td className="px-4 py-3 font-medium text-[var(--txt)]">
-                    <Link
-                      href={`/states/${nameToSlug(state.state_name)}`}
-                      className="inline-flex items-center gap-2 rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-[var(--inp-bg)] transition-colors"
-                    >
-                      {state.flag_url ? (
-                        <img
-                          src={`${state.flag_url}?width=48`}
-                          alt=""
-                          className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <Map className="h-5 w-5 text-solar shrink-0" />
-                      )}
-                      {state.state_name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-solar">
-                    {fmtUsd(state.untapped_annual_value_usd)}/yr
-                  </td>
-                  <td className="hidden sm:table-cell px-4 py-3 font-medium text-green-600 dark:text-green-400">
-                    {fmtUsd(state.untapped_lifetime_value_usd)}
-                  </td>
-                  <td className="hidden sm:table-cell px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <SolarStars count={state.sunlight_stars} />
-                      <span className="font-bold text-solar text-xs">{state.sunlight_grade}</span>
-                    </div>
-                  </td>
-                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)]">
-                    {state.adoption_rate_pct?.toFixed(1) ?? '—'}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SolarDataTable
+          rows={filtered as SolarRow[]}
+          sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+          sortDir={sortDir}
+          onSort={toggleSort}
+          renderRegion={(row) => {
+            const s = row as unknown as StateKpi
+            return (
+              <Link
+                href={`/states/${nameToSlug(s.state_name)}`}
+                className="inline-flex items-center gap-2 rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                {s.flag_url ? (
+                  <img
+                    src={`${s.flag_url}?width=48`}
+                    alt=""
+                    className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <Map className="h-5 w-5 text-solar shrink-0" />
+                )}
+                {s.state_name}
+              </Link>
+            )
+          }}
+        />
       )}
 
     </div>

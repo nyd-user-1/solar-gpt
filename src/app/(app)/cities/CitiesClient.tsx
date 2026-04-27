@@ -2,16 +2,17 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Building2, List, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Building2, List, LayoutGrid } from 'lucide-react'
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
+import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 
-type SortCol = 'name' | 'value' | 'buildings' | 'grade'
+type SortCol = SortableKey | 'region'
 
 export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
-  const [sortCol, setSortCol] = useState<SortCol>('value')
+  const [sortCol, setSortCol] = useState<SortCol>('count_qualified')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
     if (typeof window === 'undefined') return 'list'
@@ -26,10 +27,8 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
     )
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'name')      { av = a.region_name; bv = b.region_name }
-      if (sortCol === 'value')     { av = a.untapped_annual_value_usd; bv = b.untapped_annual_value_usd }
-      if (sortCol === 'buildings') { av = a.count_qualified; bv = b.count_qualified }
-      if (sortCol === 'grade')     { av = a.sunlight_grade; bv = b.sunlight_grade }
+      if (sortCol === 'region') { av = a.region_name; bv = b.region_name }
+      else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
       return 0
@@ -108,54 +107,22 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
       )}
 
       {viewMode === 'list' && (
-        <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
-          <table className="w-full min-w-[600px] text-left text-sm">
-            <thead>
-              <tr>
-                {([
-                  { key: 'name' as SortCol,      label: 'City' },
-                  { key: 'value' as SortCol,     label: 'Untapped/yr' },
-                  { key: 'buildings' as SortCol, label: 'Buildings' },
-                  { key: 'grade' as SortCol,     label: 'Grade' },
-                ]).map(col => {
-                  const active = sortCol === col.key
-                  return (
-                    <th key={col.key} className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)]">
-                      <button
-                        onClick={() => toggleSort(col.key)}
-                        className={cn('inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide',
-                          active ? 'text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]'
-                        )}
-                      >
-                        {col.label}
-                        {active ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null}
-                      </button>
-                    </th>
-                  )
-                })}
-                <th className="hidden sm:table-cell px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)]">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">State</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {filtered.map(city => (
-                <tr key={city.id} className="hover:bg-[var(--inp-bg)] transition-colors">
-                  <td className="px-4 py-3 font-medium text-[var(--txt)]">
-                    <Link href={`/cities/${nameToSlug(city.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                      <Building2 className="h-4 w-4 text-solar shrink-0" />
-                      {city.region_name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--txt)] font-medium">{fmtUsd(city.untapped_annual_value_usd)}</td>
-                  <td className="px-4 py-3 text-[var(--muted)]">{fmtNum(city.count_qualified)}</td>
-                  <td className="px-4 py-3 font-bold text-solar">{city.sunlight_grade}</td>
-                  <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)] text-xs">{city.state_name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SolarDataTable
+          rows={filtered as SolarRow[]}
+          sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+          sortDir={sortDir}
+          onSort={toggleSort}
+          renderRegion={(row) => {
+            const c = row as unknown as CityKpi
+            return (
+              <Link href={`/cities/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
+                <Building2 className="h-4 w-4 text-solar shrink-0" />
+                <span>{c.region_name}</span>
+                <span className="text-xs text-[var(--muted)] ml-1">{c.state_name}</span>
+              </Link>
+            )
+          }}
+        />
       )}
     </div>
   )
