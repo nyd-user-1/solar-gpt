@@ -1,4 +1,4 @@
-import { sql, sqlRaw } from './db'
+import { sql } from './db'
 
 export type CountyKpi = {
   id: number
@@ -490,26 +490,9 @@ export type DashboardTableRow = {
   hasChildren: boolean
 }
 
-// Columns allowed for dynamic query injection
-const SAFE_METRICS = new Set([
-  'untapped_annual_value_usd',
-  'untapped_lifetime_value_usd',
-  'adoption_rate_pct',
-  'count_qualified',
-  'existing_installs_count',
-  'carbon_offset_metric_tons',
-  'cost_per_mwh',
-  'lrmer_co2_per_mwh',
-])
-
-function assertSafe(col: string): string {
-  if (!SAFE_METRICS.has(col)) throw new Error(`Column not in whitelist: ${col}`)
-  return col
-}
-
 function toRows(
   raw: unknown[],
-  opts: { hasChildren: boolean },
+  hasChildren: boolean,
 ): DashboardTableRow[] {
   return (raw as { name: string; value: unknown; share_pct: unknown }[]).map(r => ({
     id: r.name,
@@ -517,183 +500,263 @@ function toRows(
     value: Number(r.value ?? 0),
     changePct: null,
     sharePct: Math.min(Number(r.share_pct ?? 0), 100),
-    hasChildren: opts.hasChildren,
+    hasChildren,
   }))
 }
 
-export async function getDashboardStateRows(
-  metric: string,
-  agg: 'sum' | 'avg' = 'sum',
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const aggFn = agg === 'avg' ? 'AVG' : col  // for state-level rows, just use the column directly
-  void aggFn
-  const rows = await sqlRaw(`
-    SELECT
-      state_name AS name,
-      ${col} AS value,
-      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
-    FROM solargpt.v_state_kpis
-    WHERE ${col} IS NOT NULL
-    ORDER BY ${col} DESC
-  `)
-  return toRows(rows, { hasChildren: true })
+// ── State rows ──────────────────────────────────────────────────────────────
+
+export async function getDashboardStateRows(metric: string): Promise<DashboardTableRow[]> {
+  switch (metric) {
+    case 'untapped_annual_value_usd': {
+      const r = await sql`SELECT state_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'adoption_rate_pct': {
+      const r = await sql`SELECT state_name AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'count_qualified': {
+      const r = await sql`SELECT state_name AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE count_qualified IS NOT NULL ORDER BY count_qualified DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'existing_installs_count': {
+      const r = await sql`SELECT state_name AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE existing_installs_count IS NOT NULL ORDER BY existing_installs_count DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'carbon_offset_metric_tons': {
+      const r = await sql`SELECT state_name AS name, carbon_offset_metric_tons AS value, carbon_offset_metric_tons*100.0/NULLIF(SUM(carbon_offset_metric_tons)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE carbon_offset_metric_tons IS NOT NULL ORDER BY carbon_offset_metric_tons DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'untapped_lifetime_value_usd': {
+      const r = await sql`SELECT state_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
+      return toRows(r as unknown[], true)
+    }
+    default: return []
+  }
 }
 
-export async function getDashboardGeaRows(
-  metric: string,
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const rows = await sqlRaw(`
-    SELECT
-      cambium_gea AS name,
-      ${col} AS value,
-      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
-    FROM solargpt.v_gea_kpis
-    WHERE ${col} IS NOT NULL
-    ORDER BY ${col} DESC
-  `)
-  return toRows(rows, { hasChildren: true })
+// ── GEA rows ────────────────────────────────────────────────────────────────
+
+export async function getDashboardGeaRows(metric: string): Promise<DashboardTableRow[]> {
+  switch (metric) {
+    case 'untapped_annual_value_usd': {
+      const r = await sql`SELECT cambium_gea AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'adoption_rate_pct': {
+      const r = await sql`SELECT cambium_gea AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'count_qualified': {
+      const r = await sql`SELECT cambium_gea AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE count_qualified IS NOT NULL ORDER BY count_qualified DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'existing_installs_count': {
+      const r = await sql`SELECT cambium_gea AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE existing_installs_count IS NOT NULL ORDER BY existing_installs_count DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'untapped_lifetime_value_usd': {
+      const r = await sql`SELECT cambium_gea AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'cost_per_mwh': {
+      const r = await sql`SELECT cambium_gea AS name, cost_per_mwh AS value, cost_per_mwh*100.0/NULLIF(SUM(cost_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL ORDER BY cost_per_mwh DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'lrmer_co2_per_mwh': {
+      const r = await sql`SELECT cambium_gea AS name, lrmer_co2_per_mwh AS value, lrmer_co2_per_mwh*100.0/NULLIF(SUM(lrmer_co2_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL ORDER BY lrmer_co2_per_mwh DESC`
+      return toRows(r as unknown[], false)
+    }
+    default: return []
+  }
 }
 
-export async function getDashboardGradeRows(
-  metric: string,
-  agg: 'sum' | 'avg' = 'sum',
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const fn = agg === 'avg' ? 'AVG' : 'SUM'
-  const rows = await sqlRaw(`
-    SELECT
-      sunlight_grade AS name,
-      ${fn}(${col}) AS value,
-      ${fn}(${col}) * 100.0 / NULLIF(SUM(${fn}(${col})) OVER (), 0) AS share_pct
-    FROM solargpt.v_state_kpis
-    WHERE ${col} IS NOT NULL
-    GROUP BY sunlight_grade
-    ORDER BY value DESC
-  `)
-  return toRows(rows, { hasChildren: true })
+// ── Grade rows (grouped by grade from v_state_kpis) ─────────────────────────
+
+export async function getDashboardGradeRows(metric: string, agg: 'sum' | 'avg' = 'sum'): Promise<DashboardTableRow[]> {
+  switch (`${agg}:${metric}`) {
+    case 'sum:untapped_annual_value_usd': {
+      const r = await sql`SELECT sunlight_grade AS name, SUM(untapped_annual_value_usd) AS value, SUM(untapped_annual_value_usd)*100.0/NULLIF(SUM(SUM(untapped_annual_value_usd))OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_annual_value_usd IS NOT NULL GROUP BY sunlight_grade ORDER BY value DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'avg:adoption_rate_pct': {
+      const r = await sql`SELECT sunlight_grade AS name, AVG(adoption_rate_pct) AS value, AVG(adoption_rate_pct)*100.0/NULLIF(SUM(AVG(adoption_rate_pct))OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE adoption_rate_pct IS NOT NULL GROUP BY sunlight_grade ORDER BY value DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'sum:count_qualified': {
+      const r = await sql`SELECT sunlight_grade AS name, SUM(count_qualified) AS value, SUM(count_qualified)*100.0/NULLIF(SUM(SUM(count_qualified))OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE count_qualified IS NOT NULL GROUP BY sunlight_grade ORDER BY value DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'sum:carbon_offset_metric_tons': {
+      const r = await sql`SELECT sunlight_grade AS name, SUM(carbon_offset_metric_tons) AS value, SUM(carbon_offset_metric_tons)*100.0/NULLIF(SUM(SUM(carbon_offset_metric_tons))OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE carbon_offset_metric_tons IS NOT NULL GROUP BY sunlight_grade ORDER BY value DESC`
+      return toRows(r as unknown[], true)
+    }
+    case 'sum:untapped_lifetime_value_usd': {
+      const r = await sql`SELECT sunlight_grade AS name, SUM(untapped_lifetime_value_usd) AS value, SUM(untapped_lifetime_value_usd)*100.0/NULLIF(SUM(SUM(untapped_lifetime_value_usd))OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_lifetime_value_usd IS NOT NULL GROUP BY sunlight_grade ORDER BY value DESC`
+      return toRows(r as unknown[], true)
+    }
+    default: return []
+  }
 }
+
+// ── Top N rows ───────────────────────────────────────────────────────────────
 
 export async function getDashboardCountyRows(limit = 20): Promise<DashboardTableRow[]> {
-  const rows = await sql`
-    SELECT
-      (region_name || ', ' || state_name) AS name,
-      untapped_annual_value_usd AS value,
-      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
-    FROM solargpt.v_county_kpis
-    ORDER BY untapped_annual_value_usd DESC
-    LIMIT ${limit}
-  `
-  return toRows(rows as unknown[], { hasChildren: false })
+  const r = await sql`
+    SELECT (region_name||', '||state_name) AS name, untapped_annual_value_usd AS value,
+      untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct
+    FROM solargpt.v_county_kpis ORDER BY untapped_annual_value_usd DESC LIMIT ${limit}`
+  return toRows(r as unknown[], false)
 }
 
 export async function getDashboardCityRows(limit = 20): Promise<DashboardTableRow[]> {
-  const rows = await sql`
-    SELECT
-      (region_name || ', ' || state_name) AS name,
-      untapped_annual_value_usd AS value,
-      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
-    FROM solargpt.v_city_kpis
-    ORDER BY untapped_annual_value_usd DESC
-    LIMIT ${limit}
-  `
-  return toRows(rows as unknown[], { hasChildren: false })
+  const r = await sql`
+    SELECT (region_name||', '||state_name) AS name, untapped_annual_value_usd AS value,
+      untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct
+    FROM solargpt.v_city_kpis ORDER BY untapped_annual_value_usd DESC LIMIT ${limit}`
+  return toRows(r as unknown[], false)
 }
 
-export async function getDashboardCountyChildRows(
-  stateName: string,
-  metric: string,
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const rows = await sqlRaw(`
-    SELECT
-      region_name AS name,
-      ${col} AS value,
-      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
-    FROM solargpt.v_county_kpis
-    WHERE state_name = $1 AND ${col} IS NOT NULL
-    ORDER BY ${col} DESC
-    LIMIT 20
-  `, [stateName])
-  return toRows(rows, { hasChildren: false })
+// ── Drill-down child rows ────────────────────────────────────────────────────
+
+export async function getDashboardCountyChildRows(stateName: string, metric: string): Promise<DashboardTableRow[]> {
+  switch (metric) {
+    case 'untapped_annual_value_usd': {
+      const r = await sql`SELECT region_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    case 'adoption_rate_pct': {
+      const r = await sql`SELECT region_name AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    case 'count_qualified': {
+      const r = await sql`SELECT region_name AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND count_qualified IS NOT NULL ORDER BY count_qualified DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    case 'existing_installs_count': {
+      const r = await sql`SELECT region_name AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND existing_installs_count IS NOT NULL ORDER BY existing_installs_count DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    case 'carbon_offset_metric_tons': {
+      const r = await sql`SELECT region_name AS name, carbon_offset_metric_tons AS value, carbon_offset_metric_tons*100.0/NULLIF(SUM(carbon_offset_metric_tons)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND carbon_offset_metric_tons IS NOT NULL ORDER BY carbon_offset_metric_tons DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    case 'untapped_lifetime_value_usd': {
+      const r = await sql`SELECT region_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC LIMIT 20`
+      return toRows(r as unknown[], false)
+    }
+    default: return []
+  }
 }
 
-export async function getDashboardCityChildRows(
-  stateName: string,
-): Promise<DashboardTableRow[]> {
-  const rows = await sql`
-    SELECT
-      region_name AS name,
-      untapped_annual_value_usd AS value,
-      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
-    FROM solargpt.v_city_kpis
-    WHERE state_name = ${stateName}
-    ORDER BY untapped_annual_value_usd DESC
-    LIMIT 20
-  `
-  return toRows(rows as unknown[], { hasChildren: false })
+export async function getDashboardCityChildRows(stateName: string): Promise<DashboardTableRow[]> {
+  const r = await sql`SELECT region_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_city_kpis WHERE state_name=${stateName} ORDER BY untapped_annual_value_usd DESC LIMIT 20`
+  return toRows(r as unknown[], false)
 }
 
-export async function getDashboardStateInGeaRows(
-  gea: string,
-  metric: string,
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const rows = await sqlRaw(`
-    SELECT
-      state_name AS name,
-      SUM(${col}) AS value,
-      SUM(${col}) * 100.0 / NULLIF(SUM(SUM(${col})) OVER (), 0) AS share_pct
-    FROM solargpt.v_county_kpis
-    WHERE cambium_gea = $1 AND ${col} IS NOT NULL
-    GROUP BY state_name
-    ORDER BY value DESC
-  `, [gea])
-  return toRows(rows, { hasChildren: false })
+export async function getDashboardStateInGeaRows(gea: string, metric: string): Promise<DashboardTableRow[]> {
+  switch (metric) {
+    case 'untapped_annual_value_usd': {
+      const r = await sql`SELECT state_name AS name, SUM(untapped_annual_value_usd) AS value, SUM(untapped_annual_value_usd)*100.0/NULLIF(SUM(SUM(untapped_annual_value_usd))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND untapped_annual_value_usd IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'adoption_rate_pct': {
+      const r = await sql`SELECT state_name AS name, AVG(adoption_rate_pct) AS value, AVG(adoption_rate_pct)*100.0/NULLIF(SUM(AVG(adoption_rate_pct))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND adoption_rate_pct IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'count_qualified': {
+      const r = await sql`SELECT state_name AS name, SUM(count_qualified) AS value, SUM(count_qualified)*100.0/NULLIF(SUM(SUM(count_qualified))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND count_qualified IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'existing_installs_count': {
+      const r = await sql`SELECT state_name AS name, SUM(existing_installs_count) AS value, SUM(existing_installs_count)*100.0/NULLIF(SUM(SUM(existing_installs_count))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND existing_installs_count IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'untapped_lifetime_value_usd': {
+      const r = await sql`SELECT state_name AS name, SUM(untapped_lifetime_value_usd) AS value, SUM(untapped_lifetime_value_usd)*100.0/NULLIF(SUM(SUM(untapped_lifetime_value_usd))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND untapped_lifetime_value_usd IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    default: return []
+  }
 }
 
-export async function getDashboardStateInGradeRows(
-  grade: string,
-  metric: string,
-): Promise<DashboardTableRow[]> {
-  const col = assertSafe(metric)
-  const rows = await sqlRaw(`
-    SELECT
-      state_name AS name,
-      ${col} AS value,
-      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
-    FROM solargpt.v_state_kpis
-    WHERE sunlight_grade = $1 AND ${col} IS NOT NULL
-    ORDER BY ${col} DESC
-  `, [grade])
-  return toRows(rows, { hasChildren: false })
+export async function getDashboardStateInGradeRows(grade: string, metric: string): Promise<DashboardTableRow[]> {
+  switch (metric) {
+    case 'untapped_annual_value_usd': {
+      const r = await sql`SELECT state_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE sunlight_grade=${grade} AND untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'adoption_rate_pct': {
+      const r = await sql`SELECT state_name AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE sunlight_grade=${grade} AND adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'count_qualified': {
+      const r = await sql`SELECT state_name AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE sunlight_grade=${grade} AND count_qualified IS NOT NULL ORDER BY count_qualified DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'carbon_offset_metric_tons': {
+      const r = await sql`SELECT state_name AS name, carbon_offset_metric_tons AS value, carbon_offset_metric_tons*100.0/NULLIF(SUM(carbon_offset_metric_tons)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE sunlight_grade=${grade} AND carbon_offset_metric_tons IS NOT NULL ORDER BY carbon_offset_metric_tons DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'untapped_lifetime_value_usd': {
+      const r = await sql`SELECT state_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE sunlight_grade=${grade} AND untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
+      return toRows(r as unknown[], false)
+    }
+    default: return []
+  }
 }
+
+// ── Header totals ────────────────────────────────────────────────────────────
 
 export async function getDashboardHeaderTotal(slug: string): Promise<number> {
-  const totals: Record<string, string> = {
-    'untapped-value':      'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_state_kpis',
-    'adoption-rate':       'SELECT AVG(adoption_rate_pct) AS v FROM solargpt.v_state_kpis',
-    'sunlight-grade':      'SELECT COUNT(*) AS v FROM solargpt.v_state_kpis',
-    'existing-installs':   'SELECT SUM(existing_installs_count) AS v FROM solargpt.v_state_kpis',
-    'top-counties':        'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_county_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20',
-    'top-cities':          'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_city_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20',
-    'marginal-cost':       'SELECT AVG(cost_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL',
-    'emissions-intensity': 'SELECT AVG(lrmer_co2_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL',
-    'carbon-offset':       'SELECT SUM(carbon_offset_metric_tons) AS v FROM solargpt.v_state_kpis',
-    'qualified-buildings': 'SELECT SUM(count_qualified) AS v FROM solargpt.v_state_kpis',
-    'lifetime-value':      'SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis',
-  }
-  const q = totals[slug]
-  if (!q) return 0
   try {
-    // For top-counties/top-cities, wrap in subquery to get the sum of the top N
-    const wrapped = (slug === 'top-counties' || slug === 'top-cities')
-      ? `SELECT SUM(untapped_annual_value_usd) AS v FROM (${q.replace('SELECT SUM(untapped_annual_value_usd) AS v FROM', 'SELECT untapped_annual_value_usd FROM')}) t`
-      : q
-    const rows = await sqlRaw(wrapped)
-    return Number((rows[0] as { v: unknown }).v ?? 0)
-  } catch {
-    return 0
-  }
+    switch (slug) {
+      case 'untapped-value': {
+        const r = await sql`SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'adoption-rate': {
+        const r = await sql`SELECT AVG(adoption_rate_pct) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'sunlight-grade': {
+        const r = await sql`SELECT COUNT(*) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'existing-installs': {
+        const r = await sql`SELECT SUM(existing_installs_count) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'top-counties': {
+        const r = await sql`SELECT SUM(untapped_annual_value_usd) AS v FROM (SELECT untapped_annual_value_usd FROM solargpt.v_county_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20) t`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'top-cities': {
+        const r = await sql`SELECT SUM(untapped_annual_value_usd) AS v FROM (SELECT untapped_annual_value_usd FROM solargpt.v_city_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20) t`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'marginal-cost': {
+        const r = await sql`SELECT AVG(cost_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'emissions-intensity': {
+        const r = await sql`SELECT AVG(lrmer_co2_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'carbon-offset': {
+        const r = await sql`SELECT SUM(carbon_offset_metric_tons) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'qualified-buildings': {
+        const r = await sql`SELECT SUM(count_qualified) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'lifetime-value': {
+        const r = await sql`SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      default: return 0
+    }
+  } catch { return 0 }
 }

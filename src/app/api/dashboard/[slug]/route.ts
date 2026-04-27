@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 async function fetchMainRows(tab: DashboardTab): Promise<DashboardTableRow[]> {
   switch (tab.id) {
     case 'state':
-      return getDashboardStateRows(tab.metric, tab.agg)
+      return getDashboardStateRows(tab.metric)
     case 'gea':
       return getDashboardGeaRows(tab.metric)
     case 'grade':

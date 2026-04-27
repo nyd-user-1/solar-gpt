@@ -27,7 +27,7 @@ export default async function DashboardDetailPage({
     (async () => {
       try {
         switch (firstTab.id) {
-          case 'state':  return getDashboardStateRows(firstTab.metric, firstTab.agg)
+          case 'state':  return getDashboardStateRows(firstTab.metric)
           case 'gea':    return getDashboardGeaRows(firstTab.metric)
           case 'grade':  return getDashboardGradeRows(firstTab.metric, firstTab.agg)
           case 'county': return getDashboardCountyRows(20)
