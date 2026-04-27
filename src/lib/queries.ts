@@ -1,4 +1,4 @@
-import { sql } from './db'
+import { sql, sqlRaw } from './db'
 
 export type CountyKpi = {
   id: number
@@ -477,4 +477,223 @@ export async function getTopCounties(limit = 8): Promise<CountyKpi[]> {
     LIMIT ${limit}
   `
   return rows as CountyKpi[]
+}
+
+// ── Dashboard Detail ───────────────────────────────────────────────────────────
+
+export type DashboardTableRow = {
+  id: string
+  name: string
+  value: number
+  changePct: number | null
+  sharePct: number
+  hasChildren: boolean
+}
+
+// Columns allowed for dynamic query injection
+const SAFE_METRICS = new Set([
+  'untapped_annual_value_usd',
+  'untapped_lifetime_value_usd',
+  'adoption_rate_pct',
+  'count_qualified',
+  'existing_installs_count',
+  'carbon_offset_metric_tons',
+  'cost_per_mwh',
+  'lrmer_co2_per_mwh',
+])
+
+function assertSafe(col: string): string {
+  if (!SAFE_METRICS.has(col)) throw new Error(`Column not in whitelist: ${col}`)
+  return col
+}
+
+function toRows(
+  raw: unknown[],
+  opts: { hasChildren: boolean },
+): DashboardTableRow[] {
+  return (raw as { name: string; value: unknown; share_pct: unknown }[]).map(r => ({
+    id: r.name,
+    name: r.name,
+    value: Number(r.value ?? 0),
+    changePct: null,
+    sharePct: Math.min(Number(r.share_pct ?? 0), 100),
+    hasChildren: opts.hasChildren,
+  }))
+}
+
+export async function getDashboardStateRows(
+  metric: string,
+  agg: 'sum' | 'avg' = 'sum',
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const aggFn = agg === 'avg' ? 'AVG' : col  // for state-level rows, just use the column directly
+  void aggFn
+  const rows = await sqlRaw(`
+    SELECT
+      state_name AS name,
+      ${col} AS value,
+      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
+    FROM solargpt.v_state_kpis
+    WHERE ${col} IS NOT NULL
+    ORDER BY ${col} DESC
+  `)
+  return toRows(rows, { hasChildren: true })
+}
+
+export async function getDashboardGeaRows(
+  metric: string,
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const rows = await sqlRaw(`
+    SELECT
+      cambium_gea AS name,
+      ${col} AS value,
+      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
+    FROM solargpt.v_gea_kpis
+    WHERE ${col} IS NOT NULL
+    ORDER BY ${col} DESC
+  `)
+  return toRows(rows, { hasChildren: true })
+}
+
+export async function getDashboardGradeRows(
+  metric: string,
+  agg: 'sum' | 'avg' = 'sum',
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const fn = agg === 'avg' ? 'AVG' : 'SUM'
+  const rows = await sqlRaw(`
+    SELECT
+      sunlight_grade AS name,
+      ${fn}(${col}) AS value,
+      ${fn}(${col}) * 100.0 / NULLIF(SUM(${fn}(${col})) OVER (), 0) AS share_pct
+    FROM solargpt.v_state_kpis
+    WHERE ${col} IS NOT NULL
+    GROUP BY sunlight_grade
+    ORDER BY value DESC
+  `)
+  return toRows(rows, { hasChildren: true })
+}
+
+export async function getDashboardCountyRows(limit = 20): Promise<DashboardTableRow[]> {
+  const rows = await sql`
+    SELECT
+      (region_name || ', ' || state_name) AS name,
+      untapped_annual_value_usd AS value,
+      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
+    FROM solargpt.v_county_kpis
+    ORDER BY untapped_annual_value_usd DESC
+    LIMIT ${limit}
+  `
+  return toRows(rows as unknown[], { hasChildren: false })
+}
+
+export async function getDashboardCityRows(limit = 20): Promise<DashboardTableRow[]> {
+  const rows = await sql`
+    SELECT
+      (region_name || ', ' || state_name) AS name,
+      untapped_annual_value_usd AS value,
+      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
+    FROM solargpt.v_city_kpis
+    ORDER BY untapped_annual_value_usd DESC
+    LIMIT ${limit}
+  `
+  return toRows(rows as unknown[], { hasChildren: false })
+}
+
+export async function getDashboardCountyChildRows(
+  stateName: string,
+  metric: string,
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const rows = await sqlRaw(`
+    SELECT
+      region_name AS name,
+      ${col} AS value,
+      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
+    FROM solargpt.v_county_kpis
+    WHERE state_name = $1 AND ${col} IS NOT NULL
+    ORDER BY ${col} DESC
+    LIMIT 20
+  `, [stateName])
+  return toRows(rows, { hasChildren: false })
+}
+
+export async function getDashboardCityChildRows(
+  stateName: string,
+): Promise<DashboardTableRow[]> {
+  const rows = await sql`
+    SELECT
+      region_name AS name,
+      untapped_annual_value_usd AS value,
+      untapped_annual_value_usd * 100.0 / NULLIF(SUM(untapped_annual_value_usd) OVER (), 0) AS share_pct
+    FROM solargpt.v_city_kpis
+    WHERE state_name = ${stateName}
+    ORDER BY untapped_annual_value_usd DESC
+    LIMIT 20
+  `
+  return toRows(rows as unknown[], { hasChildren: false })
+}
+
+export async function getDashboardStateInGeaRows(
+  gea: string,
+  metric: string,
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const rows = await sqlRaw(`
+    SELECT
+      state_name AS name,
+      SUM(${col}) AS value,
+      SUM(${col}) * 100.0 / NULLIF(SUM(SUM(${col})) OVER (), 0) AS share_pct
+    FROM solargpt.v_county_kpis
+    WHERE cambium_gea = $1 AND ${col} IS NOT NULL
+    GROUP BY state_name
+    ORDER BY value DESC
+  `, [gea])
+  return toRows(rows, { hasChildren: false })
+}
+
+export async function getDashboardStateInGradeRows(
+  grade: string,
+  metric: string,
+): Promise<DashboardTableRow[]> {
+  const col = assertSafe(metric)
+  const rows = await sqlRaw(`
+    SELECT
+      state_name AS name,
+      ${col} AS value,
+      ${col} * 100.0 / NULLIF(SUM(${col}) OVER (), 0) AS share_pct
+    FROM solargpt.v_state_kpis
+    WHERE sunlight_grade = $1 AND ${col} IS NOT NULL
+    ORDER BY ${col} DESC
+  `, [grade])
+  return toRows(rows, { hasChildren: false })
+}
+
+export async function getDashboardHeaderTotal(slug: string): Promise<number> {
+  const totals: Record<string, string> = {
+    'untapped-value':      'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_state_kpis',
+    'adoption-rate':       'SELECT AVG(adoption_rate_pct) AS v FROM solargpt.v_state_kpis',
+    'sunlight-grade':      'SELECT COUNT(*) AS v FROM solargpt.v_state_kpis',
+    'existing-installs':   'SELECT SUM(existing_installs_count) AS v FROM solargpt.v_state_kpis',
+    'top-counties':        'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_county_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20',
+    'top-cities':          'SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_city_kpis ORDER BY untapped_annual_value_usd DESC LIMIT 20',
+    'marginal-cost':       'SELECT AVG(cost_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL',
+    'emissions-intensity': 'SELECT AVG(lrmer_co2_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL',
+    'carbon-offset':       'SELECT SUM(carbon_offset_metric_tons) AS v FROM solargpt.v_state_kpis',
+    'qualified-buildings': 'SELECT SUM(count_qualified) AS v FROM solargpt.v_state_kpis',
+    'lifetime-value':      'SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis',
+  }
+  const q = totals[slug]
+  if (!q) return 0
+  try {
+    // For top-counties/top-cities, wrap in subquery to get the sum of the top N
+    const wrapped = (slug === 'top-counties' || slug === 'top-cities')
+      ? `SELECT SUM(untapped_annual_value_usd) AS v FROM (${q.replace('SELECT SUM(untapped_annual_value_usd) AS v FROM', 'SELECT untapped_annual_value_usd FROM')}) t`
+      : q
+    const rows = await sqlRaw(wrapped)
+    return Number((rows[0] as { v: unknown }).v ?? 0)
+  } catch {
+    return 0
+  }
 }

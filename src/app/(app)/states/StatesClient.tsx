@@ -164,62 +164,60 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         </div>
       </div>
 
-      {/* Card view — leads card pattern */}
+      {/* Card view */}
       {viewMode === 'cards' && (
         <div className="px-6 pb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(state => (
               <Link
                 key={state.id}
                 href={`/states/${nameToSlug(state.state_name)}`}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card,var(--surface))] p-3 sm:p-5 transition-all hover:border-solar hover:shadow-lg block"
+                className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:border-solar hover:shadow-lg transition-all"
               >
-                {/* Card header */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Top — flag zone */}
+                <div className="flex h-36 items-center justify-center bg-[var(--inp-bg)]">
                   {state.flag_url ? (
                     <img
-                      src={`${state.flag_url}?width=128`}
+                      src={`${state.flag_url}?width=200`}
                       alt={`${state.state_name} flag`}
-                      className="h-6 w-9 sm:h-9 sm:w-14 rounded-md object-cover shrink-0 border border-[var(--border)]"
+                      className="h-20 w-32 object-cover rounded-lg border border-[var(--border)] shadow-sm"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-6 w-9 sm:h-9 sm:w-14 items-center justify-center rounded-md bg-solar/10 text-solar shrink-0">
-                      <Map className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-solar/10">
+                      <Map className="h-9 w-9 text-solar" />
                     </div>
                   )}
-                  <span className="text-xs sm:text-base font-bold text-[var(--txt)] truncate flex-1">{state.state_name}</span>
-                  <div className="ml-auto shrink-0">
+                </div>
+
+                {/* Bottom — details */}
+                <div className="p-4">
+                  <p className="font-bold text-[var(--txt)] text-base leading-tight mb-1 group-hover:text-solar transition-colors">
+                    {state.state_name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mb-4">
+                    <span className="rounded-full bg-[var(--inp-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
+                      Grade {state.sunlight_grade}
+                    </span>
                     <SolarStars count={state.sunlight_stars} />
                   </div>
-                </div>
-                <p className="hidden sm:block mt-1 text-sm text-[var(--muted)]">Grade {state.sunlight_grade} · {state.state_name}</p>
 
-                {/* Card body — 2-col metric grid */}
-                <div className="mt-2 sm:mt-3 grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 sm:gap-y-2 text-xs">
-                  <div>
-                    <p className="text-[var(--muted)]">Untapped/yr</p>
-                    <p className="font-medium text-solar">{fmtUsd(state.untapped_annual_value_usd)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[var(--muted)]">Lifetime (25yr)</p>
-                    <p className="font-medium text-[var(--txt)]">{fmtUsd(state.untapped_lifetime_value_usd)}</p>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-[var(--muted)]">Buildings</p>
-                    <p className="font-medium text-[var(--txt)]">{fmtNum(state.count_qualified)}</p>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-[var(--muted)]">Adoption</p>
-                    <p className="font-medium text-[var(--txt)]">{state.adoption_rate_pct?.toFixed(1) ?? '—'}%</p>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-[var(--muted)]">Median Savings/yr</p>
-                    <p className="font-medium text-solar">{fmtUsd(state.median_annual_savings_usd)}</p>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-[var(--muted)]">Payback</p>
-                    <p className="font-medium text-[var(--txt)]">{state.median_payback_years?.toFixed(1) ?? '—'} yr</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-0.5">Untapped/yr</p>
+                  <p className="text-xl font-bold text-solar mb-4">{fmtUsd(state.untapped_annual_value_usd)}</p>
+
+                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                    <div>
+                      <p className="text-[var(--muted)] mb-0.5">Lifetime</p>
+                      <p className="font-semibold text-[var(--txt)]">{fmtUsd(state.untapped_lifetime_value_usd)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[var(--muted)] mb-0.5">Buildings</p>
+                      <p className="font-semibold text-[var(--txt)]">{fmtNum(state.count_qualified)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[var(--muted)] mb-0.5">Adoption</p>
+                      <p className="font-semibold text-[var(--txt)]">{state.adoption_rate_pct?.toFixed(1) ?? '—'}%</p>
+                    </div>
                   </div>
                 </div>
               </Link>

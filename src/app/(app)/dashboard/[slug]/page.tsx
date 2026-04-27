@@ -1,0 +1,53 @@
+export const dynamic = 'force-dynamic'
+
+import { notFound } from 'next/navigation'
+import { getDashboardConfig } from '@/lib/dashboard-config'
+import {
+  getDashboardStateRows,
+  getDashboardGeaRows,
+  getDashboardGradeRows,
+  getDashboardCountyRows,
+  getDashboardCityRows,
+  getDashboardHeaderTotal,
+} from '@/lib/queries'
+import { DashboardDetailClient } from './DashboardDetailClient'
+
+export default async function DashboardDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const config = getDashboardConfig(slug)
+  if (!config) notFound()
+
+  const firstTab = config.tabs[0]
+
+  const [initialRows, total] = await Promise.all([
+    (async () => {
+      try {
+        switch (firstTab.id) {
+          case 'state':  return getDashboardStateRows(firstTab.metric, firstTab.agg)
+          case 'gea':    return getDashboardGeaRows(firstTab.metric)
+          case 'grade':  return getDashboardGradeRows(firstTab.metric, firstTab.agg)
+          case 'county': return getDashboardCountyRows(20)
+          case 'city':   return getDashboardCityRows(20)
+          default:       return []
+        }
+      } catch { return [] }
+    })(),
+    getDashboardHeaderTotal(slug).catch(() => 0),
+  ])
+
+  const chartData = initialRows.slice(0, 25).map(r => ({ name: r.name, value: r.value }))
+
+  return (
+    <DashboardDetailClient
+      slug={slug}
+      config={config}
+      initialRows={initialRows}
+      initialTotal={total}
+      initialChartData={chartData}
+    />
+  )
+}
