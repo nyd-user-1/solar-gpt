@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getCityBySlug, getSiblingCities, getHeatmapPoints, nameToSlug } from '@/lib/queries'
+import { getCityBySlug, getAdjacentCities, getSiblingCities, getHeatmapPoints, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function CityDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -10,10 +10,18 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
   const city = await getCityBySlug(slug)
   if (!city) notFound()
 
-  const [siblings, heatmapPoints] = await Promise.all([
+  const [adjacent, siblings, heatmapPoints] = await Promise.all([
+    getAdjacentCities(city.id, city.state_name),
     getSiblingCities(city.state_name, city.id, 12),
     getHeatmapPoints(city.lat_min, city.lat_max, city.lng_min, city.lng_max),
   ])
+
+  const prev = adjacent.prev
+    ? { label: adjacent.prev.region_name, href: `/cities/${nameToSlug(adjacent.prev.region_name)}` }
+    : null
+  const next = adjacent.next
+    ? { label: adjacent.next.region_name, href: `/cities/${nameToSlug(adjacent.next.region_name)}` }
+    : null
 
   const infoRows = [
     { label: 'Untapped Value / yr', value: fmtUsd(city.untapped_annual_value_usd), highlight: true },
@@ -40,6 +48,8 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
     <GeoDetailPage
       title={city.region_name}
       breadcrumbs={[{ label: 'Cities', href: '/cities' }]}
+      prev={prev}
+      next={next}
       listHref="/cities"
       listLabel="All Cities"
       infoRows={infoRows}

@@ -11,3 +11,5 @@ export const STATE_ABBRS: Record<string, string> = {
   'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT',
   Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY',
 }
+
+export const US_STATES = new Set(Object.keys(STATE_ABBRS))

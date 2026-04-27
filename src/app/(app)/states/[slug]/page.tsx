@@ -2,13 +2,29 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getStateBySlug, getCountiesByState, getHeatmapPoints, nameToSlug } from '@/lib/queries'
+import { getStateBySlug, getAllStates, getCountiesByState, getHeatmapPoints, nameToSlug } from '@/lib/queries'
+import { US_STATES } from '@/lib/us-states'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function StateDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const state = await getStateBySlug(slug)
+  const [state, allStates] = await Promise.all([
+    getStateBySlug(slug),
+    getAllStates(),
+  ])
   if (!state) notFound()
+
+  const sorted = allStates
+    .filter(s => US_STATES.has(s.state_name))
+    .sort((a, b) => (b.count_qualified ?? 0) - (a.count_qualified ?? 0))
+  const idx = sorted.findIndex(s => s.state_name === state.state_name)
+  const n = sorted.length
+
+  const prevState = n > 0 ? sorted[(idx - 1 + n) % n] : null
+  const nextState = n > 0 ? sorted[(idx + 1) % n] : null
+
+  const prev = prevState ? { label: prevState.state_name, href: `/states/${nameToSlug(prevState.state_name)}` } : null
+  const next = nextState ? { label: nextState.state_name, href: `/states/${nameToSlug(nextState.state_name)}` } : null
 
   const [counties, heatmapPoints] = await Promise.all([
     getCountiesByState(state.state_name),
@@ -40,6 +56,8 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
     <GeoDetailPage
       title={state.state_name}
       breadcrumbs={[{ label: 'States', href: '/states' }]}
+      prev={prev}
+      next={next}
       listHref="/states"
       listLabel="All States"
       infoRows={infoRows}

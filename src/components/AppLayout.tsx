@@ -1,13 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Sun, Search } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { Sun, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
+import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+
+  const isRoot = pathname === '/'
+  const isDashboard = pathname.startsWith('/dashboard/')
+  const currentSlug = isDashboard ? pathname.split('/')[2] : null
+  const currentIdx = currentSlug ? DASHBOARD_CONFIGS.findIndex(c => c.slug === currentSlug) : -1
+  const n = DASHBOARD_CONFIGS.length
+
+  const prevDashboard = currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx - 1 + n) % n] : null
+  const nextDashboard = currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx + 1) % n] : null
 
   return (
     <div className="flex h-full overflow-hidden p-0 sm:p-[18px]">
@@ -39,20 +50,42 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="h-9 w-9" />
           )}
 
-          <div className="flex items-center gap-2 mr-1.5">
-            <button
-              onClick={() => router.push('/login?mode=login')}
-              className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
-            >
-              Sign in
-            </button>
-            <button
-              onClick={() => router.push('/login?mode=register')}
-              className="rounded-full bg-[#111118] px-4 py-2 text-sm font-medium text-white hover:bg-[#2a2a2a] transition-colors"
-            >
-              Sign up
-            </button>
-          </div>
+          {/* Right side: auth on root, chevrons on dashboard, nothing elsewhere */}
+          {isRoot && (
+            <div className="flex items-center gap-2 mr-1.5">
+              <button
+                onClick={() => router.push('/login?mode=login')}
+                className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => router.push('/login?mode=register')}
+                className="rounded-full bg-[#111118] px-4 py-2 text-sm font-medium text-white hover:bg-[#2a2a2a] transition-colors"
+              >
+                Sign up
+              </button>
+            </div>
+          )}
+
+          {isDashboard && prevDashboard && nextDashboard && (
+            <div className="flex items-center gap-1 mr-1.5">
+              <button
+                onClick={() => router.push(`/dashboard/${prevDashboard.slug}`)}
+                aria-label={`Previous: ${prevDashboard.title}`}
+                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-l-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => router.push(`/dashboard/${nextDashboard.slug}`)}
+                aria-label={`Next: ${nextDashboard.title}`}
+                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-r-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         <main className="flex flex-1 flex-col overflow-hidden">

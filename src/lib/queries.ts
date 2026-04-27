@@ -341,6 +341,26 @@ export async function getCityBySlug(slug: string, stateName = 'New York'): Promi
   return (rows[0] as CityKpi) ?? null
 }
 
+export async function getAdjacentCities(id: number, stateName: string): Promise<{ prev: CityKpi | null; next: CityKpi | null }> {
+  const rows = await sql`
+    WITH ordered AS (
+      SELECT id, region_name,
+        LAG(id)          OVER (ORDER BY untapped_annual_value_usd DESC) AS prev_id,
+        LEAD(id)         OVER (ORDER BY untapped_annual_value_usd DESC) AS next_id,
+        LAG(region_name) OVER (ORDER BY untapped_annual_value_usd DESC) AS prev_name,
+        LEAD(region_name)OVER (ORDER BY untapped_annual_value_usd DESC) AS next_name
+      FROM solargpt.v_city_kpis WHERE state_name = ${stateName}
+    )
+    SELECT prev_id, next_id, prev_name, next_name FROM ordered WHERE id = ${id}
+  `
+  if (!rows[0]) return { prev: null, next: null }
+  const r = rows[0] as { prev_id: number | null; next_id: number | null; prev_name: string | null; next_name: string | null }
+  return {
+    prev: r.prev_id ? { id: r.prev_id, region_name: r.prev_name } as CityKpi : null,
+    next: r.next_id ? { id: r.next_id, region_name: r.next_name } as CityKpi : null,
+  }
+}
+
 export async function getSiblingCities(stateName: string, excludeId: number, limit = 12): Promise<CityKpi[]> {
   const rows = await sql`
     SELECT * FROM solargpt.v_city_kpis
