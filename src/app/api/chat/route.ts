@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import type { SolarInsight } from '@/lib/solar-types'
 
-const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY })
+const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY ?? process.env.SOLAR_OPENAI_KEY })
 
 const BASE_SYSTEM_PROMPT = `You are SolarGPT, an AI solar market analyst built on the most comprehensive US rooftop solar dataset available.
 
