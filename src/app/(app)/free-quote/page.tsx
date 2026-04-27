@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, CheckCircle, X, ArrowUp, Sun, MapPin } from 'lucide-react'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import type { SolarInsight } from '@/lib/solar-types'
@@ -350,6 +351,7 @@ function QuoteAssistantDrawer(props: Parameters<typeof QuoteAssistantContent>[0]
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function FreeQuotePage() {
+  const router = useRouter()
   const [step, setStep] = useState<Step>('address')
   const [stepIdx, setStepIdx] = useState(0)
   const [formData, setFormData] = useState<FormData>(defaultFormData())
@@ -401,6 +403,24 @@ export default function FreeQuotePage() {
       setStepIdx(prevIdx)
       setAnimating(false)
     }, 150)
+  }
+
+  async function submitForm() {
+    setStep('loading')
+    try {
+      const res = await fetch('/api/solar-quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData, solarInsight }),
+      })
+      const data = await res.json()
+      if (data.token) {
+        router.push(`/quote/${data.token}`)
+        return
+      }
+    } catch { /* fall through to inline result */ }
+    // API failed — show inline result as fallback
+    setTimeout(() => setStep('result'), 500)
   }
 
   const fetchSuggestions = useCallback((val: string, loc?: { lat: number; lng: number } | null) => {
@@ -938,7 +958,7 @@ export default function FreeQuotePage() {
                   </label>
                 </div>
 
-                <OrangeButton onClick={goNext} disabled={!canContinue.contact}>
+                <OrangeButton onClick={submitForm} disabled={!canContinue.contact}>
                   Get My Solar Quote →
                 </OrangeButton>
 
