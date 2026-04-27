@@ -354,7 +354,17 @@ export default function FreeQuotePage() {
   const [animating, setAnimating] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [smsConsent, setSmsConsent] = useState(true)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // silent — location bias is best-effort
+      )
+    }
+  }, [])
 
   const TOTAL = QUESTION_STEPS.length
 
@@ -388,12 +398,14 @@ export default function FreeQuotePage() {
     }, 150)
   }
 
-  const fetchSuggestions = useCallback((val: string) => {
+  const fetchSuggestions = useCallback((val: string, loc?: { lat: number; lng: number } | null) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (val.length < 3) { setSuggestions([]); return }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/places?input=${encodeURIComponent(val)}`)
+        let url = `/api/places?input=${encodeURIComponent(val)}`
+        if (loc) url += `&lat=${loc.lat}&lng=${loc.lng}`
+        const res = await fetch(url)
         const data = await res.json()
         setSuggestions(Array.isArray(data) ? data : [])
       } catch { setSuggestions([]) }
@@ -630,7 +642,7 @@ export default function FreeQuotePage() {
                       onChange={e => {
                         update('address', e.target.value)
                         update('placeId', '')
-                        fetchSuggestions(e.target.value)
+                        fetchSuggestions(e.target.value, userLocation)
                       }}
                       placeholder="Enter your home address"
                       className="flex-1 text-lg text-gray-700 outline-none bg-transparent"
