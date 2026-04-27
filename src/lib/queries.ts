@@ -248,7 +248,6 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
            v.percent_covered, v.percent_qualified,
            v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
            v.kw_total, v.kw_median,
-           v.number_of_panels_total, v.number_of_panels_median,
            v.untapped_annual_value_usd, v.adoption_rate_pct,
            v.sunlight_grade, v.sunlight_stars,
            c.seal_url
@@ -319,7 +318,6 @@ export async function getAllCities(): Promise<CityKpi[]> {
     SELECT id, region_name, state_name, count_qualified, existing_installs_count,
            yearly_sunlight_kwh_total, carbon_offset_metric_tons,
            kw_total, kw_median,
-           number_of_panels_total, number_of_panels_median,
            untapped_annual_value_usd, adoption_rate_pct,
            sunlight_grade, sunlight_stars
     FROM solargpt.v_city_kpis
@@ -358,8 +356,7 @@ export async function getAllZips(): Promise<ZipKpi[]> {
   const rows = await sql`
     SELECT id, zip_code, state_name, count_qualified, existing_installs_count,
            yearly_sunlight_kwh_total, carbon_offset_metric_tons,
-           kw_total, kw_median, percent_covered, percent_qualified,
-           number_of_panels_total, number_of_panels_median,
+           kw_total, kw_median,
            untapped_annual_value_usd, adoption_rate_pct,
            sunlight_grade, sunlight_stars
     FROM solargpt.v_zip_kpis
