@@ -80,7 +80,7 @@ export default function LeadsPage() {
             {filteredDb.map(lead => (
               <tr key={`db-${lead.id}`} className="cursor-pointer hover:bg-[var(--inp-bg)] transition-colors">
                 <td className="px-4 py-3 font-medium text-[var(--txt)]">
-                  <Link href={`/leads/sl${lead.id}`} className="flex items-center gap-2 hover:text-solar transition-colors">
+                  <Link href={`/leads/${lead.id}`} className="flex items-center gap-2 hover:text-solar transition-colors">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar/10 text-solar text-xs font-bold shrink-0">
                       {lead.first_name[0]}{lead.last_name[0]}
                     </div>
