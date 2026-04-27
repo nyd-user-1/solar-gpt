@@ -138,10 +138,10 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
             if (e.key === 'Escape') setPlusOpen(false)
           }}
           placeholder="Ask about solar potential..."
-          className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-[var(--txt)] placeholder:text-[var(--muted)] outline-none leading-relaxed"
-          style={{ minHeight: '60px', maxHeight: '160px' }}
+          className="w-full resize-none bg-transparent px-5 pt-5 pb-3 text-base text-[var(--txt)] placeholder:text-[var(--muted)] outline-none leading-relaxed"
+          style={{ minHeight: '84px', maxHeight: '200px' }}
         />
-        <div className="flex items-center gap-2 px-3 pb-3">
+        <div className="flex items-center gap-2 px-4 pb-4">
           <button
             onClick={() => setPlusOpen(v => !v)}
             className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
@@ -177,8 +177,8 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
       <div className="flex-1 overflow-y-auto">
         {isEmpty ? (
           /* Empty state — QuoteTorch layout */
-          <div className="flex flex-col items-center px-4 py-12 min-h-full">
-            <div className="w-full max-w-2xl flex flex-col gap-8">
+          <div className="flex flex-col items-center justify-center min-h-full px-4 py-8">
+            <div className="w-full max-w-2xl flex flex-col gap-6">
               {/* Logo */}
               <div className="flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
@@ -189,34 +189,32 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
 
               {/* Explore */}
               <div>
-                <p className="text-base font-semibold text-[var(--txt)] mb-3">Explore</p>
-                <div className="-mx-4 overflow-x-auto scrollbar-hide">
-                  <div className="flex gap-3 px-4 pb-2">
-                    {stateChips.map(s => (
-                      <Link
-                        key={s.slug}
-                        href={`/states/${s.slug}`}
-                        className="group shrink-0 w-40 sm:w-52 aspect-[4/3] rounded-xl overflow-hidden relative hover:opacity-90 transition-opacity"
-                      >
-                        {s.flag_url ? (
-                          <img
-                            src={`${s.flag_url}?width=400`}
-                            alt={s.name}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 bg-solar/10 flex items-center justify-center">
-                            <Map className="h-8 w-8 text-solar" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        <div className="absolute bottom-2 left-3">
-                          <p className="text-sm font-bold text-white">{s.name}</p>
-                          <p className="text-[11px] text-white/70">{s.untapped}/yr</p>
+                <p className="text-base font-semibold text-[var(--txt)] mb-4">Explore</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {stateChips.slice(0, 4).map(s => (
+                    <Link
+                      key={s.slug}
+                      href={`/states/${s.slug}`}
+                      className="group aspect-[16/11] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity"
+                    >
+                      {s.flag_url ? (
+                        <img
+                          src={`${s.flag_url}?width=400`}
+                          alt={s.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-solar/10 flex items-center justify-center">
+                          <Map className="h-8 w-8 text-solar" />
                         </div>
-                      </Link>
-                    ))}
-                  </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-2 left-3">
+                        <p className="text-sm font-bold text-white">{s.name}</p>
+                        <p className="text-[11px] text-white/70">{s.untapped}/yr</p>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
