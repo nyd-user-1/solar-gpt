@@ -162,7 +162,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
         <thead>
           <tr>
             {/* Region — always visible, no tooltip */}
-            <th className="min-w-[160px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-10 whitespace-nowrap">
+            <th className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] md:sticky md:left-0 md:z-10 whitespace-nowrap">
               <button
                 onClick={() => onSort('region')}
                 className={cn(
@@ -210,7 +210,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 href && 'cursor-pointer',
               )}
             >
-              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors whitespace-nowrap">
+              <td className="px-4 py-3 font-medium text-[var(--txt)] md:sticky md:left-0 md:z-[1] bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors whitespace-nowrap">
                 {renderRegion(row)}
               </td>
               {extraCols?.map(col => (
