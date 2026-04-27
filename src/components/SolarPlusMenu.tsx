@@ -271,18 +271,12 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
                     return (
                       <button
                         key={`${c.slug}-${c.state}`}
-                        onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name} County, ${abbr}`); closeMenu() }}
-                        className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
+                        onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name}, ${abbr}`); closeMenu() }}
+                        className={`flex w-full items-center px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
                           i > 0 ? 'border-t border-[var(--border)]' : ''
                         }`}
                       >
-                        {c.seal_url
-                          ? <img src={c.seal_url} alt="" className="h-6 w-6 object-contain shrink-0" />
-                          : <MapPin className="h-5 w-5 text-solar shrink-0" />}
-                        <div className="flex flex-col items-start min-w-0">
-                          <span className="text-sm font-semibold text-[var(--txt)]">{c.name} County, {abbr}</span>
-                          <span className="text-xs text-[var(--muted)]">Grade {c.grade}</span>
-                        </div>
+                        <span className="text-sm font-semibold text-[var(--txt)]">{c.name}, {abbr}</span>
                       </button>
                     )
                   })
