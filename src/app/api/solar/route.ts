@@ -51,6 +51,10 @@ export async function GET(req: NextRequest) {
     ? Math.round(bestFinance.cashPurchaseDetails.paybackYears * 10) / 10
     : null
 
+  const yearlyEnergyKwh = lastConfig?.yearlyEnergyDcKwh
+    ? Math.round(lastConfig.yearlyEnergyDcKwh)
+    : null
+
   return NextResponse.json({
     center: data.center,
     maxSunshineHoursPerYear: sp.maxSunshineHoursPerYear ?? null,
@@ -58,6 +62,7 @@ export async function GET(req: NextRequest) {
     maxPanelsCount: sp.maxArrayPanelsCount ?? null,
     panelCapacityWatts: sp.panelCapacityWatts ?? null,
     recommendedKw,
+    yearlyEnergyKwh,
     savings20yr,
     paybackYears,
     imageryQuality: data.imageryQuality ?? null,

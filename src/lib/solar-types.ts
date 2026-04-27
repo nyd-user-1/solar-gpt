@@ -5,6 +5,7 @@ export type SolarInsight = {
   maxPanelsCount: number | null
   panelCapacityWatts: number | null
   recommendedKw: number | null
+  yearlyEnergyKwh: number | null
   savings20yr: number | null
   paybackYears: number | null
   imageryQuality: string | null

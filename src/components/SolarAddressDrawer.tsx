@@ -1,6 +1,7 @@
 'use client'
 
-import { X, Sun, CheckCircle, Home, Zap, AlertCircle } from 'lucide-react'
+import { X, Sun, CheckCircle, Home, Zap, AlertCircle, Maximize2, BatteryCharging, PiggyBank, Calendar } from 'lucide-react'
+import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
 import type { SolarInsight } from '@/lib/solar-types'
@@ -74,10 +75,10 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
             )}
           </div>
 
-          <div className="px-4 py-4 space-y-4">
-            {/* Loading state */}
+          <div className="px-4 py-4">
+            {/* Loading */}
             {loading && (
-              <div className="flex items-center gap-3 rounded-xl bg-[var(--inp-bg)] px-4 py-4">
+              <div className="flex items-center gap-3 py-6 justify-center">
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-solar animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-solar animate-bounce [animation-delay:150ms]" />
@@ -87,7 +88,7 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
               </div>
             )}
 
-            {/* Error state */}
+            {/* Error */}
             {error && !loading && (
               <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 px-4 py-3">
                 <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
@@ -98,89 +99,98 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
               </div>
             )}
 
-            {/* Data */}
-            {insight && !loading && (
-              <>
-                {/* Analysis complete */}
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                  <span className="text-sm text-[var(--muted)]">Analysis complete. Your roof has:</span>
+            {/* Data — two-section layout */}
+            {insight && !loading && (() => {
+              const installedCost = insight.recommendedKw
+                ? Math.round((insight.recommendedKw * 3100) / 100) * 100 : null
+              const afterITC = installedCost ? Math.round(installedCost * 0.70) : null
+
+              const roofRows = [
+                insight.maxSunshineHoursPerYear != null && {
+                  icon: Sun, label: 'Sunshine hours/year',
+                  value: insight.maxSunshineHoursPerYear.toLocaleString(),
+                },
+                insight.maxAreaSqFt != null && {
+                  icon: Maximize2, label: 'Usable roof area',
+                  value: `${insight.maxAreaSqFt.toLocaleString()} sq ft`,
+                },
+                insight.maxPanelsCount != null && {
+                  icon: Home, label: 'Max solar panels',
+                  value: String(insight.maxPanelsCount),
+                },
+                (insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh != null && {
+                  icon: Zap, label: 'Annual output (est.)',
+                  value: `${((insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh! / 1000).toFixed(1)} MWh/yr`,
+                },
+              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string }[]
+
+              const estimateRows = [
+                insight.recommendedKw != null && {
+                  icon: BatteryCharging, label: 'System size',
+                  value: `${insight.recommendedKw} kW`, bold: true,
+                },
+                installedCost != null && {
+                  icon: Zap, label: 'Installed cost (est.)',
+                  value: `$${installedCost.toLocaleString()}`,
+                },
+                afterITC != null && {
+                  icon: CheckCircle, label: 'After 30% federal ITC',
+                  value: `$${afterITC.toLocaleString()}`, highlight: true,
+                },
+                insight.paybackYears != null && {
+                  icon: Calendar, label: 'Payback period',
+                  value: `~${insight.paybackYears} years`,
+                },
+                insight.savings20yr != null && {
+                  icon: PiggyBank, label: '20-year savings',
+                  value: `$${insight.savings20yr.toLocaleString()}`, highlight: true,
+                },
+              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; bold?: boolean; highlight?: boolean }[]
+
+              return (
+                <div className="space-y-5">
+                  {/* Status */}
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-[var(--muted)]">Analysis complete</span>
+                  </div>
+
+                  {/* Section 1 — Roof */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2 px-1">
+                      Roof Analysis
+                    </p>
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden divide-y divide-[var(--border)]">
+                      {roofRows.map(({ icon: Icon, label, value }) => (
+                        <div key={label} className="flex items-center gap-3 px-4 py-3">
+                          <Icon className="h-4 w-4 text-solar shrink-0" />
+                          <span className="flex-1 text-sm text-[var(--muted)]">{label}</span>
+                          <span className="text-sm font-semibold text-[var(--txt)] tabular-nums">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section 2 — System estimate */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2 px-1">
+                      System Estimate
+                    </p>
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden divide-y divide-[var(--border)]">
+                      {estimateRows.map(({ icon: Icon, label, value, highlight }) => (
+                        <div key={label} className="flex items-center gap-3 px-4 py-3">
+                          <Icon className={`h-4 w-4 shrink-0 ${highlight ? 'text-green-500' : 'text-solar'}`} />
+                          <span className="flex-1 text-sm text-[var(--muted)]">{label}</span>
+                          <span className={`text-sm font-semibold tabular-nums ${highlight ? 'text-green-600' : 'text-[var(--txt)]'}`}>
+                            {value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-
-                {/* Metric rows */}
-                <div className="space-y-3">
-                  {insight.maxSunshineHoursPerYear != null && (
-                    <div className="flex items-start gap-3 rounded-xl bg-[var(--inp-bg)] px-4 py-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 shrink-0">
-                        <Sun className="h-4 w-4 text-yellow-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[var(--txt)]">
-                          {insight.maxSunshineHoursPerYear.toLocaleString()} hours of usable sunlight per year
-                        </p>
-                        <p className="text-xs text-[var(--muted)] mt-0.5">
-                          Based on day-to-day analysis of weather patterns
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {insight.maxAreaSqFt != null && (
-                    <div className="flex items-start gap-3 rounded-xl bg-[var(--inp-bg)] px-4 py-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 shrink-0">
-                        <Home className="h-4 w-4 text-purple-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[var(--txt)]">
-                          {insight.maxAreaSqFt.toLocaleString()} sq ft available for solar panels
-                        </p>
-                        <p className="text-xs text-[var(--muted)] mt-0.5">
-                          Based on 3D modeling of your roof and nearby trees
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Savings + system size card */}
-                <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-                  {insight.savings20yr != null && (
-                    <div className="px-4 py-4 border-b border-[var(--border)]">
-                      <p className="text-2xl font-bold text-[var(--txt)]">
-                        {fmtMoney(insight.savings20yr)} savings
-                      </p>
-                      <p className="text-xs text-[var(--muted)] mt-0.5">
-                        Estimated net savings for your roof over 20 years
-                      </p>
-                    </div>
-                  )}
-
-                  {insight.recommendedKw != null && (
-                    <div className="px-4 py-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
-                          Your Recommended Solar Installation Size
-                        </p>
-                        <Zap className="h-3.5 w-3.5 text-solar shrink-0" />
-                      </div>
-                      <p className="text-4xl font-bold text-[var(--txt)] text-center tabular-nums">
-                        {insight.recommendedKw} kW
-                      </p>
-                      {insight.maxAreaSqFt != null && (
-                        <p className="text-sm text-[var(--muted)] text-center mt-1">
-                          ({insight.maxAreaSqFt.toLocaleString()} ft²)
-                        </p>
-                      )}
-                      {insight.paybackYears != null && (
-                        <p className="text-xs text-[var(--muted)] text-center mt-2">
-                          ~{insight.paybackYears} year payback period
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+              )
+            })()}
           </div>
         </div>
 
@@ -190,9 +200,10 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
             <button className="flex-1 rounded-xl border border-[var(--border)] py-3 text-sm font-semibold text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
               Save Report
             </button>
-            <button className="flex-1 rounded-xl bg-[#1a1a1a] dark:bg-white py-3 text-sm font-semibold text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity">
+            <Link href="/free-quote"
+              className="flex-1 rounded-xl bg-[#1a1a1a] dark:bg-white py-3 text-sm font-semibold text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity text-center">
               Get a Free Quote
-            </button>
+            </Link>
           </div>
         )}
       </div>
