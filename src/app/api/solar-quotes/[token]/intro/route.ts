@@ -17,12 +17,11 @@ Homeownership: ${q.homeownership}
 Estimated monthly savings: ~$${q.monthly_savings}/month
 
 Rules:
-- Open with "Hi [first name]!" (no bold, no comma after Hi)
-- In one sentence: mention roof direction, sun exposure, and bill size to establish why the address is a good solar candidate
+- Open with "Hi **[first name]**!" (bold the name)
+- In one sentence: mention roof direction, sun exposure, and bill size to establish why the address is a good solar candidate. Bold the street address (not city/state).
 - End with the estimated monthly savings figure
-- Reference the street address naturally (not the full address with city/state)
 - No second paragraph. No "here's what we found." No filler. Max 2 sentences, ~50 words total.
-- Match this style exactly: "Hi Steph! Your south-facing roof, full sun exposure, and $300+ monthly electric bill make 111 Fischer Avenue a strong candidate for solar. As a homeowner, you're well-positioned to invest — and we estimate a tailored system could save you about $278 a month."`
+- Match this style exactly: "Hi **Steph**! Your south-facing roof, full sun exposure, and $300+ monthly electric bill make **111 Fischer Avenue** a strong candidate for solar. As a homeowner, you're well-positioned to invest — and we estimate a tailored system could save you about $278 a month."`
 
   const result = streamText({
     model: openai('gpt-4o-mini'),

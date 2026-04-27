@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, CheckCircle, MapPin, X, ArrowUp, Sun, ChevronDown } from 'lucide-react'
+import { Bell, CheckCircle, MapPin, X, ArrowUp, Sun } from 'lucide-react'
 import { MarkdownContent } from '@/components/MarkdownContent'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -265,48 +265,6 @@ function SatelliteMap({ lat, lng, address }: { lat: number; lng: number; address
   )
 }
 
-// ─── Estimate details accordion ───────────────────────────────────────────────
-
-function EstimateAccordion({ quote, date }: { quote: QuoteData; date: string }) {
-  const [open, setOpen] = useState(false)
-
-  const rows: { label: string; value: string }[] = [
-    ...(quote.sunshine_hours != null ? [{ label: 'Sunshine hours/year', value: Number(quote.sunshine_hours).toLocaleString() }] : []),
-    ...(quote.roof_area_sqft != null ? [{ label: 'Usable roof area', value: `${Number(quote.roof_area_sqft).toLocaleString()} sq ft` }] : []),
-    ...(quote.max_panels != null ? [{ label: 'Max panels', value: String(quote.max_panels) }] : []),
-    { label: 'System size', value: `${quote.system_kw} kW` },
-    { label: 'Gross cost', value: `$${Number(quote.gross_cost).toLocaleString()}` },
-    { label: 'Federal tax credit (30%)', value: `-$${Number(quote.itc_amount).toLocaleString()}` },
-    { label: 'Payback period', value: `~${quote.payback_years} years` },
-    { label: '20-year savings', value: `$${Number(quote.savings_20yr).toLocaleString()}` },
-    { label: 'Estimate date', value: date },
-  ]
-
-  return (
-    <div className="mt-3 border-t border-gray-100">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="flex w-full items-center justify-between py-3 text-sm font-semibold text-gray-800 hover:text-gray-900 transition-colors"
-      >
-        <span>How this estimate was calculated</span>
-        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="pb-3 space-y-0">
-          {rows.map(({ label, value }) => (
-            <div key={label} className="flex items-center justify-between py-1.5 border-t border-gray-50 first:border-0 text-sm">
-              <span className="text-gray-400">{label}</span>
-              <span className="font-medium text-gray-900">{value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function QuotePage() {
@@ -373,27 +331,15 @@ export default function QuotePage() {
               <SatelliteMap lat={quote.lat} lng={quote.lng} address={quote.address} />
             )}
 
-            {/* Header — dynamic name + date */}
-            <h1 className="text-2xl font-bold text-gray-900">{quote.first_name}&apos;s solar estimate</h1>
-            <p className="mt-1 text-sm text-gray-400">{date}</p>
-
             {/* Quote card */}
-            <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              {/* Top row: savings + date */}
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  {/* Monthly savings as hero number */}
-                  <p className="text-4xl font-bold text-gray-900">
-                    ${quote.monthly_savings}
-                  </p>
-                  <p className="mt-0.5 text-sm text-gray-500">Est. savings per/mo.</p>
+                  <p className="text-4xl font-bold text-gray-900">${quote.monthly_savings}</p>
+                  <p className="mt-0.5 text-sm text-gray-500">Saved per/mo.</p>
                 </div>
-                <button type="button" onClick={() => setAssistantOpen(true)}
-                  className="relative rounded-xl bg-orange-50 px-3 py-2 border border-transparent hover:border-[#e8751c] transition-colors shrink-0"
-                  style={{ color: ACCENT }} title="Ask about your estimate">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 size-2.5 animate-bounce rounded-full"
-                    style={{ backgroundColor: ACCENT }} />
-                </button>
+                <p className="text-xs text-gray-400 shrink-0 mt-1">{date}</p>
               </div>
 
               {/* Applied incentives */}
@@ -410,8 +356,22 @@ export default function QuotePage() {
                 ))}
               </div>
 
-              {/* Accordion: estimate details + solar API data */}
-              <EstimateAccordion quote={quote} date={date} />
+              {/* Bell button — replaces accordion, triggers Solar Assistant */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setAssistantOpen(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors hover:bg-orange-50"
+                  style={{ color: ACCENT }}
+                >
+                  <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-orange-50">
+                    <Bell className="h-4 w-4" />
+                    <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full animate-bounce"
+                      style={{ backgroundColor: ACCENT }} />
+                  </div>
+                  How this estimate was calculated
+                </button>
+              </div>
             </div>
 
             <p className="mt-6 text-center text-xs text-gray-300">

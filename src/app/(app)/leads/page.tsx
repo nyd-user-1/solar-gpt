@@ -1,16 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SAMPLE_LEADS, STATUS_STYLES } from '@/data/leads'
 import { Search, Sun, Users, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface DbLead {
+  id: number; first_name: string; last_name: string; email: string; phone: string
+  address: string; monthly_bill: string; roof_shade: string; created_at: string
+  token: string | null; system_kw: number | null; net_cost: number | null
+  monthly_savings: number | null
+}
+
 export default function LeadsPage() {
   const [query, setQuery] = useState('')
+  const [dbLeads, setDbLeads] = useState<DbLead[]>([])
+
+  useEffect(() => {
+    fetch('/api/leads').then(r => r.json()).then(setDbLeads).catch(() => {})
+  }, [])
 
   const filtered = SAMPLE_LEADS.filter(l => {
     const name = `${l.first_name} ${l.last_name} ${l.city} ${l.county} ${l.zip}`.toLowerCase()
+    return name.includes(query.toLowerCase())
+  })
+
+  const filteredDb = dbLeads.filter(l => {
+    const name = `${l.first_name} ${l.last_name} ${l.address}`.toLowerCase()
     return name.includes(query.toLowerCase())
   })
 
@@ -59,6 +76,40 @@ export default function LeadsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
+            {/* Real DB leads from free-quote submissions */}
+            {filteredDb.map(lead => (
+              <tr key={`db-${lead.id}`} className="cursor-pointer hover:bg-[var(--inp-bg)] transition-colors">
+                <td className="px-4 py-3 font-medium text-[var(--txt)]">
+                  <Link href={`/leads/sl${lead.id}`} className="flex items-center gap-2 hover:text-solar transition-colors">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar/10 text-solar text-xs font-bold shrink-0">
+                      {lead.first_name[0]}{lead.last_name[0]}
+                    </div>
+                    <div>
+                      <p>{lead.first_name} {lead.last_name}</p>
+                      <p className="text-xs text-[var(--muted)]">{lead.email}</p>
+                    </div>
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-[var(--muted)]">
+                  <p className="truncate max-w-[180px]">{lead.address.split(',').slice(0, 2).join(',')}</p>
+                </td>
+                <td className="px-4 py-3">
+                  <p className="font-medium text-[var(--txt)]">{lead.system_kw ? `${lead.system_kw} kW` : '—'}</p>
+                  <p className="text-xs text-[var(--muted)]">{lead.roof_shade}</p>
+                </td>
+                <td className="hidden sm:table-cell px-4 py-3 text-[var(--muted)]">{lead.monthly_bill}/mo</td>
+                <td className="px-4 py-3 font-medium text-solar">
+                  {lead.net_cost ? `$${Number(lead.net_cost).toLocaleString()}` : '—'}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', STATUS_STYLES['New'].bg, STATUS_STYLES['New'].text)}>
+                    <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_STYLES['New'].dot)} />
+                    New
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {/* Sample leads */}
             {filtered.map(lead => {
               const style = STATUS_STYLES[lead.contact_status] ?? STATUS_STYLES['New']
               return (

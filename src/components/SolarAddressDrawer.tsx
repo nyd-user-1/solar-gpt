@@ -41,17 +41,11 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
 
       <div className="relative h-full w-full sm:w-[380px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="flex items-start gap-3 px-4 py-4 border-b border-[var(--border)] shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar shrink-0 mt-0.5">
-            <Sun className="h-4 w-4 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[var(--txt)] leading-tight">Solar Analysis</p>
-            <p className="text-xs text-[var(--muted)] truncate mt-0.5">{address}</p>
-          </div>
+        <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4 shrink-0">
+          <span className="flex-1 text-base font-semibold text-[var(--txt)]">Solar Assistant</span>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors shrink-0"
+            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
