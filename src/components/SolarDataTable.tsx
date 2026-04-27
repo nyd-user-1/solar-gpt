@@ -155,11 +155,11 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
     <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
-      <table className="w-full text-left text-sm">
+      <table className="w-full table-fixed text-left text-sm">
         <thead>
           <tr>
             {/* Region — always visible, no tooltip */}
-            <th className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-10">
+            <th className="w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-10">
               <button
                 onClick={() => onSort('region')}
                 className={cn(
@@ -198,7 +198,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
         <tbody className="divide-y divide-[var(--border)] align-middle">
           {rows.map(row => (
             <tr key={row.id} className="hover:bg-[var(--inp-bg)] transition-colors">
-              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 bg-inherit">
+              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 bg-inherit overflow-hidden">
                 {renderRegion(row)}
               </td>
               {extraCols?.map(col => (
@@ -216,7 +216,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 <td
                   key={col.key}
                   className={cn(
-                    'px-3 py-3 tabular-nums text-right text-[var(--muted)] text-xs',
+                    'px-3 py-3 tabular-nums text-left text-[var(--muted)] text-xs',
                     !col.mobile && 'hidden md:table-cell',
                   )}
                 >

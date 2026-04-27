@@ -127,11 +127,11 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           renderRegion={(row) => {
             const c = row as unknown as CountyKpi
             return (
-              <Link href={`/counties/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
+              <Link href={`/counties/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 min-w-0 hover:text-solar transition-colors">
                 {c.seal_url
                   ? <img src={c.seal_url} alt="" className="h-5 w-5 object-contain shrink-0" />
                   : <MapPin className="h-4 w-4 text-solar shrink-0" />}
-                <span>{c.region_name}</span>
+                <span className="truncate">{c.region_name}</span>
               </Link>
             )
           }}
