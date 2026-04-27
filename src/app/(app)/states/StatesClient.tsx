@@ -167,15 +167,15 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
       {/* Card view */}
       {viewMode === 'cards' && (
         <div className="px-6 pb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map(state => (
               <Link
                 key={state.id}
                 href={`/states/${nameToSlug(state.state_name)}`}
-                className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:border-solar hover:shadow-lg transition-all"
+                className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
               >
-                {/* Top — flag zone, full-bleed */}
-                <div className="relative h-36 overflow-hidden bg-[var(--inp-bg)]">
+                {/* Top — flag, full-bleed */}
+                <div className="relative h-40 overflow-hidden bg-[var(--inp-bg)]">
                   {state.flag_url ? (
                     <img
                       src={`${state.flag_url}?width=600`}
@@ -185,8 +185,8 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-solar/10">
-                        <Map className="h-9 w-9 text-solar" />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--inp-bg)] border border-[var(--border)]">
+                        <Map className="h-8 w-8 text-[var(--muted)]" />
                       </div>
                     </div>
                   )}
@@ -194,33 +194,32 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
 
                 {/* Bottom — details */}
                 <div className="p-4">
-                  <p className="font-bold text-[var(--txt)] text-base leading-tight mb-1 group-hover:text-solar transition-colors">
-                    {state.state_name}
-                  </p>
-                  <div className="flex items-center gap-1.5 mb-4">
-                    <span className="rounded-full bg-[var(--inp-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
-                      Grade {state.sunlight_grade}
+                  {/* Icon + name row */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
+                      <Sun className="h-3 w-3 text-[var(--muted)]" />
+                    </div>
+                    <p className="font-bold text-[var(--txt)] text-sm truncate">{state.state_name}</p>
+                  </div>
+
+                  {/* Badge row */}
+                  <div className="flex items-center gap-1.5 mb-6">
+                    <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
+                      {state.sunlight_grade}
                     </span>
-                    <SolarStars count={state.sunlight_stars} />
+                    <span className="rounded-full border border-solar/40 px-2 py-0.5 text-[11px] text-solar">
+                      ★ {state.sunlight_stars}
+                    </span>
                   </div>
 
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-0.5">Untapped/yr</p>
-                  <p className="text-xl font-bold text-solar mb-4">{fmtUsd(state.untapped_annual_value_usd)}</p>
-
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <div>
-                      <p className="text-[var(--muted)] mb-0.5">Lifetime</p>
-                      <p className="font-semibold text-[var(--txt)]">{fmtUsd(state.untapped_lifetime_value_usd)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[var(--muted)] mb-0.5">Buildings</p>
-                      <p className="font-semibold text-[var(--txt)]">{fmtNum(state.count_qualified)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[var(--muted)] mb-0.5">Adoption</p>
-                      <p className="font-semibold text-[var(--txt)]">{state.adoption_rate_pct?.toFixed(1) ?? '—'}%</p>
-                    </div>
+                  {/* Metric label + CTA */}
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Untapped/yr</p>
+                    <span className="rounded-lg bg-[var(--txt)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--bg)]">
+                      Explore →
+                    </span>
                   </div>
+                  <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
                 </div>
               </Link>
             ))}

@@ -75,49 +75,48 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
       </div>
 
       {viewMode === 'cards' && (
-        <div className="px-6 pb-8 pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="px-6 pb-8 pt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map(gea => (
             <Link
               key={gea.cambium_gea}
               href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`}
-              className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:border-solar hover:shadow-lg transition-all"
+              className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
             >
               {/* Top — icon zone */}
-              <div className="flex h-36 items-center justify-center bg-[var(--inp-bg)]">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-solar/10">
-                  <Zap className="h-9 w-9 text-solar" />
+              <div className="flex h-40 items-center justify-center bg-[var(--inp-bg)]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--border)]">
+                  <Zap className="h-8 w-8 text-[var(--muted)]" />
                 </div>
               </div>
 
               {/* Bottom — details */}
               <div className="p-4">
-                <p className="font-bold text-[var(--txt)] text-base leading-tight mb-1 group-hover:text-solar transition-colors">
-                  {displayGea(gea.cambium_gea)}
-                </p>
-                <div className="flex items-center gap-1.5 mb-4">
-                  <span className="rounded-full bg-[var(--inp-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
-                    Grade {gea.sunlight_grade}
+                {/* Icon + name row */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
+                    <Zap className="h-3 w-3 text-[var(--muted)]" />
+                  </div>
+                  <p className="font-bold text-[var(--txt)] text-sm truncate">{displayGea(gea.cambium_gea)}</p>
+                </div>
+
+                {/* Badge row */}
+                <div className="flex items-center gap-1.5 mb-6">
+                  <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
+                    {gea.sunlight_grade}
                   </span>
-                  <span className="text-xs text-[var(--muted)]">· {gea.county_count} counties</span>
+                  <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
+                    {gea.county_count} counties
+                  </span>
                 </div>
 
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-0.5">Untapped/yr</p>
-                <p className="text-xl font-bold text-solar mb-4">{fmtUsd(gea.untapped_annual_value_usd)}</p>
-
-                <div className="grid grid-cols-3 gap-2 text-[11px]">
-                  <div>
-                    <p className="text-[var(--muted)] mb-0.5">Lifetime</p>
-                    <p className="font-semibold text-[var(--txt)]">{fmtUsd(gea.untapped_lifetime_value_usd)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[var(--muted)] mb-0.5">Buildings</p>
-                    <p className="font-semibold text-[var(--txt)]">{fmtNum(gea.count_qualified)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[var(--muted)] mb-0.5">Adoption</p>
-                    <p className="font-semibold text-[var(--txt)]">{gea.adoption_rate_pct?.toFixed(1) ?? '—'}%</p>
-                  </div>
+                {/* Metric label + CTA */}
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Untapped/yr</p>
+                  <span className="rounded-lg bg-[var(--txt)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--bg)]">
+                    Explore →
+                  </span>
                 </div>
+                <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(gea.untapped_annual_value_usd)}</p>
               </div>
             </Link>
           ))}
