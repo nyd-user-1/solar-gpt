@@ -309,12 +309,12 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
 
               <div>
                 <p className="text-base font-semibold text-[var(--txt)] mb-6">Explore</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {stateChips.slice(0, 4).map(s => (
+                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
+                  {stateChips.map(s => (
                     <Link
                       key={s.slug}
                       href={`/states/${s.slug}`}
-                      className="group h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity"
+                      className="group shrink-0 w-[181px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity"
                     >
                       {s.flag_url ? (
                         <img
