@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { MapPin, Zap } from 'lucide-react'
-import { getExploreCounties, getAllGeas, getGeaKpi, type CountyKpi, type GeaKpi } from '@/lib/queries'
+import { MapPin } from 'lucide-react'
+import { getExploreCounties, getAllGeas, getGeaKpi, getGeaLogos, type CountyKpi, type GeaKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
@@ -37,7 +37,7 @@ function CountyCard({ county, index }: { county: CountyKpi; index: number }) {
   )
 }
 
-function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: number }) {
+function GeaCard({ gea, kpi, index, logoUrl }: { gea: string; kpi: GeaKpi | null; index: number; logoUrl?: string }) {
   const gradient = CARD_GRADIENTS[(index + 3) % CARD_GRADIENTS.length]
   return (
     <Link
@@ -46,13 +46,22 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-85 group-hover:opacity-100 transition-opacity`} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Zap className="h-4 w-4 text-white/90" />
-          <p className="text-lg font-bold text-white">{fmtGea(gea)}</p>
+      {/* ISO/RTO logo — top right */}
+      {logoUrl && (
+        <div className="absolute top-4 right-4 h-10 flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt={fmtGea(gea)}
+            className="h-full max-w-[120px] object-contain drop-shadow-md"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
         </div>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
+        <p className="text-lg font-bold text-white mb-0.5">{fmtGea(gea)}</p>
         <p className="text-sm text-white/80">
-          {kpi ? `${fmtNum(kpi.county_count)} counties · ${fmtUsd(kpi.untapped_annual_value_usd)}/yr untapped` : 'Loading…'}
+          {kpi ? `${fmtNum(kpi.county_count)} counties · ${fmtUsd(kpi.untapped_annual_value_usd)}/yr untapped` : '—'}
         </p>
       </div>
     </Link>
@@ -60,9 +69,10 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
 }
 
 export default async function ExplorePage() {
-  const [counties, geas] = await Promise.all([
+  const [counties, geas, geaLogos] = await Promise.all([
     getExploreCounties(),
     getAllGeas(),
+    getGeaLogos(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
@@ -74,9 +84,7 @@ export default async function ExplorePage() {
         <div className="px-4 pt-2 pb-16 sm:pb-10">
 
           {/* Top counties horizontal scroll */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mb-4">
-            By County
-          </h2>
+          <h2 className="text-xl font-bold text-[var(--txt)] mb-4">County</h2>
           <div className="-mx-4 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featured.map((county, i) => (
@@ -86,12 +94,10 @@ export default async function ExplorePage() {
           </div>
 
           {/* GEA Regions grid */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">
-            By GEA Region
-          </h2>
+          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">GEA Region</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (
-              <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
+              <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} logoUrl={geaLogos[gea]} />
             ))}
           </div>
 

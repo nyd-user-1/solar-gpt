@@ -446,6 +446,42 @@ export async function getGeaKpi(gea: string): Promise<GeaKpi | null> {
   return (rows[0] as GeaKpi) ?? null
 }
 
+const GEA_LOGO_SEEDS: Record<string, string> = {
+  'CAISO':             'https://evcvaluation.com/wp-content/uploads/CAISO_Logo_Custom.png',
+  'NYISO':             'https://www.nyiso.com/documents/20142/10339375/nyiso-logo-opengraph.png/44f65e34-e632-8f8a-e594-013f2d3ef46b?t=1690894417356',
+  'ERCOT':             'https://bkvenergy.com/wp-content/uploads/2023/08/ERCOT-logo-1.webp',
+  'SPP':               'https://www.spp.org/logo.png',
+  'ISO New England':   'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
+  'ISO_NE':            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
+  'ISONE':             'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/ISO_New_England.svg/3840px-ISO_New_England.svg.png',
+}
+
+export async function getGeaLogos(): Promise<Record<string, string>> {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS gea_assets (
+        gea_name  TEXT PRIMARY KEY,
+        logo_url  TEXT NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `
+    // Upsert seeds so new logos can be added here without manual SQL
+    for (const [name, url] of Object.entries(GEA_LOGO_SEEDS)) {
+      await sql`
+        INSERT INTO gea_assets (gea_name, logo_url)
+        VALUES (${name}, ${url})
+        ON CONFLICT (gea_name) DO NOTHING
+      `
+    }
+    const rows = await sql`SELECT gea_name, logo_url FROM gea_assets`
+    const map: Record<string, string> = {}
+    for (const r of rows) map[r.gea_name as string] = r.logo_url as string
+    return map
+  } catch {
+    return GEA_LOGO_SEEDS
+  }
+}
+
 export async function getCountiesByGea(gea: string): Promise<CountyKpi[]> {
   const rows = await sql`
     SELECT * FROM solargpt.v_county_kpis
