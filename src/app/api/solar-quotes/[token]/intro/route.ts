@@ -7,22 +7,22 @@ const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY ?? process
 export async function POST(req: NextRequest) {
   const q = await req.json()
 
-  const prompt = `Write a warm, personalized 2-paragraph intro for a solar quote.
+  const prompt = `Write a single punchy sentence greeting for a solar quote — maximum 2 sentences total.
 
 Name: ${q.first_name} ${q.last_name}
 Address: ${q.address}
 Monthly electric bill: ${q.monthly_bill}
-Roof: ${q.roof_age} old · ${q.roof_shade} sun · facing ${q.roof_direction ?? 'unknown direction'}
-Primary goal: ${q.goal}
-System size: ${q.system_kw} kW
-Net cost after 30% federal tax credit: $${Number(q.net_cost).toLocaleString()}
+Roof: ${q.roof_age} old · ${q.roof_shade} sun · facing ${q.roof_direction ?? 'south'}
+Homeownership: ${q.homeownership}
 Estimated monthly savings: ~$${q.monthly_savings}/month
-${q.sunshine_hours ? `Annual sunshine hours: ${Number(q.sunshine_hours).toLocaleString()}` : ''}
-${q.max_panels ? `Max panels: ${q.max_panels}` : ''}
 
-Paragraph 1: Greet them warmly by first name (**bold**). Highlight 2-3 things working in their favour (roof direction, sun exposure, bill size, homeownership). Keep it encouraging.
-Paragraph 2: Reference the specific address (**bold**) and transition naturally into "here's what we found for you." One sentence max.
-No headers. No bullet points. Just two tight paragraphs. Conversational, not salesy.`
+Rules:
+- Open with "Hi [first name]!" (no bold, no comma after Hi)
+- In one sentence: mention roof direction, sun exposure, and bill size to establish why the address is a good solar candidate
+- End with the estimated monthly savings figure
+- Reference the street address naturally (not the full address with city/state)
+- No second paragraph. No "here's what we found." No filler. Max 2 sentences, ~50 words total.
+- Match this style exactly: "Hi Steph! Your south-facing roof, full sun exposure, and $300+ monthly electric bill make 111 Fischer Avenue a strong candidate for solar. As a homeowner, you're well-positioned to invest — and we estimate a tailored system could save you about $278 a month."`
 
   const result = streamText({
     model: openai('gpt-4o-mini'),
