@@ -47,7 +47,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
               <Search className="h-3.5 w-3.5" />
               <span>Search…</span>
-              <kbd className="ml-1 text-[10px] font-mono text-[var(--muted2)] bg-[var(--border)] px-1 rounded">⌘K</kbd>
             </button>
             <button
               onClick={() => router.push('/login?mode=login')}

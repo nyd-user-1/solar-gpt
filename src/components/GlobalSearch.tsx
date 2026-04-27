@@ -68,7 +68,6 @@ export function GlobalSearch() {
       >
         <Search className="h-3.5 w-3.5" />
         <span>Search…</span>
-        <kbd className="ml-1 rounded border border-[var(--border)] px-1 py-0.5 text-[10px] font-mono text-[var(--muted2)]">⌘K</kbd>
       </button>
     )
   }
