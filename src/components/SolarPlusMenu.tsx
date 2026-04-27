@@ -7,6 +7,20 @@ import { Plus, ChevronRight, ArrowLeft, X, Lightbulb, Map, MapPin } from 'lucide
 /*  Sample prompts                                                     */
 /* ------------------------------------------------------------------ */
 
+const STATE_ABBRS: Record<string, string> = {
+  Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA',
+  Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', Florida: 'FL', Georgia: 'GA',
+  Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA',
+  Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD',
+  Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS',
+  Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV',
+  'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+  'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK',
+  Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+  'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT',
+  Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY',
+}
+
 const SAMPLE_PROMPTS = [
   { title: 'Most Untapped Potential', description: 'Best US states by solar opportunity', prompt: 'Which US states have the most untapped solar potential right now?' },
   { title: 'Payback Period', description: 'When does solar pay for itself?', prompt: "What's the typical payback period for rooftop solar in Texas?" },
@@ -75,7 +89,7 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
   const fetchCounties = async (q: string) => {
     setCountiesLoading(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q || 'a')}`)
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
       const data = await res.json()
       setCounties(data.counties ?? [])
     } catch { setCounties([]) }
@@ -251,24 +265,27 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
               countiesLoading
                 ? <p className="px-4 py-3 text-xs text-[var(--muted)]">Loading…</p>
                 : counties.length === 0
-                  ? <p className="px-4 py-3 text-xs text-[var(--muted)]">Type to search counties</p>
-                  : counties.map((c, i) => (
-                    <button
-                      key={`${c.slug}-${c.state}`}
-                      onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name} County, ${c.state}`); closeMenu() }}
-                      className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
-                        i > 0 ? 'border-t border-[var(--border)]' : ''
-                      }`}
-                    >
-                      {c.seal_url
-                        ? <img src={c.seal_url} alt="" className="h-6 w-6 object-contain shrink-0" />
-                        : <MapPin className="h-5 w-5 text-solar shrink-0" />}
-                      <div className="flex flex-col items-start min-w-0">
-                        <span className="text-sm font-semibold text-[var(--txt)]">{c.name}</span>
-                        <span className="text-xs text-[var(--muted)]">{c.state} · Grade {c.grade}</span>
-                      </div>
-                    </button>
-                  ))
+                  ? <p className="px-4 py-3 text-xs text-[var(--muted)]">No matches</p>
+                  : counties.map((c, i) => {
+                    const abbr = STATE_ABBRS[c.state] ?? c.state
+                    return (
+                      <button
+                        key={`${c.slug}-${c.state}`}
+                        onClick={() => { onSelect(`Analyze the solar opportunity in ${c.name} County, ${abbr}`); closeMenu() }}
+                        className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
+                          i > 0 ? 'border-t border-[var(--border)]' : ''
+                        }`}
+                      >
+                        {c.seal_url
+                          ? <img src={c.seal_url} alt="" className="h-6 w-6 object-contain shrink-0" />
+                          : <MapPin className="h-5 w-5 text-solar shrink-0" />}
+                        <div className="flex flex-col items-start min-w-0">
+                          <span className="text-sm font-semibold text-[var(--txt)]">{c.name} County, {abbr}</span>
+                          <span className="text-xs text-[var(--muted)]">Grade {c.grade}</span>
+                        </div>
+                      </button>
+                    )
+                  })
             )}
 
           </div>

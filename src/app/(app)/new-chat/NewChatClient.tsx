@@ -225,10 +225,10 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
   /* ---- Main chat input ---- */
   const chatInputBox = (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-1.5 rounded-[28px] border border-[var(--border)] bg-[var(--surface)] pl-2 pr-2 py-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-col rounded-[28px] border border-[var(--border)] bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-shadow hover:shadow-md gap-1">
 
         {selectedAddress && (
-          <div className="order-0 basis-full flex items-center gap-2 px-1 pb-2 mb-0.5 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2 pb-2.5 mb-1 border-b border-[var(--border)]">
             <MapPin className="h-3.5 w-3.5 text-solar shrink-0" />
             <span className="text-xs text-solar truncate flex-1 font-medium">{selectedAddress.description}</span>
             <button onClick={clearAddress} className="text-[var(--muted)] hover:text-solar transition-colors shrink-0">
@@ -249,50 +249,52 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
             if (e.key === 'Escape') { setModelMenuOpen(false) }
           }}
           placeholder={selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
-          className="order-2 sm:order-1 flex-1 sm:basis-full min-w-0 resize-none bg-transparent px-1 sm:px-0 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
+          className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
           style={{ minHeight: '40px' }} />
 
-        <button onClick={() => { setAddressMode(true) }}
-          className={`order-3 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
-          title="Look up an address">
-          <MapPin className="h-4 w-4" />
-        </button>
-
-        <div className="relative order-4 shrink-0" ref={modelRef}>
-          <button ref={modelBtnRef} type="button"
-            onClick={() => {
-              if (!modelMenuOpen && modelBtnRef.current) {
-                const rect = modelBtnRef.current.getBoundingClientRect()
-                setModelMenuAbove(rect.top > 300)
-              }
-              setModelMenuOpen(v => !v)
-            }}
-            className="inline-flex items-center text-[var(--muted)] hover:text-[var(--txt)] transition-colors rounded-lg p-1.5"
-            aria-label={`Model: ${selectedModel.label}`}>
-            {modelIcon(selectedModel.provider)}
+        <div className="flex items-center gap-1.5 pt-1">
+          <button onClick={() => { setAddressMode(true) }}
+            className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:text-[var(--txt)]'}`}
+            title="Look up an address">
+            <MapPin className="h-4 w-4" />
           </button>
-          {modelMenuOpen && (
-            <div className={`absolute right-0 w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden py-1 z-20 ${modelMenuAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
-              {MODEL_OPTIONS.map(m => (
-                <button key={m.id} onClick={() => { setSelectedModelId(m.id); setModelMenuOpen(false) }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--inp-bg)] transition-colors">
-                  <span className="shrink-0 text-[var(--muted)]">{modelIcon(m.provider)}</span>
-                  <span className="flex-1 text-left font-medium text-[var(--txt)]">{m.label}</span>
-                  {m.id === selectedModelId && (
-                    <svg className="h-4 w-4 shrink-0 text-[var(--txt)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <button type="button" onClick={() => submit(input)} disabled={!input.trim() || loading || streaming}
-          className="order-5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
-          <ArrowUp className="h-4 w-4" />
-        </button>
+          <div className="relative shrink-0" ref={modelRef}>
+            <button ref={modelBtnRef} type="button"
+              onClick={() => {
+                if (!modelMenuOpen && modelBtnRef.current) {
+                  const rect = modelBtnRef.current.getBoundingClientRect()
+                  setModelMenuAbove(rect.top > 300)
+                }
+                setModelMenuOpen(v => !v)
+              }}
+              className="inline-flex items-center text-[var(--muted)] hover:text-[var(--txt)] transition-colors rounded-lg p-1.5"
+              aria-label={`Model: ${selectedModel.label}`}>
+              {modelIcon(selectedModel.provider)}
+            </button>
+            {modelMenuOpen && (
+              <div className={`absolute left-0 w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden py-1 z-20 ${modelMenuAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+                {MODEL_OPTIONS.map(m => (
+                  <button key={m.id} onClick={() => { setSelectedModelId(m.id); setModelMenuOpen(false) }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--inp-bg)] transition-colors">
+                    <span className="shrink-0 text-[var(--muted)]">{modelIcon(m.provider)}</span>
+                    <span className="flex-1 text-left font-medium text-[var(--txt)]">{m.label}</span>
+                    {m.id === selectedModelId && (
+                      <svg className="h-4 w-4 shrink-0 text-[var(--txt)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button type="button" onClick={() => submit(input)} disabled={!input.trim() || loading || streaming}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
+            <ArrowUp className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <p className="text-center text-[10px] text-[var(--muted2)] mt-2">
