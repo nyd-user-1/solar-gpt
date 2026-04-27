@@ -80,22 +80,12 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
               href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`}
               className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
             >
-              {/* Top — icon zone */}
-              <div className="flex h-40 items-center justify-center bg-[var(--inp-bg)]">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--border)]">
-                  <Zap className="h-8 w-8 text-[var(--muted)]" />
-                </div>
-              </div>
+              {/* Top — color band */}
+              <div className="h-2 bg-solar/20" />
 
               {/* Bottom — details */}
               <div className="p-4">
-                {/* Icon + name row */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--inp-bg)]">
-                    <Zap className="h-3 w-3 text-[var(--muted)]" />
-                  </div>
-                  <p className="font-bold text-[var(--txt)] text-sm truncate">{fmtGea(gea.cambium_gea)}</p>
-                </div>
+                <p className="font-bold text-[var(--txt)] text-sm truncate mb-2">{fmtGea(gea.cambium_gea)}</p>
 
                 {/* Badge row */}
                 <div className="flex items-center gap-1.5 mb-6">
@@ -156,8 +146,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
               {filtered.map(gea => (
                 <tr key={gea.cambium_gea} className="hover:bg-[var(--inp-bg)] transition-colors">
                   <td className="px-4 py-3 font-medium text-[var(--txt)]">
-                    <Link href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
-                      <Zap className="h-4 w-4 text-solar shrink-0" />
+                    <Link href={`/gea-regions/${geaToSlug(gea.cambium_gea)}`} className="hover:text-solar transition-colors">
                       {fmtGea(gea.cambium_gea)}
                     </Link>
                   </td>

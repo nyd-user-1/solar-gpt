@@ -17,7 +17,7 @@ export function DashboardHub() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 pt-6 pb-16 sm:pb-10 max-w-6xl mx-auto w-full">
+        <div className="px-6 pt-6 pb-16 sm:pb-10 w-full">
 
           <div className="mb-8">
             <h2 className="text-3xl font-extrabold tracking-tight text-[var(--txt)]">

@@ -81,11 +81,11 @@ export default async function ExplorePage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 pt-2 pb-16 sm:pb-10">
+        <div className="px-6 pt-2 pb-16 sm:pb-10">
 
           {/* Top counties horizontal scroll */}
           <h2 className="text-xl font-bold text-[var(--txt)] mb-4">County</h2>
-          <div className="-mx-4 overflow-x-auto scrollbar-hide">
+          <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featured.map((county, i) => (
                 <CountyCard key={county.id} county={county} index={i} />
