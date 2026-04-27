@@ -7,6 +7,7 @@ import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
+import { STATE_ABBRS } from '@/lib/us-states'
 
 type SortCol = SortableKey | 'region'
 
@@ -112,13 +113,22 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          hideCols={['percent_covered', 'kw_total']}
+          extraCols={[{
+            key: 'state',
+            header: 'State',
+            mobile: true,
+            render: (row) => {
+              const c = row as unknown as CityKpi
+              return <span>{STATE_ABBRS[c.state_name] ?? c.state_name}</span>
+            },
+          }]}
           renderRegion={(row) => {
             const c = row as unknown as CityKpi
             return (
               <Link href={`/cities/${nameToSlug(c.region_name)}`} className="flex items-center gap-2 hover:text-solar transition-colors">
                 <Building2 className="h-4 w-4 text-solar shrink-0" />
                 <span>{c.region_name}</span>
-                <span className="text-xs text-[var(--muted)] ml-1">{c.state_name}</span>
               </Link>
             )
           }}

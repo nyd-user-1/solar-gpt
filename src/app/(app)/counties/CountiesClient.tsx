@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, MapPin, List, LayoutGrid } from 'lucide-react'
 import { cn, fmtUsd, fmtGea } from '@/lib/utils'
+import { STATE_ABBRS } from '@/lib/us-states'
 import { nameToSlug } from '@/lib/queries'
 import type { CountyKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
@@ -121,7 +122,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
             mobile: true,
             render: (row) => {
               const c = row as unknown as CountyKpi
-              return <span>{c.state_name}</span>
+              return <span>{STATE_ABBRS[c.state_name] ?? c.state_name}</span>
             },
           }]}
           renderRegion={(row) => {
