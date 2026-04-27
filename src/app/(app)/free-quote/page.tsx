@@ -22,6 +22,7 @@ interface FormData {
   monthlyBill: string
   roofAge: string
   roofShade: string
+  roofDirection: string
   goal: string
   timeline: string
   creditScore: string
@@ -40,7 +41,7 @@ interface PlaceSuggestion {
 
 const QUESTION_STEPS = [
   'address', 'homeownership', 'monthlyBill', 'roofAge',
-  'roofShade', 'goal', 'timeline', 'creditScore', 'contact',
+  'roofShade', 'roofDirection', 'goal', 'timeline', 'creditScore', 'contact',
 ] as const
 
 type QuestionStep = typeof QUESTION_STEPS[number]
@@ -49,7 +50,7 @@ type Step = QuestionStep | 'loading' | 'result'
 function defaultFormData(): FormData {
   return {
     address: '', placeId: '', lat: null, lng: null,
-    homeownership: '', monthlyBill: '', roofAge: '', roofShade: '',
+    homeownership: '', monthlyBill: '', roofAge: '', roofShade: '', roofDirection: '',
     goal: '', timeline: '', creditScore: '',
     firstName: '', lastName: '', email: '', phone: '',
   }
@@ -447,6 +448,7 @@ export default function FreeQuotePage() {
     monthlyBill: !!formData.monthlyBill,
     roofAge: !!formData.roofAge,
     roofShade: !!formData.roofShade,
+    roofDirection: !!formData.roofDirection,
     goal: !!formData.goal,
     timeline: !!formData.timeline,
     creditScore: !!formData.creditScore,
@@ -774,6 +776,32 @@ export default function FreeQuotePage() {
                   ))}
                 </div>
                 <OrangeButton onClick={goNext} disabled={!formData.roofShade}>CONTINUE →</OrangeButton>
+              </div>
+            )}
+
+            {/* ROOF DIRECTION */}
+            {currentStep === 'roofDirection' && (
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                  Which direction does your roof face?
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { val: 'South', sub: 'Optimal · Max annual output' },
+                    { val: 'West', sub: 'Great · Best for afternoon peaks' },
+                    { val: 'East', sub: 'Great · Best for morning output' },
+                    { val: 'North', sub: 'Lower output · 30–50% below south' },
+                  ].map(({ val, sub }) => (
+                    <CardOption
+                      key={val}
+                      label={val}
+                      sub={sub}
+                      selected={formData.roofDirection === val}
+                      onClick={() => { update('roofDirection', val); setTimeout(goNext, 120) }}
+                    />
+                  ))}
+                </div>
+                <OrangeButton onClick={goNext} disabled={!formData.roofDirection}>CONTINUE →</OrangeButton>
               </div>
             )}
 
