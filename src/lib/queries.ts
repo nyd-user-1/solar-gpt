@@ -445,8 +445,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getTopStates(limit = 8): Promise<StateKpi[]> {
   const rows = await sql`
-    SELECT id, state_name, lat_avg, lng_avg, lat_min, lat_max, lng_min, lng_max,
-      v.id, v.state_name, v.lat_avg, v.lng_avg, v.lat_min, v.lat_max, v.lng_min, v.lng_max,
+    SELECT v.id, v.state_name, v.lat_avg, v.lng_avg, v.lat_min, v.lat_max, v.lng_min, v.lng_max,
       v.count_qualified, v.existing_installs_count, v.untapped_annual_value_usd,
       v.untapped_lifetime_value_usd, v.adoption_rate_pct, v.median_payback_years,
       v.median_annual_savings_usd, v.median_install_cost_usd, v.cars_off_road_equivalent,
