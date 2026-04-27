@@ -315,7 +315,10 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
             <div className="flex flex-col items-center justify-center min-h-full px-4 py-8">
               <div className="w-full max-w-[773px] flex flex-col gap-6">
                 <div className="flex flex-col items-center">
-                  <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-7 w-7 text-solar" />
+                    <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
+                  </div>
                 </div>
                 {inputBox}
                 <div className="max-w-[744px] mx-auto w-full">
@@ -323,14 +326,14 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                   <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                     {stateChips.map(s => (
                       <button key={s.slug} type="button"
-                        onClick={() => { setInput(`What is the solar potential in ${s.name}?`); textareaRef.current?.focus() }}
+                        onClick={() => { setInput(`What is the solar energy potential in ${s.name}?`); textareaRef.current?.focus() }}
                         className="group shrink-0 w-[176px] h-[97px] rounded-2xl overflow-hidden relative hover:opacity-90 transition-opacity snap-start">
                         {s.flag_url
                           ? <img src={`${s.flag_url}?width=400`} alt={s.name} className="absolute inset-0 w-full h-full object-cover" />
                           : <div className="absolute inset-0 bg-solar/10 flex items-center justify-center"><Map className="h-8 w-8 text-solar" /></div>}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-2 left-3">
-                          <p className="text-sm font-bold text-white">{s.name}</p>
+                          <p className="text-sm font-extrabold text-solar">{s.name}</p>
                         </div>
                       </button>
                     ))}

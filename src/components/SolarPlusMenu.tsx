@@ -240,7 +240,7 @@ export function SolarPlusMenu({ stateChips, onSelect }: Props) {
                 {filteredStates.map((s, i) => (
                   <button
                     key={s.slug}
-                    onClick={() => { onSelect(`What is the solar potential in ${s.name}?`); closeMenu() }}
+                    onClick={() => { onSelect(`What is the solar energy potential in ${s.name}?`); closeMenu() }}
                     className={`flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--inp-bg)] transition-colors ${
                       i > 0 ? 'border-t border-[var(--border)]' : ''
                     }`}
