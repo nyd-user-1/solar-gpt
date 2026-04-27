@@ -319,7 +319,7 @@ export default function NewChatClient({ stateChips }: { stateChips: StateChip[] 
                   <h1 className="text-3xl font-bold text-[var(--txt)]">SolarGPT</h1>
                 </div>
                 {inputBox}
-                <div className="max-w-[744px]">
+                <div className="max-w-[744px] mx-auto w-full">
                   <p className="text-base font-semibold text-[var(--txt)] mb-6">Explore</p>
                   <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                     {stateChips.map(s => (
