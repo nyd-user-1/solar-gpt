@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Sun, ChevronLeft, ChevronRight, ArrowRightFromLine } from 'lucide-react'
+import { Sun, ChevronLeft, ChevronRight, ArrowRightFromLine, ArrowLeftToLine } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -72,17 +72,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Top bar */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           {/* Sun icon — only visible when sidebar is closed; opens sidebar */}
-          {!sidebarOpen ? (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
-            >
-              <ArrowRightFromLine className="h-5 w-5 text-[var(--txt)]" />
-            </button>
-          ) : (
-            <div className="h-9 w-9" />
-          )}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            aria-label="Toggle sidebar"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
+          >
+            {sidebarOpen
+              ? <ArrowLeftToLine className="h-5 w-5 text-[var(--txt)]" />
+              : <ArrowRightFromLine className="h-5 w-5 text-[var(--txt)]" />
+            }
+          </button>
 
           {/* Page title — list pages only */}
           {pageTitle && (

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User, ArrowLeftToLine,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -123,20 +123,19 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Header */}
       <div className="flex items-center px-4 pt-4 pb-2">
         <Sun className="h-5 w-5 text-solar fill-solar/20 mr-2 shrink-0" />
-        <span className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
+        <Link
+          href="/"
+          onClick={handleNavClick}
+          className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)] rounded-lg px-2 py-1 -ml-2 hover:bg-[var(--inp-bg)] transition-colors"
+        >
+          SolarGPT
+        </Link>
         {/* Mobile: profile avatar */}
         <button
           onClick={() => setProfileOpen(true)}
-          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold mr-1"
+          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold"
         >
           {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
-        </button>
-        {/* Collapse sidebar */}
-        <button
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
-        >
-          <ArrowLeftToLine className="h-5 w-5 text-[var(--txt)]" />
         </button>
       </div>
 
