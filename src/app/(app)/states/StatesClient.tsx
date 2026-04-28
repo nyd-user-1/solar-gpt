@@ -119,7 +119,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar">
+    <div className="flex-1 overflow-y-auto no-scrollbar animate-zoom-in">
 
       {/* Header */}
       <div className="px-6 pt-8 pb-4">
