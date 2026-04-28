@@ -280,6 +280,7 @@ export type CountyMapEntry = {
   region_name: string
   state_name: string
   untapped_annual_value_usd: number
+  count_qualified: number
 }
 
 export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
@@ -288,7 +289,8 @@ export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
       LPAD(m.state_fips::text, 2, '0') || LPAD(m.county_fips::text, 3, '0') AS fips,
       v.region_name,
       v.state_name,
-      v.untapped_annual_value_usd
+      v.untapped_annual_value_usd,
+      v.count_qualified
     FROM solargpt.v_county_kpis v
     JOIN LATERAL (
       SELECT state_fips, county_fips
@@ -383,11 +385,12 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
 export type StateMapEntry = {
   name: string
   untapped_annual_value_usd: number
+  count_qualified: number
 }
 
 export async function getStatesForMap(): Promise<StateMapEntry[]> {
   const rows = await sql`
-    SELECT state_name AS name, untapped_annual_value_usd
+    SELECT state_name AS name, untapped_annual_value_usd, count_qualified
     FROM solargpt.v_state_kpis
     ORDER BY state_name
   `
@@ -400,7 +403,8 @@ export async function getCountiesForState(stateName: string): Promise<CountyMapE
       LPAD(m.state_fips::text, 2, '0') || LPAD(m.county_fips::text, 3, '0') AS fips,
       v.region_name,
       v.state_name,
-      v.untapped_annual_value_usd
+      v.untapped_annual_value_usd,
+      v.count_qualified
     FROM solargpt.v_county_kpis v
     JOIN LATERAL (
       SELECT state_fips, county_fips

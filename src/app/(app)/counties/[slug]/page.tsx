@@ -79,6 +79,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
         countyFips,
         stateAbbr,
         stateName: county.state_name,
+        countyName: county.region_name,
       } : undefined}
       chatContext={`${county.region_name}, ${county.state_name}`}
     />

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { ZipMapEntry } from '@/lib/queries'
-import { fmtNum, fmtUsd } from '@/lib/utils'
+import { fmtNum } from '@/lib/utils'
 
 function zipGeoJsonUrl(stateAbbr: string, stateName: string): string {
   const nameSlug = stateName.toLowerCase().replace(/ /g, '_')
@@ -42,7 +42,7 @@ const LEGEND = [
 ]
 
 type Bounds = { north: number; south: number; east: number; west: number }
-type HoveredZip = { zip: string; place: string | null; value: number; count: number }
+type ChipData = { title: string; subtitle?: string | null; buildings: number }
 
 function FitBounds({ bounds }: { bounds: Bounds }) {
   const map = useMap()
@@ -54,15 +54,12 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
 }
 
 function ZipChoroplethLayer({
-  zips,
-  stateAbbr,
-  stateName,
-  onHoverChange,
+  zips, stateAbbr, stateName, onHoverChange,
 }: {
   zips: ZipMapEntry[]
   stateAbbr: string
   stateName: string
-  onHoverChange: (info: HoveredZip | null) => void
+  onHoverChange: (data: ChipData | null) => void
 }) {
   const map = useMap()
   const initialized = useRef(false)
@@ -99,7 +96,7 @@ function ZipChoroplethLayer({
           const zip = (e.feature.getProperty('ZCTA5CE10') ?? e.feature.getProperty('GEOID10')) as string
           const z = zipLookup[zip]
           map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
-          onHoverChange(z ? { zip: z.zip_code, place: z.region_name ?? null, value: z.untapped_annual_value_usd, count: z.count_qualified } : null)
+          onHoverChange(z ? { title: z.zip_code, subtitle: z.region_name ?? null, buildings: z.count_qualified } : null)
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
@@ -112,22 +109,24 @@ function ZipChoroplethLayer({
 }
 
 export default function CountyZipMap({
-  zips,
-  stateAbbr,
-  stateName,
-  bounds,
+  zips, countyFips: _countyFips, stateAbbr, stateName, countyName, bounds,
   className = 'h-64 sm:h-96 w-full',
 }: {
   zips: ZipMapEntry[]
   countyFips: string
   stateAbbr: string
   stateName: string
+  countyName: string
   bounds: Bounds
   className?: string
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const center = { lat: (bounds.north + bounds.south) / 2, lng: (bounds.east + bounds.west) / 2 }
-  const [hoveredZip, setHoveredZip] = useState<HoveredZip | null>(null)
+
+  const countyTotal = useMemo(() => zips.reduce((s, z) => s + z.count_qualified, 0), [zips])
+  const defaultChip = useMemo<ChipData>(() => ({ title: countyName, buildings: countyTotal }), [countyName, countyTotal])
+  const [hoveredChip, setHoveredChip] = useState<ChipData | null>(null)
+  const chip = hoveredChip ?? defaultChip
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-sm ${className}`}>
@@ -146,27 +145,20 @@ export default function CountyZipMap({
             zips={zips}
             stateAbbr={stateAbbr}
             stateName={stateName}
-            onHoverChange={setHoveredZip}
+            onHoverChange={setHoveredChip}
           />
         </Map>
       </APIProvider>
 
-      {/* Hover info chip */}
-      <div
-        className={`absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none transition-opacity duration-150 ${hoveredZip ? 'opacity-100' : 'opacity-0'}`}
-      >
-        {hoveredZip && (
-          <>
-            <p className="text-sm font-bold text-[#1a1a1a]">{hoveredZip.zip}</p>
-            {hoveredZip.place && <p className="text-xs font-medium text-[#555]">{hoveredZip.place}</p>}
-            <p className="text-[10px] text-[#666]">{fmtNum(hoveredZip.count)} qualified buildings</p>
-          </>
-        )}
+      {/* Info chip — always visible, shows county aggregate by default */}
+      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
+        <p className="text-sm font-bold text-[#1a1a1a]">{chip.title}</p>
+        {chip.subtitle && <p className="text-xs font-medium text-[#555]">{chip.subtitle}</p>}
+        <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
       </div>
 
-      {/* Legend — top left */}
+      {/* Legend — top left, no header label */}
       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#999] mb-1.5">Potential / yr</p>
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />

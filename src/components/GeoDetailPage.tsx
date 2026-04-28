@@ -64,7 +64,7 @@ export interface DetailPageProps {
   /** State county choropleth — when provided, renders StateCountyMap */
   stateCountyData?: { counties: CountyMapEntry[]; fips: string; name: string }
   /** County ZIP choropleth — when provided, renders CountyZipMap */
-  countyZipData?: { zips: ZipMapEntry[]; countyFips: string; stateAbbr: string; stateName: string }
+  countyZipData?: { zips: ZipMapEntry[]; countyFips: string; stateAbbr: string; stateName: string; countyName: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -207,6 +207,7 @@ export function GeoDetailPage({
               countyFips={countyZipData.countyFips}
               stateAbbr={countyZipData.stateAbbr}
               stateName={countyZipData.stateName}
+              countyName={countyZipData.countyName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
             />

@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
 import type { CountyMapEntry, StateMapEntry } from '@/lib/queries'
+import { fmtNum, fmtUsd } from '@/lib/utils'
+
+type ChipData = { name: string; value: number; buildings: number }
 
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
@@ -50,7 +53,7 @@ const COUNTY_LEGEND = [
   { color: '#fef3c7', label: '< $10M' },
 ]
 
-function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
+function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: CountyMapEntry[]; states: StateMapEntry[]; onHoverChange: (d: ChipData | null) => void }) {
   const map = useMap()
   const router = useRouter()
   const initialized = useRef(false)
@@ -140,10 +143,13 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
           lastHoveredNameRef.current = name
           currentHoveredRef.current = name
           refreshStateStyle()
+          const s = stateLookup[name]
+          onHoverChange(s ? { name, value: s.untapped_annual_value_usd, buildings: s.count_qualified } : null)
         })
         stateLayer.addListener('mouseout', () => {
           currentHoveredRef.current = null
           refreshStateStyle()
+          onHoverChange(null)
         })
       })
 
@@ -159,9 +165,13 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
         })
         map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
           map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const c = countyLookup[fips]
+          onHoverChange(c ? { name: c.region_name, value: c.untapped_annual_value_usd, buildings: c.count_qualified } : null)
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
+          onHoverChange(null)
         })
         countiesReadyRef.current = true
         applyCountyStyle()
@@ -172,13 +182,15 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
       zoomListener.remove()
       stateLayerRef.current?.setMap(null)
     }
-  }, [map, counties, states, router])
+  }, [map, counties, states, router, onHoverChange])
 
   return null
 }
 
 export default function CountyChoropleth({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
+  const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
+
   return (
     <div className="relative w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       <APIProvider apiKey={apiKey}>
@@ -191,11 +203,23 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
           styles={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
         >
-          <DualChoroplethLayer counties={counties} states={states} />
+          <DualChoroplethLayer counties={counties} states={states} onHoverChange={setHoveredInfo} />
         </Map>
       </APIProvider>
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Potential / yr</p>
+
+      {/* Hover chip */}
+      <div className={`absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none transition-opacity duration-150 ${hoveredInfo ? 'opacity-100' : 'opacity-0'}`}>
+        {hoveredInfo && (
+          <>
+            <p className="text-sm font-bold text-[#1a1a1a]">{hoveredInfo.name}</p>
+            <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(hoveredInfo.value)} potential/yr</p>
+            <p className="text-[10px] text-[#666]">{fmtNum(hoveredInfo.buildings)} qualified buildings</p>
+          </>
+        )}
+      </div>
+
+      {/* Legend — top left, no header */}
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         {COUNTY_LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />

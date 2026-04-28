@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
 import type { CountyMapEntry } from '@/lib/queries'
+import { fmtNum } from '@/lib/utils'
+
+type ChipData = { name: string; buildings: number }
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -54,7 +57,7 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
   return null
 }
 
-function CountyChoroplethLayer({ counties, stateFips, stateName, bounds }: { counties: CountyMapEntry[]; stateFips: string; stateName: string; bounds: Bounds }) {
+function CountyChoroplethLayer({ counties, stateFips, stateName, bounds, onHoverChange }: { counties: CountyMapEntry[]; stateFips: string; stateName: string; bounds: Bounds; onHoverChange: (d: ChipData | null) => void }) {
   const map = useMap()
   const router = useRouter()
   const initialized = useRef(false)
@@ -95,10 +98,14 @@ function CountyChoroplethLayer({ counties, stateFips, stateName, bounds }: { cou
         if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
       })
       map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+        const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+        const c = lookup[fips]
         map.data.overrideStyle(e.feature, { strokeWeight: 2.5, strokeColor: '#f59e0b', fillOpacity: 0.95 })
+        onHoverChange(c ? { name: c.region_name, buildings: c.count_qualified } : null)
       })
       map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
         map.data.revertStyle(e.feature)
+        onHoverChange(null)
       })
 
       // ── State border overlay ──
@@ -124,10 +131,7 @@ function CountyChoroplethLayer({ counties, stateFips, stateName, bounds }: { cou
 }
 
 export default function StateCountyMap({
-  counties,
-  stateFips,
-  stateName,
-  bounds,
+  counties, stateFips, stateName, bounds,
   className = 'h-64 sm:h-96 w-full',
 }: {
   counties: CountyMapEntry[]
@@ -138,6 +142,7 @@ export default function StateCountyMap({
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const center = { lat: (bounds.north + bounds.south) / 2, lng: (bounds.east + bounds.west) / 2 }
+  const [hoveredCounty, setHoveredCounty] = useState<ChipData | null>(null)
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-sm ${className}`}>
@@ -152,12 +157,28 @@ export default function StateCountyMap({
           style={{ width: '100%', height: '100%' }}
         >
           <FitBounds bounds={bounds} />
-          <CountyChoroplethLayer counties={counties} stateFips={stateFips} stateName={stateName} bounds={bounds} />
+          <CountyChoroplethLayer
+            counties={counties}
+            stateFips={stateFips}
+            stateName={stateName}
+            bounds={bounds}
+            onHoverChange={setHoveredCounty}
+          />
         </Map>
       </APIProvider>
 
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Potential / yr</p>
+      {/* County hover chip */}
+      <div className={`absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none transition-opacity duration-150 ${hoveredCounty ? 'opacity-100' : 'opacity-0'}`}>
+        {hoveredCounty && (
+          <>
+            <p className="text-sm font-bold text-[#1a1a1a]">{hoveredCounty.name}</p>
+            <p className="text-[10px] text-[#666]">{fmtNum(hoveredCounty.buildings)} qualified buildings</p>
+          </>
+        )}
+      </div>
+
+      {/* Legend — top left, no header */}
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
