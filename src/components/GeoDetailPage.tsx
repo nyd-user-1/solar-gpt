@@ -7,9 +7,9 @@ import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, MessageCir
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
 import { ChatDrawer } from '@/components/ChatDrawer'
-import CityMarkersMap from '@/components/CityMarkersMap'
 import StateCountyMap from '@/components/StateCountyMap'
-import type { HeatmapPoint, CityMarker, CountyMapEntry } from '@/lib/queries'
+import CountyZipMap from '@/components/CountyZipMap'
+import type { HeatmapPoint, CountyMapEntry, ZipMapEntry } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -56,10 +56,10 @@ export interface DetailPageProps {
   mapMarkers?: MapMarker[]
   /** Heatmap data points for the solar potential overlay */
   heatmapPoints?: HeatmapPoint[]
-  /** City markers — when provided, renders CityMarkersMap instead of RegionMap */
-  cityMarkersData?: CityMarker[]
   /** State county choropleth — when provided, renders StateCountyMap */
   stateCountyData?: { counties: CountyMapEntry[]; fips: string; name: string }
+  /** County ZIP choropleth — when provided, renders CountyZipMap */
+  countyZipData?: { zips: ZipMapEntry[]; countyFips: string; stateAbbr: string; stateName: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -89,7 +89,7 @@ export function GeoDetailPage({
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, cityMarkersData, stateCountyData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -182,10 +182,13 @@ export function GeoDetailPage({
               className="h-64 sm:h-96 w-full"
             />
           </div>
-        ) : cityMarkersData && cityMarkersData.length > 0 && mapBounds ? (
+        ) : countyZipData && mapBounds ? (
           <div className="mb-8">
-            <CityMarkersMap
-              cities={cityMarkersData}
+            <CountyZipMap
+              zips={countyZipData.zips}
+              countyFips={countyZipData.countyFips}
+              stateAbbr={countyZipData.stateAbbr}
+              stateName={countyZipData.stateName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
             />

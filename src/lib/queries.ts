@@ -432,6 +432,47 @@ export type CityMarker = {
   count_qualified: number
 }
 
+export type ZipMapEntry = {
+  zip_code: string
+  untapped_annual_value_usd: number
+  count_qualified: number
+}
+
+export async function getZipsForCounty(
+  stateName: string,
+  latMin: number, latMax: number,
+  lngMin: number, lngMax: number,
+): Promise<ZipMapEntry[]> {
+  const rows = await sql`
+    SELECT zip_code, untapped_annual_value_usd, count_qualified
+    FROM solargpt.v_zip_kpis
+    WHERE state_name = ${stateName}
+      AND lat_avg BETWEEN ${latMin} AND ${latMax}
+      AND lng_avg BETWEEN ${lngMin} AND ${lngMax}
+    ORDER BY untapped_annual_value_usd DESC NULLS LAST
+  `
+  return rows as ZipMapEntry[]
+}
+
+export async function getCountyFips(stateName: string, countyName: string): Promise<string | null> {
+  const rows = await sql`
+    SELECT LPAD(m.state_fips::text, 2, '0') || LPAD(m.county_fips::text, 3, '0') AS fips
+    FROM solargpt.raw_cambium_county_mapping m
+    WHERE LOWER(m.state_name) = LOWER(${stateName})
+      AND (
+        LOWER(m.county_name || ' County')       = LOWER(${countyName}) OR
+        LOWER(m.county_name || ' Parish')       = LOWER(${countyName}) OR
+        LOWER(m.county_name || ' Borough')      = LOWER(${countyName}) OR
+        LOWER(m.county_name || ' Municipality') = LOWER(${countyName}) OR
+        LOWER(m.county_name || ' Census Area')  = LOWER(${countyName}) OR
+        LOWER(m.county_name || ' city')         = LOWER(${countyName}) OR
+        LOWER(m.county_name)                    = LOWER(${countyName})
+      )
+    LIMIT 1
+  `
+  return (rows[0] as { fips: string } | undefined)?.fips ?? null
+}
+
 export async function getCitiesForCountyMap(
   stateName: string,
   latMin: number, latMax: number,

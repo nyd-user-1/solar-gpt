@@ -6,9 +6,11 @@ import {
   getCountyBySlug,
   getAdjacentCounties,
   getCitiesByState,
-  getCitiesForCountyMap,
+  getZipsForCounty,
+  getCountyFips,
   nameToSlug,
 } from '@/lib/queries'
+import { STATE_ABBR } from '@/lib/state-abbr'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
 export default async function CountyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -16,11 +18,14 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
   const county = await getCountyBySlug(slug)
   if (!county) notFound()
 
-  const [adjacent, cities, cityMarkers] = await Promise.all([
+  const [adjacent, cities, zipData, countyFips] = await Promise.all([
     getAdjacentCounties(county.id, county.state_name),
     getCitiesByState(county.state_name, 16),
-    getCitiesForCountyMap(county.state_name, county.lat_min, county.lat_max, county.lng_min, county.lng_max),
+    getZipsForCounty(county.state_name, county.lat_min, county.lat_max, county.lng_min, county.lng_max),
+    getCountyFips(county.state_name, county.region_name),
   ])
+
+  const stateAbbr = STATE_ABBR[county.state_name] ?? ''
 
   const prev = adjacent.prev
     ? { label: adjacent.prev.region_name, href: `/counties/${nameToSlug(adjacent.prev.region_name)}` }
@@ -66,9 +71,13 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       carouselItems={carouselItems}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      mapCenter={{ lat: county.lat_avg, lng: county.lng_avg }}
       mapBounds={{ north: county.lat_max, south: county.lat_min, east: county.lng_max, west: county.lng_min }}
-      cityMarkersData={cityMarkers}
+      countyZipData={countyFips && stateAbbr ? {
+        zips: zipData,
+        countyFips,
+        stateAbbr,
+        stateName: county.state_name,
+      } : undefined}
       chatContext={`${county.region_name}, ${county.state_name}`}
     />
   )
