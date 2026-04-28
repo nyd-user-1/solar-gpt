@@ -42,7 +42,7 @@ const LEGEND = [
 ]
 
 type Bounds = { north: number; south: number; east: number; west: number }
-type HoveredZip = { zip: string; place: string; value: number; count: number }
+type HoveredZip = { zip: string; place: string | null; value: number; count: number }
 
 function FitBounds({ bounds }: { bounds: Bounds }) {
   const map = useMap()
@@ -99,7 +99,7 @@ function ZipChoroplethLayer({
           const zip = (e.feature.getProperty('ZCTA5CE10') ?? e.feature.getProperty('GEOID10')) as string
           const z = zipLookup[zip]
           map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
-          onHoverChange(z ? { zip: z.zip_code, place: z.region_name, value: z.untapped_annual_value_usd, count: z.count_qualified } : null)
+          onHoverChange(z ? { zip: z.zip_code, place: z.region_name ?? null, value: z.untapped_annual_value_usd, count: z.count_qualified } : null)
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
@@ -158,7 +158,7 @@ export default function CountyZipMap({
         {hoveredZip && (
           <>
             <p className="text-sm font-bold text-[#1a1a1a]">{hoveredZip.zip}</p>
-            <p className="text-xs font-medium text-[#555]">{hoveredZip.place}</p>
+            {hoveredZip.place && <p className="text-xs font-medium text-[#555]">{hoveredZip.place}</p>}
             <p className="text-[10px] text-[#666]">{fmtNum(hoveredZip.count)} qualified buildings</p>
           </>
         )}
