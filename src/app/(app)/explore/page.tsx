@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
-import { getExploreCounties, getAllGeas, getGeaKpi, type CountyKpi, type GeaKpi } from '@/lib/queries'
+import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
@@ -16,6 +15,31 @@ const CARD_GRADIENTS = [
   'from-rose-400 to-pink-500',
   'from-cyan-400 to-sky-500',
 ]
+
+function StateCard({ state, index }: { state: StateKpi; index: number }) {
+  const gradient = CARD_GRADIENTS[(index + 5) % CARD_GRADIENTS.length]
+  return (
+    <Link
+      href={`/states/${nameToSlug(state.state_name)}`}
+      className="group relative shrink-0 w-[calc(50vw-22px)] sm:w-[220px] aspect-[3/4] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {state.flag_url && (
+        <div className="absolute inset-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${state.flag_url}?width=600`} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay" />
+        </div>
+      )}
+      <div className="absolute top-3 right-3 rounded-full bg-white/20 backdrop-blur-sm px-2 py-1">
+        <span className="text-xs font-bold text-white">{fmtUsd(state.untapped_annual_value_usd)}</span>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
+        <p className="text-sm font-bold text-white leading-snug">{state.state_name}</p>
+      </div>
+    </Link>
+  )
+}
 
 function CountyCard({ county, index }: { county: CountyKpi; index: number }) {
   const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length]
@@ -61,24 +85,28 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
 }
 
 export default async function ExplorePage() {
-  const [counties, geas] = await Promise.all([
+  const [counties, geas, states] = await Promise.all([
     getExploreCounties(),
     getAllGeas(),
+    getAllStates(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
-  const featured = counties.slice(0, 12)
+  const featuredCounties = counties.slice(0, 12)
+  const featuredStates = [...states]
+    .sort((a, b) => (b.untapped_annual_value_usd ?? 0) - (a.untapped_annual_value_usd ?? 0))
+    .slice(0, 15)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
-          {/* Top counties horizontal scroll */}
+          {/* States horizontal scroll */}
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
-              {featured.map((county, i) => (
-                <CountyCard key={county.id} county={county} index={i} />
+              {featuredStates.map((state, i) => (
+                <StateCard key={state.id} state={state} index={i} />
               ))}
             </div>
           </div>
@@ -91,24 +119,14 @@ export default async function ExplorePage() {
             ))}
           </div>
 
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-solar" />
-            All NY Counties
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {counties.map(county => (
-              <Link
-                key={county.id}
-                href={`/counties/${nameToSlug(county.region_name)}`}
-                className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-3 transition-all hover:shadow-md hover:border-solar group"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--txt)] truncate">{county.region_name}</p>
-                  <p className="text-xs text-[var(--muted)]">{fmtUsd(county.untapped_annual_value_usd)}/yr</p>
-                </div>
-                <span className="text-xs font-bold text-solar shrink-0 ml-2">{county.sunlight_grade}</span>
-              </Link>
-            ))}
+          {/* Counties horizontal scroll */}
+          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">County</h2>
+          <div className="-mx-6 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
+              {featuredCounties.map((county, i) => (
+                <CountyCard key={county.id} county={county} index={i} />
+              ))}
+            </div>
           </div>
 
         </div>
