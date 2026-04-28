@@ -434,6 +434,7 @@ export type CityMarker = {
 
 export type ZipMapEntry = {
   zip_code: string
+  region_name: string
   untapped_annual_value_usd: number
   count_qualified: number
 }
@@ -444,7 +445,7 @@ export async function getZipsForCounty(
   lngMin: number, lngMax: number,
 ): Promise<ZipMapEntry[]> {
   const rows = await sql`
-    SELECT zip_code, untapped_annual_value_usd, count_qualified
+    SELECT zip_code, region_name, untapped_annual_value_usd, count_qualified
     FROM solargpt.v_zip_kpis
     WHERE state_name = ${stateName}
       AND lat_avg BETWEEN ${latMin} AND ${latMax}
