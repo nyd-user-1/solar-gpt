@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import {
   ChevronLeft, ChevronRight, ChevronDown,
   Send, MessageSquare, ScrollText,
-  Phone, Mail, Calendar, Clock, ExternalLink, MapPin,
+  Phone, Mail, Calendar, Clock, MapPin, Sun, MessageCircle,
 } from 'lucide-react'
 import { SAMPLE_LEADS } from '@/data/leads'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
@@ -116,23 +116,33 @@ export default function LeadDetailPage() {
     return (
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
-          {/* Breadcrumb */}
-          <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            <Link href="/leads" className="hover:text-solar transition-colors">Leads</Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-solar font-medium">{fullName}</span>
-          </nav>
-
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between gap-2">
+          <div className="mb-8 flex items-center justify-between gap-2">
             <h1 className="text-2xl font-bold text-[var(--txt)]">{fullName}</h1>
-            {dbLead.token && (
-              <Link href={`/quote/${dbLead.token}`}
-                className="flex items-center gap-2 rounded-full bg-solar text-white px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity shrink-0">
-                <ExternalLink className="h-3.5 w-3.5" />
-                View Quote
-              </Link>
-            )}
+            <div className="hidden sm:flex items-center shrink-0">
+              <div className="inline-flex -space-x-px">
+                <Link href="/leads"
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-l-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                  <ChevronLeft className="h-4 w-4" />
+                </Link>
+                <button
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                  <MessageCircle className="h-4 w-4" />
+                </button>
+                <Link href={dbLead.token ? `/quote/${dbLead.token}` : '/free-quote'}
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                  <Sun className="h-4 w-4" />
+                </Link>
+                <Link href="/leads"
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                  <MapPin className="h-4 w-4" />
+                </Link>
+                <Link href="/leads"
+                  className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-r-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Satellite map */}
@@ -243,36 +253,28 @@ export default function LeadDetailPage() {
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-4">
-        {/* Breadcrumb */}
-        <nav className="mb-4 flex items-center gap-1.5 text-xs text-[var(--muted)]">
-          <Link href="/leads" className="hover:text-solar transition-colors">Leads</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-solar font-medium">{fullName}</span>
-        </nav>
-
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="mb-8 flex items-center justify-between gap-2">
           <h1 className="text-2xl font-bold text-[var(--txt)]">{fullName}</h1>
           <div className="hidden sm:flex items-center shrink-0">
             <div className="inline-flex -space-x-px">
-              <Link href={prev ? `/leads/${prev.id}` : '#'} aria-disabled={!prev}
-                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-l-full text-[var(--muted)] transition-colors ${prev ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}>
+              <Link href={prev ? `/leads/${prev.id}` : '#'}
+                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-l-full text-[var(--muted)] transition-colors ${prev ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'pointer-events-none'}`}>
                 <ChevronLeft className="h-4 w-4" />
               </Link>
-              <a href={`mailto:${lead.email}`}
+              <button className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                <MessageCircle className="h-4 w-4" />
+              </button>
+              <Link href="/free-quote"
                 className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
-                <Send className="h-4 w-4" />
-              </a>
-              <a href={`sms:${lead.phone}`}
-                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
-                <MessageSquare className="h-4 w-4" />
-              </a>
+                <Sun className="h-4 w-4" />
+              </Link>
               <Link href="/leads"
                 className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
-                <ScrollText className="h-4 w-4" />
+                <MapPin className="h-4 w-4" />
               </Link>
-              <Link href={next ? `/leads/${next.id}` : '#'} aria-disabled={!next}
-                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-r-full text-[var(--muted)] transition-colors ${next ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}>
+              <Link href={next ? `/leads/${next.id}` : '#'}
+                className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] rounded-r-full text-[var(--muted)] transition-colors ${next ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'pointer-events-none'}`}>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>

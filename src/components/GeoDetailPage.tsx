@@ -118,7 +118,7 @@ export function GeoDetailPage({
                 <Link
                   href={prev?.href ?? '#'}
                   aria-disabled={!prev}
-                  className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-l-full text-[var(--muted)] transition-colors ${prev ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}
+                  className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-l-full text-[var(--muted)] transition-colors ${prev ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'pointer-events-none'}`}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Link>
@@ -155,7 +155,7 @@ export function GeoDetailPage({
                 <Link
                   href={next?.href ?? '#'}
                   aria-disabled={!next}
-                  className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-r-full text-[var(--muted)] transition-colors ${next ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'opacity-30 pointer-events-none'}`}
+                  className={`inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-r-full text-[var(--muted)] transition-colors ${next ? 'hover:text-solar hover:bg-[var(--inp-bg)]' : 'pointer-events-none'}`}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Link>
@@ -261,8 +261,8 @@ export function GeoDetailPage({
                     href={item.href}
                     className="block w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
                   >
-                    <div className="flex flex-col items-center justify-center text-center h-full gap-0.5">
-                      <p className="text-sm font-semibold text-[var(--txt)] truncate max-w-full">{item.title}</p>
+                    <div className="flex flex-col items-start text-left gap-0.5">
+                      <p className="text-sm font-semibold text-[var(--txt)]">{item.title}</p>
                       <p className="text-xs text-[var(--muted)]">{item.subtitle}</p>
                       {item.metric && (
                         <p className="mt-1 text-sm font-bold text-solar">{item.metric}</p>
@@ -302,7 +302,7 @@ export function GeoDetailPage({
                   <CarouselItem key={item.href} className="basis-full sm:basis-1/2 md:basis-1/3">
                     <Link
                       href={item.href}
-                      className="block w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 text-center transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer overflow-hidden"
+                      className="block w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer overflow-hidden"
                     >
                       <p className="mb-1 text-sm font-medium text-[var(--txt)] truncate">{item.title}</p>
                       <p className="text-xs text-[var(--muted)] line-clamp-2">{item.subtitle}</p>
