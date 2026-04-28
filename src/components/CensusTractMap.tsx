@@ -52,11 +52,12 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
 }
 
 function TractChoroplethLayer({
-  tracts, stateFips, onHoverChange,
+  tracts, stateFips, onHoverChange, onLoaded,
 }: {
   tracts: TractMapEntry[]
   stateFips: string
   onHoverChange: (data: ChipData | null) => void
+  onLoaded: () => void
 }) {
   const map = useMap()
   const initialized = useRef(false)
@@ -97,8 +98,9 @@ function TractChoroplethLayer({
           map.data.revertStyle(e.feature)
           onHoverChange(null)
         })
+        onLoaded()
       })
-  }, [map, tracts, stateFips, onHoverChange])
+  }, [map, tracts, stateFips, onHoverChange, onLoaded])
 
   return null
 }
@@ -119,9 +121,11 @@ export default function CensusTractMap({
   const totalBuildings = useMemo(() => tracts.reduce((s, t) => s + t.count_qualified, 0), [tracts])
   const defaultChip = useMemo<ChipData>(() => ({ title: parentName, buildings: totalBuildings }), [parentName, totalBuildings])
   const [hoveredChip, setHoveredChip] = useState<ChipData | null>(null)
+  const [loaded, setLoaded] = useState(false)
   const chip = hoveredChip ?? defaultChip
 
   const handleHover = useCallback((data: ChipData | null) => setHoveredChip(data), [])
+  const handleLoaded = useCallback(() => setLoaded(true), [])
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-sm ${className}`}>
@@ -136,18 +140,21 @@ export default function CensusTractMap({
           style={{ width: '100%', height: '100%' }}
         >
           <FitBounds bounds={bounds} />
-          <TractChoroplethLayer tracts={tracts} stateFips={stateFips} onHoverChange={handleHover} />
+          <TractChoroplethLayer tracts={tracts} stateFips={stateFips} onHoverChange={handleHover} onLoaded={handleLoaded} />
         </Map>
       </APIProvider>
 
-      {/* Info chip — always visible, shows parent by default */}
-      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
+      {/* Skeleton overlay — fades out once GeoJSON is loaded */}
+      <div className={`absolute inset-0 z-10 rounded-2xl bg-[var(--border)] animate-shimmer pointer-events-none transition-opacity duration-500 ${loaded ? 'opacity-0' : 'opacity-100'}`} />
+
+      {/* Info chip — always visible above skeleton */}
+      <div className="absolute bottom-8 left-3 z-20 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
         <p className="text-sm font-bold text-[#1a1a1a]">{chip.title}</p>
         <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
       </div>
 
-      {/* Legend — top left, no header */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
+      {/* Legend — top left, above skeleton */}
+      <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         <p className="text-[9px] font-semibold uppercase tracking-wider text-[#999] mb-1.5">Qualified Bldgs.</p>
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
 import type { ZipMapEntry } from '@/lib/queries'
@@ -55,12 +55,13 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
 }
 
 function ZipChoroplethLayer({
-  zips, stateAbbr, stateName, onHoverChange,
+  zips, stateAbbr, stateName, onHoverChange, onLoaded,
 }: {
   zips: ZipMapEntry[]
   stateAbbr: string
   stateName: string
   onHoverChange: (data: ChipData | null) => void
+  onLoaded: () => void
 }) {
   const map = useMap()
   const router = useRouter()
@@ -108,8 +109,9 @@ function ZipChoroplethLayer({
           map.data.revertStyle(e.feature)
           onHoverChange(null)
         })
+        onLoaded()
       })
-  }, [map, zips, stateAbbr, stateName, onHoverChange, router])
+  }, [map, zips, stateAbbr, stateName, onHoverChange, onLoaded, router])
 
   return null
 }
@@ -132,7 +134,9 @@ export default function CountyZipMap({
   const countyTotal = useMemo(() => zips.reduce((s, z) => s + z.count_qualified, 0), [zips])
   const defaultChip = useMemo<ChipData>(() => ({ title: countyName, buildings: countyTotal }), [countyName, countyTotal])
   const [hoveredChip, setHoveredChip] = useState<ChipData | null>(null)
+  const [loaded, setLoaded] = useState(false)
   const chip = hoveredChip ?? defaultChip
+  const handleLoaded = useCallback(() => setLoaded(true), [])
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-sm ${className}`}>
@@ -152,19 +156,23 @@ export default function CountyZipMap({
             stateAbbr={stateAbbr}
             stateName={stateName}
             onHoverChange={setHoveredChip}
+            onLoaded={handleLoaded}
           />
         </Map>
       </APIProvider>
 
-      {/* Info chip — always visible, shows county aggregate by default */}
-      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
+      {/* Skeleton overlay — fades out once GeoJSON loaded */}
+      <div className={`absolute inset-0 z-10 rounded-2xl bg-[var(--border)] animate-shimmer pointer-events-none transition-opacity duration-500 ${loaded ? 'opacity-0' : 'opacity-100'}`} />
+
+      {/* Info chip — above skeleton */}
+      <div className="absolute bottom-8 left-3 z-20 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
         <p className="text-sm font-bold text-[#1a1a1a]">{chip.title}</p>
         {chip.subtitle && <p className="text-xs font-medium text-[#555]">{chip.subtitle}</p>}
         <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
       </div>
 
-      {/* Legend — top left, no header label */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
+      {/* Legend — above skeleton */}
+      <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
