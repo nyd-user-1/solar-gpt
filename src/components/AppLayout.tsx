@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col min-w-0 rounded-none sm:rounded-2xl bg-[var(--surface)] overflow-hidden">
+      <div className="flex flex-1 flex-col min-w-0 rounded-none sm:rounded-2xl bg-[var(--surface)] overflow-hidden outline-none">
         {/* Top bar */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           {/* Sun icon — only visible when sidebar is closed; opens sidebar */}
@@ -145,7 +145,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex flex-1 flex-col overflow-hidden outline-none" tabIndex={-1}>
           {children}
         </main>
       </div>
