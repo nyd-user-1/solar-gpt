@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { MapPin } from 'lucide-react'
-import { getExploreCounties, getAllGeas, getGeaKpi, getGeaLogos, type CountyKpi, type GeaKpi } from '@/lib/queries'
+import { getExploreCounties, getAllGeas, getGeaKpi, type CountyKpi, type GeaKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
@@ -26,18 +26,17 @@ function CountyCard({ county, index }: { county: CountyKpi; index: number }) {
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-      <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-2 py-1">
-        <span className="text-xs font-bold text-white">{county.sunlight_grade}</span>
+      <div className="absolute top-3 right-3 rounded-full bg-white/20 backdrop-blur-sm px-2 py-1">
+        <span className="text-xs font-bold text-white">{fmtUsd(county.untapped_annual_value_usd)}</span>
       </div>
       <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
         <p className="text-sm font-bold text-white leading-snug">{county.region_name}</p>
-        <p className="text-xs text-white/80">{fmtUsd(county.untapped_annual_value_usd)}/yr untapped</p>
       </div>
     </Link>
   )
 }
 
-function GeaCard({ gea, kpi, index, logoUrl }: { gea: string; kpi: GeaKpi | null; index: number; logoUrl?: string }) {
+function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: number }) {
   const gradient = CARD_GRADIENTS[(index + 3) % CARD_GRADIENTS.length]
   return (
     <Link
@@ -46,22 +45,15 @@ function GeaCard({ gea, kpi, index, logoUrl }: { gea: string; kpi: GeaKpi | null
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-85 group-hover:opacity-100 transition-opacity`} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-      {/* ISO/RTO logo — top right */}
-      {logoUrl && (
-        <div className="absolute top-4 right-4 h-10 flex items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoUrl}
-            alt={fmtGea(gea)}
-            className="h-full max-w-[120px] object-contain drop-shadow-md"
-            style={{ filter: 'brightness(0) invert(1)' }}
-          />
+      {kpi && (
+        <div className="absolute top-4 right-4 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1">
+          <span className="text-sm font-bold text-white">{fmtUsd(kpi.untapped_annual_value_usd)}</span>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
         <p className="text-lg font-bold text-white mb-0.5">{fmtGea(gea)}</p>
         <p className="text-sm text-white/80">
-          {kpi ? `${fmtNum(kpi.county_count)} counties · ${fmtUsd(kpi.untapped_annual_value_usd)}/yr untapped` : '—'}
+          {kpi ? `${fmtNum(kpi.county_count)} counties` : '—'}
         </p>
       </div>
     </Link>
@@ -69,10 +61,9 @@ function GeaCard({ gea, kpi, index, logoUrl }: { gea: string; kpi: GeaKpi | null
 }
 
 export default async function ExplorePage() {
-  const [counties, geas, geaLogos] = await Promise.all([
+  const [counties, geas] = await Promise.all([
     getExploreCounties(),
     getAllGeas(),
-    getGeaLogos(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
@@ -96,7 +87,7 @@ export default async function ExplorePage() {
           <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">Region</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (
-              <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} logoUrl={geaLogos[gea]} />
+              <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
             ))}
           </div>
 
