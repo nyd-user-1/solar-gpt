@@ -389,12 +389,17 @@ export type CityMarker = {
   count_qualified: number
 }
 
-export async function getCitiesForCountyMap(countyName: string, stateName: string): Promise<CityMarker[]> {
+export async function getCitiesForCountyMap(
+  stateName: string,
+  latMin: number, latMax: number,
+  lngMin: number, lngMax: number,
+): Promise<CityMarker[]> {
   const rows = await sql`
     SELECT id, region_name, lat_avg, lng_avg, untapped_annual_value_usd, count_qualified
     FROM solargpt.v_city_kpis
     WHERE state_name = ${stateName}
-      AND LOWER(REPLACE(county_name, ' County', '')) = LOWER(REPLACE(${countyName}, ' County', ''))
+      AND lat_avg BETWEEN ${latMin} AND ${latMax}
+      AND lng_avg BETWEEN ${lngMin} AND ${lngMax}
     ORDER BY untapped_annual_value_usd DESC NULLS LAST
   `
   return rows as CityMarker[]

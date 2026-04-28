@@ -19,7 +19,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
   const [adjacent, cities, cityMarkers] = await Promise.all([
     getAdjacentCounties(county.id, county.state_name),
     getCitiesByState(county.state_name, 16),
-    getCitiesForCountyMap(county.region_name, county.state_name),
+    getCitiesForCountyMap(county.state_name, county.lat_min, county.lat_max, county.lng_min, county.lng_max),
   ])
 
   const prev = adjacent.prev
