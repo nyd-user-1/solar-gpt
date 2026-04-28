@@ -28,10 +28,20 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
     })
     const q = query.toLowerCase()
     let list = query
-      ? unique.filter(c =>
-          c.region_name.toLowerCase().includes(q) ||
-          c.state_name.toLowerCase().includes(q)
-        )
+      ? unique
+          .filter(c =>
+            c.region_name.toLowerCase().includes(q) ||
+            c.state_name.toLowerCase().includes(q)
+          )
+          .sort((a, b) => {
+            const an = a.region_name.toLowerCase()
+            const bn = b.region_name.toLowerCase()
+            const aExact = an === q, bExact = bn === q
+            const aStarts = an.startsWith(q), bStarts = bn.startsWith(q)
+            if (aExact !== bExact) return aExact ? -1 : 1
+            if (aStarts !== bStarts) return aStarts ? -1 : 1
+            return an.localeCompare(bn)
+          })
       : [...unique]
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
