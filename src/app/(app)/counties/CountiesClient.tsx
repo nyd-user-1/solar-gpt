@@ -109,7 +109,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
       {viewMode === 'list' && (
         <SolarDataTable
           rows={filtered as SolarRow[]}
-          sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+          sortCol={sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
           hideCols={['percent_covered', 'kw_total']}

@@ -103,7 +103,7 @@ interface ExtraCol<T> {
 
 interface Props<T extends SolarRow> {
   rows: T[]
-  sortCol: SortableKey
+  sortCol: SortableKey | 'region'
   sortDir: 'asc' | 'desc'
   onSort: (key: SortableKey) => void
   renderRegion: (row: T) => React.ReactNode

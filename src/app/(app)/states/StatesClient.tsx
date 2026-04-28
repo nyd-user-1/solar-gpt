@@ -223,7 +223,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
       {viewMode === 'list' && (
         <SolarDataTable
           rows={filteredStates as SolarRow[]}
-          sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+          sortCol={sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
           getRowHref={(row) => {
@@ -258,7 +258,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           </div>
           <SolarDataTable
             rows={filteredTerritories as SolarRow[]}
-            sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+            sortCol={sortCol}
             sortDir={sortDir}
             onSort={toggleSort}
             getRowHref={(row) => {
