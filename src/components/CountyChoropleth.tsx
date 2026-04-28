@@ -138,7 +138,7 @@ export default function CountyChoropleth({ counties }: { counties: CountyMapEntr
       </APIProvider>
 
       {/* Legend */}
-      <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
+      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">
           Untapped / yr
         </p>
