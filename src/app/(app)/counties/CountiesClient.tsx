@@ -97,7 +97,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           {filtered.map(county => (
             <Link
               key={county.id}
-              href={`/counties/${nameToSlug(county.region_name)}`}
+              href={`/counties/${nameToSlug(county.state_name)}/${nameToSlug(county.region_name)}`}
               className="flex flex-col rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 transition-all hover:shadow-xl hover:border-solar"
             >
               <div className="flex items-center gap-3 mb-3">
@@ -145,7 +145,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           }]}
           getRowHref={(row) => {
             const c = row as unknown as CountyKpi
-            return `/counties/${nameToSlug(c.region_name)}`
+            return `/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`
           }}
           renderRegion={(row) => {
             const c = row as unknown as CountyKpi

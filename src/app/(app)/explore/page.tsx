@@ -53,7 +53,7 @@ function CountyCard({ county, index }: { county: CountyKpi; index: number }) {
   const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length]
   return (
     <Link
-      href={`/counties/${nameToSlug(county.region_name)}`}
+      href={`/counties/${nameToSlug(county.state_name)}/${nameToSlug(county.region_name)}`}
       className="group relative shrink-0 w-[calc(50vw-22px)] sm:w-[220px] aspect-[3/4] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />

@@ -342,11 +342,11 @@ export async function getCountyByName(regionName: string, stateName: string): Pr
   return (rows[0] as CountyKpi) ?? null
 }
 
-export async function getCountyBySlug(slug: string, stateName = 'New York'): Promise<CountyKpi | null> {
+export async function getCountyBySlug(stateSlug: string, countySlug: string): Promise<CountyKpi | null> {
   const rows = await sql`
     SELECT * FROM solargpt.v_county_kpis
-    WHERE REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') = ${slug}
-    AND state_name = ${stateName}
+    WHERE REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') = ${stateSlug}
+      AND REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') = ${countySlug}
     LIMIT 1
   `
   return (rows[0] as CountyKpi) ?? null

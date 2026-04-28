@@ -161,7 +161,7 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const c = countyLookup[fips]
-          if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
+          if (c) router.push(`/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`)
         })
         map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
           map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })

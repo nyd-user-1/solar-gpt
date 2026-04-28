@@ -42,7 +42,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ sta
     .filter(c => c.id !== city.id)
     .map(c => ({
       title: c.region_name,
-      subtitle: `Qualified Bldgs. ${fmtNum(c.count_qualified)}`,
+      subtitle: fmtNum(c.count_qualified),
       href: `/cities/${cityStateSlug}/${nameToSlug(c.region_name)}`,
       metric: fmtUsd(c.untapped_annual_value_usd),
     }))

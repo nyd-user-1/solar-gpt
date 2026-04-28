@@ -95,7 +95,7 @@ function CountyChoroplethLayer({ counties, stateFips, stateName, bounds, onHover
       map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
         const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
         const c = lookup[fips]
-        if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
+        if (c) router.push(`/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`)
       })
       map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
         const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)

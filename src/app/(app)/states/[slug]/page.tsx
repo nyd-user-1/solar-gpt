@@ -50,8 +50,8 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
     .sort((a, b) => a.region_name.localeCompare(b.region_name))
     .map(c => ({
       title: c.region_name,
-      subtitle: `Qualified Bldgs. ${fmtNum(c.count_qualified)}`,
-      href: `/counties/${nameToSlug(c.region_name)}`,
+      subtitle: fmtNum(c.count_qualified),
+      href: `/counties/${nameToSlug(state.state_name)}/${nameToSlug(c.region_name)}`,
       metric: fmtUsd(c.untapped_annual_value_usd),
     }))
 

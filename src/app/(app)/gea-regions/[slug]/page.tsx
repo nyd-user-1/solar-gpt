@@ -38,10 +38,10 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   const carouselItems = counties.map(c => ({
     title: c.region_name,
-    subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
-    href: `/counties/${nameToSlug(c.region_name)}`,
+    subtitle: fmtNum(c.count_qualified),
+    href: `/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`,
     metric: fmtUsd(c.untapped_annual_value_usd),
-    metricLabel: 'potential/yr',
+    
   }))
 
   return (

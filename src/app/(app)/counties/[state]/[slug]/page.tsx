@@ -12,10 +12,12 @@ import {
 import { STATE_ABBR } from '@/lib/state-abbr'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
-export default async function CountyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const county = await getCountyBySlug(slug)
+export default async function CountyDetailPage({ params }: { params: Promise<{ state: string; slug: string }> }) {
+  const { state: stateSlug, slug } = await params
+  const county = await getCountyBySlug(stateSlug, slug)
   if (!county) notFound()
+
+  const countyStateSlug = nameToSlug(county.state_name)
 
   const [adjacent, zipData, countyFips] = await Promise.all([
     getAdjacentCounties(county.id, county.state_name),
@@ -26,10 +28,10 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
   const stateAbbr = STATE_ABBR[county.state_name] ?? ''
 
   const prev = adjacent.prev
-    ? { label: adjacent.prev.region_name, href: `/counties/${nameToSlug(adjacent.prev.region_name)}` }
+    ? { label: adjacent.prev.region_name, href: `/counties/${countyStateSlug}/${nameToSlug(adjacent.prev.region_name)}` }
     : null
   const next = adjacent.next
-    ? { label: adjacent.next.region_name, href: `/counties/${nameToSlug(adjacent.next.region_name)}` }
+    ? { label: adjacent.next.region_name, href: `/counties/${countyStateSlug}/${nameToSlug(adjacent.next.region_name)}` }
     : null
 
   const infoRows = [
@@ -50,7 +52,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     .map(z => ({
       title: z.zip_code,
       subtitle: z.region_name ?? '',
-      subtitle2: `Qualified Bldgs. ${fmtNum(z.count_qualified)}`,
+      subtitle2: fmtNum(z.count_qualified),
       href: `/zips/${z.zip_code}`,
       metric: fmtUsd(z.untapped_annual_value_usd),
     }))
@@ -60,6 +62,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       title={county.region_name}
       breadcrumbs={[
         { label: 'Counties', href: '/counties' },
+        { label: county.state_name, href: `/states/${countyStateSlug}` },
         ...(county.cambium_gea ? [{ label: fmtGea(county.cambium_gea), href: `/gea-regions/${county.cambium_gea.toLowerCase().replace(/_/g, '-')}` }] : []),
       ]}
       prev={prev}
