@@ -226,6 +226,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           sortCol={sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          regionLabel="State"
           getRowHref={(row) => {
             const s = row as unknown as StateKpi
             return `/states/${nameToSlug(s.state_name)}`
@@ -261,6 +262,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
             sortCol={sortCol}
             sortDir={sortDir}
             onSort={toggleSort}
+            regionLabel="State"
             getRowHref={(row) => {
               const s = row as unknown as StateKpi
               return `/states/${nameToSlug(s.state_name)}`

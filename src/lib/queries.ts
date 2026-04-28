@@ -252,8 +252,13 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
            v.sunlight_grade, v.sunlight_stars,
            c.seal_url, c.number_of_panels_median, c.number_of_panels_total
     FROM solargpt.v_county_kpis v
-    LEFT JOIN solargpt.raw_sunroof_county c USING (id)
-    ORDER BY v.count_qualified DESC NULLS LAST
+    LEFT JOIN LATERAL (
+      SELECT seal_url, number_of_panels_median, number_of_panels_total
+      FROM solargpt.raw_sunroof_county
+      WHERE id = v.id
+      LIMIT 1
+    ) c ON true
+    ORDER BY v.region_name ASC
   `
   return rows as CountyKpi[]
 }

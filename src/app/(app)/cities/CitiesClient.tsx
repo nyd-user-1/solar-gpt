@@ -12,8 +12,8 @@ type SortCol = SortableKey | 'region'
 
 export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
-  const [sortCol, setSortCol] = useState<SortCol>('count_qualified')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [sortCol, setSortCol] = useState<SortCol>('region')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
     if (typeof window === 'undefined') return 'list'
     return (localStorage.getItem('solargpt.viewPreference.cities') as 'list' | 'cards') ?? 'list'
@@ -110,6 +110,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
           sortCol={sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
+          regionLabel="City"
           hideCols={['percent_covered', 'kw_total']}
           extraCols={[{
             key: 'state',

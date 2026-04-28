@@ -107,6 +107,7 @@ interface Props<T extends SolarRow> {
   sortDir: 'asc' | 'desc'
   onSort: (key: SortableKey) => void
   renderRegion: (row: T) => React.ReactNode
+  regionLabel?: string
   hideCols?: SortableKey[]
   extraCols?: ExtraCol<T>[]
   getRowHref?: (row: T) => string
@@ -153,7 +154,7 @@ function ColHeader({ col, active, dir, onSort }: {
   )
 }
 
-export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, hideCols, extraCols, getRowHref }: Props<T>) {
+export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, regionLabel = 'Region', hideCols, extraCols, getRowHref }: Props<T>) {
   const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
@@ -170,7 +171,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                   sortCol === 'region' ? 'text-[var(--txt)]' : 'text-[var(--muted)]',
                 )}
               >
-                Region
+                {regionLabel}
                 {sortCol === 'region'
                   ? sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
                   : <ChevronUp className="h-3 w-3 opacity-0 group-hover:opacity-40" />}
