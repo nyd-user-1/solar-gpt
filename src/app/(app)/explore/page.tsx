@@ -103,7 +103,10 @@ export default async function ExplorePage() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* States horizontal scroll */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">State</p>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">State</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featuredStates.map((state, i) => (
@@ -113,7 +116,10 @@ export default async function ExplorePage() {
           </div>
 
           {/* Regions grid */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mt-8 mb-3">Region</p>
+          <div className="flex items-center gap-3 mt-10 mb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">Region</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (
               <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
@@ -121,7 +127,10 @@ export default async function ExplorePage() {
           </div>
 
           {/* Counties horizontal scroll */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mt-8 mb-3">County</p>
+          <div className="flex items-center gap-3 mt-10 mb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">County</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featuredCounties.map((county, i) => (
