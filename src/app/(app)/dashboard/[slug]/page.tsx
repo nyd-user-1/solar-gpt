@@ -27,11 +27,11 @@ export default async function DashboardDetailPage({
     (async () => {
       try {
         switch (firstTab.id) {
-          case 'state':  return getDashboardStateRows(firstTab.metric)
-          case 'gea':    return getDashboardGeaRows(firstTab.metric)
-          case 'grade':  return getDashboardGradeRows(firstTab.metric, firstTab.agg)
-          case 'county': return getDashboardCountyRows(20)
-          case 'city':   return getDashboardCityRows(20)
+          case 'state':  return await getDashboardStateRows(firstTab.metric)
+          case 'gea':    return await getDashboardGeaRows(firstTab.metric)
+          case 'grade':  return await getDashboardGradeRows(firstTab.metric, firstTab.agg)
+          case 'county': return await getDashboardCountyRows(20)
+          case 'city':   return await getDashboardCityRows(20)
           default:       return []
         }
       } catch { return [] }

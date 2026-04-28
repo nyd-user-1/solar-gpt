@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, ChevronDown, ChevronLeft } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis,
-  Tooltip as RechartsTooltip, PieChart, Pie, Cell,
+  Tooltip as RechartsTooltip, PieChart, Pie, Cell, CartesianGrid,
 } from 'recharts'
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
@@ -94,10 +94,17 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
   const activeTab = visibleTabs.find(t => t.id === activeTabId) ?? visibleTabs[0]
 
+  const isMwhDashboard = slug === 'mwh-by-region'
+
   const displayTotal = focusedRow ? focusedRow.value : total
-  const displayChartData = focusedRow && childrenMap[focusedRow.id]?.length
-    ? childrenMap[focusedRow.id].slice(0, 25).map(r => ({ name: r.name, value: r.value }))
+  const rawDisplayChartData = focusedRow && childrenMap[focusedRow.id]?.length
+    ? childrenMap[focusedRow.id].map(r => ({ name: r.name, value: r.value }))
     : chartData
+
+  // For MWh dashboard sort A-Z; others keep value-desc order
+  const displayChartData = isMwhDashboard
+    ? [...rawDisplayChartData].sort((a, b) => a.name.localeCompare(b.name))
+    : rawDisplayChartData.slice(0, 25)
 
   // Send total to AppLayout header
   useEffect(() => {
@@ -156,7 +163,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
           {/* Chart */}
           {displayChartData.length > 1 && (
-            <div className={`${config.chartType === 'pie' ? 'h-32 md:h-40' : 'h-20 md:h-24'} mb-4 -mx-2`}>
+            <div className={`${isMwhDashboard ? 'h-40 md:h-52' : 'h-20 md:h-24'} mb-4 -mx-2`}>
               <ResponsiveContainer width="100%" height="100%">
                 {config.chartType === 'area' ? (
                   <AreaChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
@@ -173,6 +180,27 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                       formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
                       labelFormatter={(l) => String(l ?? '')} />
                   </AreaChart>
+                ) : isMwhDashboard ? (
+                  <BarChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 32, left: 8 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={6}
+                      interval={Math.max(0, Math.floor(displayChartData.length / 12) - 1)}
+                      tick={{ fontSize: 10, fill: 'var(--muted-foreground, #6b7280)' }}
+                      tickFormatter={(v: string) => v.length > 10 ? v.slice(0, 9) + '…' : v}
+                      angle={-35}
+                      textAnchor="end"
+                    />
+                    <Bar dataKey="value" fill={config.color} radius={[2, 2, 0, 0]} animationDuration={400} />
+                    <RechartsTooltip
+                      cursor={{ fill: 'var(--inp-bg)', opacity: 0.5 }}
+                      contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
+                      labelFormatter={(l) => String(l ?? '')} />
+                  </BarChart>
                 ) : config.chartType === 'pie' ? (
                   <PieChart>
                     <Pie data={displayChartData} dataKey="value" nameKey="name"

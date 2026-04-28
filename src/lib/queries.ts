@@ -1076,6 +1076,10 @@ export async function getDashboardCountyChildRows(stateName: string, metric: str
       const r = await sql`SELECT region_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC LIMIT 20`
       return toRows(r as unknown[], false)
     }
+    case 'yearly_sunlight_kwh_total': {
+      const r = await sql`SELECT region_name AS name, yearly_sunlight_kwh_total AS value, yearly_sunlight_kwh_total*100.0/NULLIF(SUM(yearly_sunlight_kwh_total)OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE state_name=${stateName} AND yearly_sunlight_kwh_total IS NOT NULL ORDER BY yearly_sunlight_kwh_total DESC LIMIT 30`
+      return toRows(r as unknown[], false)
+    }
     default: return []
   }
 }
@@ -1105,6 +1109,10 @@ export async function getDashboardStateInGeaRows(gea: string, metric: string): P
     }
     case 'untapped_lifetime_value_usd': {
       const r = await sql`SELECT state_name AS name, SUM(untapped_lifetime_value_usd) AS value, SUM(untapped_lifetime_value_usd)*100.0/NULLIF(SUM(SUM(untapped_lifetime_value_usd))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND untapped_lifetime_value_usd IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
+    case 'yearly_sunlight_kwh_total': {
+      const r = await sql`SELECT state_name AS name, SUM(yearly_sunlight_kwh_total) AS value, SUM(yearly_sunlight_kwh_total)*100.0/NULLIF(SUM(SUM(yearly_sunlight_kwh_total))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND yearly_sunlight_kwh_total IS NOT NULL GROUP BY state_name ORDER BY value DESC`
       return toRows(r as unknown[], false)
     }
     default: return []
@@ -1184,6 +1192,10 @@ export async function getDashboardHeaderTotal(slug: string): Promise<number> {
       }
       case 'lifetime-value': {
         const r = await sql`SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis`
+        return Number((r[0] as { v: unknown }).v ?? 0)
+      }
+      case 'mwh-by-region': {
+        const r = await sql`SELECT SUM(yearly_sunlight_kwh_total) AS v FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       default: return 0
