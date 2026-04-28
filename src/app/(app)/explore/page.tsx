@@ -103,6 +103,7 @@ export default async function ExplorePage() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* States horizontal scroll */}
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">State</p>
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featuredStates.map((state, i) => (
@@ -112,7 +113,7 @@ export default async function ExplorePage() {
           </div>
 
           {/* Regions grid */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">Region</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mt-8 mb-3">Region</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (
               <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
@@ -120,7 +121,7 @@ export default async function ExplorePage() {
           </div>
 
           {/* Counties horizontal scroll */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">County</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mt-8 mb-3">County</p>
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featuredCounties.map((county, i) => (
