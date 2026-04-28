@@ -160,13 +160,12 @@ export default function CountyZipMap({
             <p className="text-sm font-bold text-[#1a1a1a]">{hoveredZip.zip}</p>
             {hoveredZip.place && <p className="text-xs font-medium text-[#555]">{hoveredZip.place}</p>}
             <p className="text-[10px] text-[#666]">{fmtNum(hoveredZip.count)} qualified buildings</p>
-            <p className="text-[10px] text-[#f59e0b] font-semibold">Potential/yr {fmtUsd(hoveredZip.value)}</p>
           </>
         )}
       </div>
 
-      {/* Legend */}
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
+      {/* Legend — top left */}
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         <p className="text-[9px] font-semibold uppercase tracking-wider text-[#999] mb-1.5">Potential / yr</p>
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">

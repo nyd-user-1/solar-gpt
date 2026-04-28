@@ -35,9 +35,9 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
 
   const infoRows = [
     { label: 'Potential / yr', value: fmtUsd(state.untapped_annual_value_usd), highlight: true },
+    { label: 'Qualified Buildings', value: fmtNum(state.count_qualified) },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(state.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${state.sunlight_grade}  (${state.sunlight_stars}/5 ☀)` },
-    { label: 'Qualified Buildings', value: fmtNum(state.count_qualified) },
     { label: 'Existing Installs', value: fmtNum(state.existing_installs_count) },
     { label: 'Adoption Rate', value: state.adoption_rate_pct != null ? `${state.adoption_rate_pct.toFixed(1)}%` : '—' },
     { label: 'Median Install Cost', value: fmtUsd(state.median_install_cost_usd) },
@@ -46,13 +46,14 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
     { label: 'Counties', value: counties.length.toString() },
   ]
 
-  const carouselItems = counties.slice(0, 20).map(c => ({
-    title: c.region_name,
-    subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
-    href: `/counties/${nameToSlug(c.region_name)}`,
-    metric: fmtUsd(c.untapped_annual_value_usd),
-    metricLabel: 'potential/yr',
-  }))
+  const carouselItems = [...counties]
+    .sort((a, b) => a.region_name.localeCompare(b.region_name))
+    .map(c => ({
+      title: c.region_name,
+      subtitle: `Qualified Bldgs. ${fmtNum(c.count_qualified)}`,
+      href: `/counties/${nameToSlug(c.region_name)}`,
+      metric: fmtUsd(c.untapped_annual_value_usd),
+    }))
 
   return (
     <GeoDetailPage
@@ -63,8 +64,10 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
       listHref="/states"
       listLabel="All States"
       infoRows={infoRows}
-      carouselTitle="Top Counties"
+      defaultInfoRows={2}
+      carouselTitle="Counties"
       carouselItems={carouselItems}
+      carouselScrollable
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"

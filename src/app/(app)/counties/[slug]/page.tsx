@@ -49,9 +49,8 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     .sort((a, b) => a.zip_code.localeCompare(b.zip_code))
     .map(z => ({
       title: z.zip_code,
-      subtitle: z.region_name
-        ? `${z.region_name} · ${fmtNum(z.count_qualified)} qualified buildings`
-        : `${fmtNum(z.count_qualified)} qualified buildings`,
+      subtitle: z.region_name ?? '',
+      subtitle2: `Qualified Bldgs. ${fmtNum(z.count_qualified)}`,
       href: `/zips/${z.zip_code}`,
       metric: fmtUsd(z.untapped_annual_value_usd),
     }))

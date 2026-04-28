@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, MessageCircle } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
@@ -20,6 +20,7 @@ export interface InfoRow {
 export interface CarouselCard {
   title: string
   subtitle: string
+  subtitle2?: string
   href: string
   metric?: string
   metricLabel?: string
@@ -102,6 +103,16 @@ export function GeoDetailPage({
   const [query, setQuery] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
   const freeScrollRef = useRef<HTMLDivElement>(null)
+
+  const filteredCarouselItems = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return carouselItems
+    return carouselItems.filter(item =>
+      item.title.toLowerCase().includes(q) ||
+      item.subtitle.toLowerCase().includes(q) ||
+      (item.subtitle2 ?? '').toLowerCase().includes(q)
+    )
+  }, [carouselItems, query])
 
   useEffect(() => {
     setTransitioning(true)
@@ -281,7 +292,9 @@ export function GeoDetailPage({
               </div>
               <div ref={freeScrollRef} className="overflow-x-auto no-scrollbar">
                 <div className="flex gap-3 pb-1">
-                  {carouselItems.map(item => (
+                  {filteredCarouselItems.length === 0 ? (
+                    <p className="text-sm text-[var(--muted)] px-1 py-4">No results found.</p>
+                  ) : filteredCarouselItems.map(item => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -290,7 +303,14 @@ export function GeoDetailPage({
                       <div className="flex items-center justify-between gap-2 w-full">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <p className="text-sm font-semibold text-[var(--txt)] truncate">{item.title}</p>
-                          <p className="text-xs text-[var(--muted)] truncate">{item.subtitle}</p>
+                          {item.subtitle && (
+                            <p className={`truncate ${item.subtitle2 ? 'text-xs font-medium text-[var(--txt)]' : 'text-xs text-[var(--muted)]'}`}>
+                              {item.subtitle}
+                            </p>
+                          )}
+                          {item.subtitle2 && (
+                            <p className="text-[11px] text-[var(--muted)] truncate">{item.subtitle2}</p>
+                          )}
                         </div>
                         {item.metric && (
                           <div className="flex flex-col items-end shrink-0">
