@@ -34,7 +34,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/leads': 'Leads',
     '/explore': 'Explore',
     '/dashboard': 'Dashboards',
-    '/funds': 'Funds',
     '/glossary': 'Glossary',
     '/profile': 'Profile',
     '/settings': 'Settings',
@@ -42,6 +41,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/free-quote': 'Free Quote',
   }
   const pageTitle = PAGE_TITLES[pathname] ?? null
+
+  // Cyclic nav order for the chevron buttons (excludes utility/auth pages)
+  const NAV_CYCLE = ['/dashboard', '/explore', '/states', '/counties', '/cities', '/leads', '/gea-regions']
+  const navIdx = NAV_CYCLE.indexOf(pathname)
+  const prevNav = navIdx >= 0 ? NAV_CYCLE[(navIdx - 1 + NAV_CYCLE.length) % NAV_CYCLE.length] : null
+  const nextNav = navIdx >= 0 ? NAV_CYCLE[(navIdx + 1) % NAV_CYCLE.length] : null
   const currentSlug = isDashboard ? pathname.split('/')[2] : null
   const currentIdx = currentSlug ? DASHBOARD_CONFIGS.findIndex(c => c.slug === currentSlug) : -1
   const n = DASHBOARD_CONFIGS.length
@@ -82,6 +87,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Page title — list pages only */}
           {pageTitle && (
             <span className="ml-3 flex-1 text-xl font-bold text-[var(--txt)]">{pageTitle}</span>
+          )}
+
+          {/* Page-cycle chevrons — shown on all nav pages */}
+          {navIdx >= 0 && prevNav && nextNav && (
+            <div className="flex items-center gap-2 ml-auto mr-1.5">
+              <button
+                onClick={() => router.push(prevNav)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => router.push(nextNav)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           )}
 
           {/* Right side: auth on root, chevrons on dashboard, nothing elsewhere */}

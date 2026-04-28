@@ -25,7 +25,6 @@ const NAV_ITEMS = [
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
   { to: '/leads',        icon: Users,            label: 'Leads' },
-  { to: '/funds',        icon: Wallet,           label: 'Funds' },
   { to: '/gea-regions',  icon: Zap,              label: 'GEA Regions' },
 ]
 
@@ -234,6 +233,11 @@ export function Sidebar({ onClose }: SidebarProps) {
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
                 <Settings className="h-4 w-4 flex-shrink-0" />
                 Settings
+              </Link>
+              <Link href="/funds" onClick={() => setAccountOpen(false)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                <Wallet className="h-4 w-4 flex-shrink-0" />
+                Funds
               </Link>
               {me?.isAdmin && (
                 <Link href="/admin" onClick={() => setAccountOpen(false)}

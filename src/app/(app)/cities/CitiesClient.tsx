@@ -43,9 +43,8 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
-      <div className="px-6 pt-8 pb-6">
-        <h1 className="text-2xl font-bold text-[var(--txt)]">Cities & Towns</h1>
-        <p className="hidden sm:block text-sm text-[var(--muted)] mt-1">
+      <div className="px-6 pt-4 pb-6">
+        <p className="hidden sm:block text-sm text-[var(--muted)]">
           {cities.length.toLocaleString()} cities with solar data
         </p>
       </div>
