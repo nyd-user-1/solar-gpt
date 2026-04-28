@@ -29,9 +29,9 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
 
   const infoRows = [
     { label: 'Potential / yr', value: fmtUsd(kpi.untapped_annual_value_usd), highlight: true },
+    { label: 'Qualified Buildings', value: fmtNum(kpi.count_qualified) },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(kpi.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${kpi.sunlight_grade}  (${kpi.sunlight_stars}/5 ☀)` },
-    { label: 'Qualified Buildings', value: fmtNum(kpi.count_qualified) },
     { label: 'Existing Installs', value: fmtNum(kpi.existing_installs_count) },
     { label: 'Adoption Rate', value: kpi.adoption_rate_pct != null ? `${kpi.adoption_rate_pct.toFixed(1)}%` : '—' },
     { label: 'Counties', value: kpi.county_count.toString() },
@@ -39,13 +39,16 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
     { label: 'Homes Powered Equiv.', value: fmtNum(kpi.homes_powered_equivalent) },
   ]
 
-  const carouselItems = counties.map(c => ({
-    title: c.region_name,
-    subtitle: fmtNum(c.count_qualified),
-    href: `/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`,
-    metric: fmtUsd(c.untapped_annual_value_usd),
-    
-  }))
+  const seen = new Set<number>()
+  const carouselItems = [...counties]
+    .sort((a, b) => a.region_name.localeCompare(b.region_name))
+    .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true })
+    .map(c => ({
+      title: c.region_name,
+      subtitle: fmtNum(c.count_qualified),
+      href: `/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`,
+      metric: fmtUsd(c.untapped_annual_value_usd),
+    }))
 
   return (
     <GeoDetailPage
@@ -56,8 +59,10 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
       listHref="/gea-regions"
       listLabel="All GEA Regions"
       infoRows={infoRows}
-      carouselTitle={`Counties in ${fmtGea(gea)}`}
+      carouselTitle={fmtGea(gea)}
       carouselItems={carouselItems}
+      carouselScrollable
+      defaultInfoRows={2}
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
