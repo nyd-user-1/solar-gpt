@@ -926,36 +926,49 @@ function toGeaRows(
   }))
 }
 
+// ── US state filter (excludes Puerto Rico municipalities, territories, foreign states) ──
+const US_STATES = [
+  'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
+  'Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa',
+  'Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan',
+  'Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada',
+  'New Hampshire','New Jersey','New Mexico','New York','North Carolina',
+  'North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island',
+  'South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont',
+  'Virginia','Washington','West Virginia','Wisconsin','Wyoming',
+  'District of Columbia',
+]
+
 // ── State rows ──────────────────────────────────────────────────────────────
 
 export async function getDashboardStateRows(metric: string): Promise<DashboardTableRow[]> {
   switch (metric) {
     case 'untapped_annual_value_usd': {
-      const r = await sql`SELECT state_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_annual_value_usd IS NOT NULL ORDER BY untapped_annual_value_usd DESC`
+      const r = await sql`SELECT state_name AS name, untapped_annual_value_usd AS value, untapped_annual_value_usd*100.0/NULLIF(SUM(untapped_annual_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_annual_value_usd IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY untapped_annual_value_usd DESC`
       return toRows(r as unknown[], true)
     }
     case 'adoption_rate_pct': {
-      const r = await sql`SELECT state_name AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE adoption_rate_pct IS NOT NULL ORDER BY adoption_rate_pct DESC`
+      const r = await sql`SELECT state_name AS name, adoption_rate_pct AS value, adoption_rate_pct*100.0/NULLIF(SUM(adoption_rate_pct)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE adoption_rate_pct IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY adoption_rate_pct DESC`
       return toRows(r as unknown[], true)
     }
     case 'count_qualified': {
-      const r = await sql`SELECT state_name AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE count_qualified IS NOT NULL ORDER BY count_qualified DESC`
+      const r = await sql`SELECT state_name AS name, count_qualified AS value, count_qualified*100.0/NULLIF(SUM(count_qualified)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE count_qualified IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY count_qualified DESC`
       return toRows(r as unknown[], true)
     }
     case 'existing_installs_count': {
-      const r = await sql`SELECT state_name AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE existing_installs_count IS NOT NULL ORDER BY existing_installs_count DESC`
+      const r = await sql`SELECT state_name AS name, existing_installs_count AS value, existing_installs_count*100.0/NULLIF(SUM(existing_installs_count)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE existing_installs_count IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY existing_installs_count DESC`
       return toRows(r as unknown[], true)
     }
     case 'carbon_offset_metric_tons': {
-      const r = await sql`SELECT state_name AS name, carbon_offset_metric_tons AS value, carbon_offset_metric_tons*100.0/NULLIF(SUM(carbon_offset_metric_tons)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE carbon_offset_metric_tons IS NOT NULL ORDER BY carbon_offset_metric_tons DESC`
+      const r = await sql`SELECT state_name AS name, carbon_offset_metric_tons AS value, carbon_offset_metric_tons*100.0/NULLIF(SUM(carbon_offset_metric_tons)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE carbon_offset_metric_tons IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY carbon_offset_metric_tons DESC`
       return toRows(r as unknown[], true)
     }
     case 'untapped_lifetime_value_usd': {
-      const r = await sql`SELECT state_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
+      const r = await sql`SELECT state_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_lifetime_value_usd IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY untapped_lifetime_value_usd DESC`
       return toRows(r as unknown[], true)
     }
     case 'yearly_sunlight_kwh_total': {
-      const r = await sql`SELECT state_name AS name, yearly_sunlight_kwh_total AS value, yearly_sunlight_kwh_total*100.0/NULLIF(SUM(yearly_sunlight_kwh_total)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL ORDER BY yearly_sunlight_kwh_total DESC`
+      const r = await sql`SELECT state_name AS name, yearly_sunlight_kwh_total AS value, yearly_sunlight_kwh_total*100.0/NULLIF(SUM(yearly_sunlight_kwh_total)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL AND state_name = ANY(${US_STATES}) ORDER BY yearly_sunlight_kwh_total DESC`
       return toRows(r as unknown[], true)
     }
     default: return []
@@ -1151,19 +1164,19 @@ export async function getDashboardHeaderTotal(slug: string): Promise<number> {
   try {
     switch (slug) {
       case 'untapped-value': {
-        const r = await sql`SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT SUM(untapped_annual_value_usd) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'adoption-rate': {
-        const r = await sql`SELECT AVG(adoption_rate_pct) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT AVG(adoption_rate_pct) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'sunlight-grade': {
-        const r = await sql`SELECT COUNT(*) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT COUNT(*) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'existing-installs': {
-        const r = await sql`SELECT SUM(existing_installs_count) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT SUM(existing_installs_count) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'top-counties': {
@@ -1183,19 +1196,19 @@ export async function getDashboardHeaderTotal(slug: string): Promise<number> {
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'carbon-offset': {
-        const r = await sql`SELECT SUM(carbon_offset_metric_tons) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT SUM(carbon_offset_metric_tons) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'qualified-buildings': {
-        const r = await sql`SELECT SUM(count_qualified) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT SUM(count_qualified) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'lifetime-value': {
-        const r = await sql`SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis`
+        const r = await sql`SELECT SUM(untapped_lifetime_value_usd) AS v FROM solargpt.v_state_kpis WHERE state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'mwh-by-region': {
-        const r = await sql`SELECT SUM(yearly_sunlight_kwh_total) AS v FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL`
+        const r = await sql`SELECT SUM(yearly_sunlight_kwh_total) AS v FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL AND state_name = ANY(${US_STATES})`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       default: return 0

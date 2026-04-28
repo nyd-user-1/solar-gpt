@@ -108,12 +108,17 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
   // API also caps child rows at 30 for county — pass all through for chart
 
-  // Send total to AppLayout header
+  // Send total to AppLayout header.
+  // setTimeout(fn, 0) defers past the current effect flush so AppLayout's
+  // listener (parent effect, runs after children) is set up before we fire.
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('solargpt:dashboard-header', {
-      detail: { formatted: fmtHeader(displayTotal, activeTab.format), color: config.color }
-    }))
+    const tid = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('solargpt:dashboard-header', {
+        detail: { formatted: fmtHeader(displayTotal, activeTab.format), color: config.color }
+      }))
+    }, 0)
     return () => {
+      clearTimeout(tid)
       window.dispatchEvent(new CustomEvent('solargpt:dashboard-header', { detail: null }))
     }
   }, [displayTotal, activeTab.format, config.color])
