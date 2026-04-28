@@ -10,6 +10,7 @@ import { ChatDrawer } from '@/components/ChatDrawer'
 import StateCountyMap from '@/components/StateCountyMap'
 import CountyZipMap from '@/components/CountyZipMap'
 import CensusTractMap from '@/components/CensusTractMap'
+import GEAMiniMap from '@/components/GEAMiniMap'
 import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry } from '@/lib/queries'
 
 export interface InfoRow {
@@ -68,6 +69,8 @@ export interface DetailPageProps {
   countyZipData?: { zips: ZipMapEntry[]; countyFips: string; stateAbbr: string; stateName: string; countyName: string }
   /** Census tract choropleth — when provided, renders CensusTractMap */
   tractData?: { tracts: TractMapEntry[]; stateFips: string; parentName: string }
+  /** GEA region map — when provided, renders GEAMiniMap full-size */
+  geaMapData?: { stateNames: string[]; bounds: { north: number; south: number; east: number; west: number } }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -99,7 +102,7 @@ export function GeoDetailPage({
   defaultInfoRows = 4,
   carouselScrollable = false,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, geaMapData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -223,6 +226,13 @@ export function GeoDetailPage({
               parentName={tractData.parentName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : geaMapData ? (
+          <div className="mb-8 relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden shadow-sm">
+            <GEAMiniMap
+              stateNames={geaMapData.stateNames}
+              bounds={geaMapData.bounds}
             />
           </div>
         ) : mapCenter ? (
