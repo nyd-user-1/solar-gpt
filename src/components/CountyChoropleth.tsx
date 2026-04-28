@@ -61,6 +61,7 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
   const countiesReadyRef = useRef(false)
   const lastHoveredNameRef = useRef<string | null>(null)
   const currentHoveredRef = useRef<string | null>(null)
+  const refreshStyleRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (!map || initialized.current) return
@@ -116,6 +117,8 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
         }
       })
     }
+
+    refreshStyleRef.current = refreshStateStyle
 
     const applyZoom = () => {
       refreshStateStyle()
@@ -183,6 +186,18 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
       stateLayerRef.current?.setMap(null)
     }
   }, [map, counties, states, router, onHoverChange])
+
+  // Listen for state highlight events from external components (e.g. state cards)
+  useEffect(() => {
+    const handle = (e: Event) => {
+      const name = (e as CustomEvent<{ name: string | null }>).detail.name
+      lastHoveredNameRef.current = name
+      currentHoveredRef.current = name
+      refreshStyleRef.current?.()
+    }
+    window.addEventListener('solargpt:state-highlight', handle)
+    return () => window.removeEventListener('solargpt:state-highlight', handle)
+  }, [])
 
   return null
 }

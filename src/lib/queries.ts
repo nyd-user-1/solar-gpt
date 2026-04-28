@@ -281,6 +281,7 @@ export type CountyMapEntry = {
   state_name: string
   untapped_annual_value_usd: number
   count_qualified: number
+  cambium_gea: string | null
 }
 
 export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
@@ -290,7 +291,8 @@ export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
       v.region_name,
       v.state_name,
       v.untapped_annual_value_usd,
-      v.count_qualified
+      v.count_qualified,
+      v.cambium_gea
     FROM solargpt.v_county_kpis v
     JOIN LATERAL (
       SELECT state_fips, county_fips
@@ -404,7 +406,8 @@ export async function getCountiesForState(stateName: string): Promise<CountyMapE
       v.region_name,
       v.state_name,
       v.untapped_annual_value_usd,
-      v.count_qualified
+      v.count_qualified,
+      v.cambium_gea
     FROM solargpt.v_county_kpis v
     JOIN LATERAL (
       SELECT state_fips, county_fips
