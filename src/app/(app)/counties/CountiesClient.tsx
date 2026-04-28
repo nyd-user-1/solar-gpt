@@ -20,11 +20,22 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
   })
 
   const filtered = useMemo(() => {
-    let list = [...counties]
-    if (query) list = list.filter(c =>
-      c.region_name.toLowerCase().includes(query.toLowerCase()) ||
-      c.state_name.toLowerCase().includes(query.toLowerCase())
-    )
+    // Deduplicate by id in case the view returns multiple rows per county
+    const seen = new Set<number>()
+    const unique = counties.filter(c => {
+      if (seen.has(c.id)) return false
+      seen.add(c.id)
+      return true
+    })
+    const q = query.toLowerCase()
+    let list = query
+      ? unique.filter(c =>
+          c.region_name.toLowerCase().includes(q) ||
+          c.state_name.toLowerCase().includes(q) ||
+          // allow searching "erie" to match "Erie County"
+          c.region_name.toLowerCase().replace(' county', '').includes(q)
+        )
+      : [...unique]
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
       if (sortCol === 'region') { av = a.region_name; bv = b.region_name }

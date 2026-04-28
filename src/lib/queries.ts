@@ -243,22 +243,34 @@ export async function getCountiesByState(stateName: string): Promise<CountyKpi[]
 // ── County ────────────────────────────────────────────────────────────────────
 export async function getAllCounties(): Promise<CountyKpi[]> {
   const rows = await sql`
-    SELECT v.id, v.region_name, v.state_name, v.cambium_gea,
-           v.count_qualified, v.existing_installs_count,
-           v.percent_covered, v.percent_qualified,
-           v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
-           v.kw_total, v.kw_median,
-           v.untapped_annual_value_usd, v.adoption_rate_pct,
-           v.sunlight_grade, v.sunlight_stars,
-           c.seal_url, c.number_of_panels_median, c.number_of_panels_total
-    FROM solargpt.v_county_kpis v
-    LEFT JOIN LATERAL (
-      SELECT seal_url, number_of_panels_median, number_of_panels_total
-      FROM solargpt.raw_sunroof_county
-      WHERE id = v.id
-      LIMIT 1
-    ) c ON true
-    ORDER BY v.region_name ASC
+    SELECT sub.id, sub.region_name, sub.state_name, sub.cambium_gea,
+           sub.count_qualified, sub.existing_installs_count,
+           sub.percent_covered, sub.percent_qualified,
+           sub.yearly_sunlight_kwh_total, sub.carbon_offset_metric_tons,
+           sub.kw_total, sub.kw_median,
+           sub.untapped_annual_value_usd, sub.adoption_rate_pct,
+           sub.sunlight_grade, sub.sunlight_stars,
+           sub.seal_url, sub.number_of_panels_median, sub.number_of_panels_total
+    FROM (
+      SELECT DISTINCT ON (v.id)
+             v.id, v.region_name, v.state_name, v.cambium_gea,
+             v.count_qualified, v.existing_installs_count,
+             v.percent_covered, v.percent_qualified,
+             v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
+             v.kw_total, v.kw_median,
+             v.untapped_annual_value_usd, v.adoption_rate_pct,
+             v.sunlight_grade, v.sunlight_stars,
+             c.seal_url, c.number_of_panels_median, c.number_of_panels_total
+      FROM solargpt.v_county_kpis v
+      LEFT JOIN LATERAL (
+        SELECT seal_url, number_of_panels_median, number_of_panels_total
+        FROM solargpt.raw_sunroof_county
+        WHERE id = v.id
+        LIMIT 1
+      ) c ON true
+      ORDER BY v.id
+    ) sub
+    ORDER BY sub.region_name ASC
   `
   return rows as CountyKpi[]
 }
