@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Search, Building2, List, LayoutGrid } from 'lucide-react'
 import { cn, fmtUsd, fmtNum, stateAbbr } from '@/lib/utils'
@@ -10,6 +10,8 @@ import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTab
 
 type SortCol = SortableKey | 'region'
 
+const PAGE_SIZE = 500
+
 export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
   const [sortCol, setSortCol] = useState<SortCol>('region')
@@ -18,7 +20,10 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
     if (typeof window === 'undefined') return 'list'
     return (localStorage.getItem('solargpt.viewPreference.cities') as 'list' | 'cards') ?? 'list'
   })
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
+  // Full filtered+sorted array (all matching rows, not sliced)
   const filtered = useMemo(() => {
     const seen = new Set<number>()
     const unique = cities.filter(c => {
@@ -26,23 +31,28 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
       seen.add(c.id)
       return true
     })
-    const q = query.toLowerCase()
-    let list = query
-      ? unique
-          .filter(c =>
-            c.region_name.toLowerCase().includes(q) ||
-            c.state_name.toLowerCase().includes(q)
-          )
-          .sort((a, b) => {
-            const an = a.region_name.toLowerCase()
-            const bn = b.region_name.toLowerCase()
-            const aExact = an === q, bExact = bn === q
-            const aStarts = an.startsWith(q), bStarts = bn.startsWith(q)
-            if (aExact !== bExact) return aExact ? -1 : 1
-            if (aStarts !== bStarts) return aStarts ? -1 : 1
-            return an.localeCompare(bn)
-          })
-      : [...unique]
+
+    // When searching: relevance order, skip column sort
+    if (query) {
+      const q = query.toLowerCase()
+      return unique
+        .filter(c =>
+          c.region_name.toLowerCase().includes(q) ||
+          c.state_name.toLowerCase().includes(q)
+        )
+        .sort((a, b) => {
+          const an = a.region_name.toLowerCase()
+          const bn = b.region_name.toLowerCase()
+          const aExact = an === q, bExact = bn === q
+          const aStarts = an.startsWith(q), bStarts = bn.startsWith(q)
+          if (aExact !== bExact) return aExact ? -1 : 1
+          if (aStarts !== bStarts) return aStarts ? -1 : 1
+          return an.localeCompare(bn)
+        })
+    }
+
+    // No query: apply column sort
+    const list = [...unique]
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
       if (sortCol === 'region') { av = a.region_name; bv = b.region_name }
@@ -53,6 +63,27 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
     })
     return list
   }, [cities, query, sortCol, sortDir])
+
+  // Reset visible window whenever the filtered set changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [filtered])
+
+  // IntersectionObserver: load next page when sentinel enters viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel || visibleCount >= filtered.length) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setVisibleCount(v => Math.min(v + PAGE_SIZE, filtered.length))
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [visibleCount, filtered.length])
+
+  const visibleRows = filtered.slice(0, visibleCount)
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -82,7 +113,11 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             <LayoutGrid className="h-5 w-5" />
           </button>
           <div className="ml-auto">
-            <span className="text-xs text-[var(--muted)]">{filtered.length} results</span>
+            <span className="text-xs text-[var(--muted)]">
+              {visibleCount < filtered.length
+                ? `${visibleCount.toLocaleString()} of ${filtered.length.toLocaleString()}`
+                : `${filtered.length.toLocaleString()} results`}
+            </span>
           </div>
         </div>
       </div>
@@ -90,69 +125,78 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
       {/* Scroll area */}
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
 
-      {viewMode === 'cards' && (
-        <div className="px-6 pb-8 pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(city => (
-            <Link
-              key={city.id}
-              href={`/cities/${nameToSlug(city.region_name)}`}
-              className="flex flex-col rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 transition-all hover:shadow-xl hover:border-solar"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar/10 text-solar">
-                  <Building2 className="h-5 w-5" />
+        {viewMode === 'cards' && (
+          <div className="px-6 pb-4 pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleRows.map(city => (
+              <Link
+                key={city.id}
+                href={`/cities/${nameToSlug(city.region_name)}`}
+                className="flex flex-col rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 transition-all hover:shadow-xl hover:border-solar"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar/10 text-solar">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-[var(--txt)]">{city.region_name}</p>
+                    <p className="text-xs text-[var(--muted)]">{city.state_name} · Grade {city.sunlight_grade}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-[var(--txt)]">{city.region_name}</p>
-                  <p className="text-xs text-[var(--muted)]">{city.state_name} · Grade {city.sunlight_grade}</p>
+                <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
+                  <div>
+                    <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Untapped/yr</p>
+                    <p className="text-lg font-bold text-[var(--txt)]">{fmtUsd(city.untapped_annual_value_usd)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Buildings</p>
+                    <p className="text-lg font-bold text-solar">{fmtNum(city.count_qualified)}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
-                <div>
-                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Untapped/yr</p>
-                  <p className="text-lg font-bold text-[var(--txt)]">{fmtUsd(city.untapped_annual_value_usd)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Buildings</p>
-                  <p className="text-lg font-bold text-solar">{fmtNum(city.count_qualified)}</p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              </Link>
+            ))}
+          </div>
+        )}
 
-      {viewMode === 'list' && (
-        <SolarDataTable
-          rows={filtered as SolarRow[]}
-          sortCol={sortCol}
-          sortDir={sortDir}
-          onSort={toggleSort}
-          regionLabel="City"
-          hideCols={['percent_covered', 'kw_total']}
-          extraCols={[{
-            key: 'state',
-            header: 'State',
-            mobile: true,
-            render: (row) => {
+        {viewMode === 'list' && (
+          <SolarDataTable
+            rows={visibleRows as SolarRow[]}
+            sortCol={sortCol}
+            sortDir={sortDir}
+            onSort={toggleSort}
+            regionLabel="City"
+            hideCols={['percent_covered', 'kw_total']}
+            extraCols={[{
+              key: 'state',
+              header: 'State',
+              mobile: true,
+              render: (row) => {
+                const c = row as unknown as CityKpi
+                return <span>{stateAbbr(c.state_name)}</span>
+              },
+            }]}
+            getRowHref={(row) => {
               const c = row as unknown as CityKpi
-              return <span>{stateAbbr(c.state_name)}</span>
-            },
-          }]}
-          getRowHref={(row) => {
-            const c = row as unknown as CityKpi
-            return `/cities/${nameToSlug(c.region_name)}`
-          }}
-          renderRegion={(row) => {
-            const c = row as unknown as CityKpi
-            return (
-              <span className="truncate block hover:text-solar transition-colors">{c.region_name}</span>
-            )
-          }}
-        />
-      )}
+              return `/cities/${nameToSlug(c.region_name)}`
+            }}
+            renderRegion={(row) => {
+              const c = row as unknown as CityKpi
+              return (
+                <span className="truncate block hover:text-solar transition-colors">{c.region_name}</span>
+              )
+            }}
+          />
+        )}
 
-      </div>{/* end scroll area */}
+        {/* Sentinel — triggers next page load */}
+        {visibleCount < filtered.length && (
+          <div ref={sentinelRef} className="flex items-center justify-center py-6">
+            <span className="text-xs text-[var(--muted)]">Loading more…</span>
+          </div>
+        )}
+        {/* Bottom padding when fully loaded */}
+        {visibleCount >= filtered.length && <div className="h-8" />}
+
+      </div>
     </div>
   )
 }
