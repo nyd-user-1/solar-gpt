@@ -6,10 +6,6 @@ import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { US_STATES } from '@/lib/us-states'
 
-const GEA_IMAGES: Record<string, string> = {
-  'CAISO': 'https://www.caiso.com/theme/img/caiso-share.jpg',
-}
-
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
   'from-yellow-400 to-amber-500',
@@ -73,23 +69,13 @@ function CountyCard({ county, index }: { county: CountyKpi; index: number }) {
 
 function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: number }) {
   const gradient = CARD_GRADIENTS[(index + 3) % CARD_GRADIENTS.length]
-  const imageUrl = GEA_IMAGES[gea]
   return (
     <Link
       href={`/gea-regions/${geaToSlug(gea)}`}
       className="group relative w-full aspect-[16/9] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-85 group-hover:opacity-100 transition-opacity`} />
-      {imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl}
-          alt={fmtGea(gea)}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
       {kpi && (
         <div className="absolute top-4 right-4 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1">
           <span className="text-sm font-bold text-white">{fmtUsd(kpi.untapped_annual_value_usd)}</span>
