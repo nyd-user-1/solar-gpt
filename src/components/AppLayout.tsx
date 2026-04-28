@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               aria-label="Open sidebar"
               className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
             >
-              <ArrowRightFromLine className="h-5 w-5 text-[var(--muted)]" />
+              <ArrowRightFromLine className="h-5 w-5 text-[var(--txt)]" />
             </button>
           ) : (
             <div className="h-9 w-9" />

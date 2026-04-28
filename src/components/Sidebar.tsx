@@ -136,7 +136,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
         >
-          <ArrowLeftToLine className="h-5 w-5 text-[var(--muted)]" />
+          <ArrowLeftToLine className="h-5 w-5 text-[var(--txt)]" />
         </button>
       </div>
 
