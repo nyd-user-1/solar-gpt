@@ -210,7 +210,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 href && 'cursor-pointer',
               )}
             >
-              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] overflow-hidden bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors">
+              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] overflow-hidden bg-[var(--surface)] group-hover/row:bg-[var(--row-hover)] transition-colors">
                 {renderRegion(row)}
               </td>
               {extraCols?.map(col => (
