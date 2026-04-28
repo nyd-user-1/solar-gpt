@@ -7,6 +7,7 @@ import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { StateKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
+import { US_STATES } from '@/lib/us-states'
 
 type SortCol = SortableKey | 'region'
 
@@ -88,6 +89,46 @@ function SolarStars({ count }: { count: number }) {
   )
 }
 
+function StateCardGrid({ states }: { states: StateKpi[] }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {states.map(state => (
+        <Link
+          key={state.id}
+          href={`/states/${nameToSlug(state.state_name)}`}
+          className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
+        >
+          <div className="relative h-40 overflow-hidden bg-[var(--inp-bg)]">
+            {state.flag_url ? (
+              <img src={`${state.flag_url}?width=600`} alt={`${state.state_name} flag`} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--inp-bg)] border border-[var(--border)]">
+                  <Map className="h-8 w-8 text-[var(--muted)]" />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-4">
+            <p className="font-bold text-[var(--txt)] text-lg truncate mb-2">{state.state_name}</p>
+            <div className="flex items-center gap-1.5 mb-5">
+              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">{state.sunlight_grade}</span>
+              <span className="rounded-full border border-solar/40 px-2 py-0.5 text-[11px] text-solar">★ {state.sunlight_stars}</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Untapped/yr</p>
+              </div>
+              <span className="rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">Explore →</span>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 export default function StatesClient({ states }: { states: StateKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
@@ -112,6 +153,12 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
     })
     return list
   }, [states, query, grades, sortCol, sortDir])
+
+  const filteredStates = useMemo(() => filtered.filter(s => US_STATES.has(s.state_name)), [filtered])
+  const filteredTerritories = useMemo(() => {
+    const t = filtered.filter(s => !US_STATES.has(s.state_name))
+    return [...t].sort((a, b) => a.state_name.localeCompare(b.state_name))
+  }, [filtered])
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -159,67 +206,23 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
       {/* Card view */}
       {viewMode === 'cards' && (
         <div className="px-6 pb-8 pt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map(state => (
-              <Link
-                key={state.id}
-                href={`/states/${nameToSlug(state.state_name)}`}
-                className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
-              >
-                {/* Top — flag, full-bleed */}
-                <div className="relative h-40 overflow-hidden bg-[var(--inp-bg)]">
-                  {state.flag_url ? (
-                    <img
-                      src={`${state.flag_url}?width=600`}
-                      alt={`${state.state_name} flag`}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--inp-bg)] border border-[var(--border)]">
-                        <Map className="h-8 w-8 text-[var(--muted)]" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom — details */}
-                <div className="p-4">
-                  {/* Name row — no icon */}
-                  <p className="font-bold text-[var(--txt)] text-lg truncate mb-2">{state.state_name}</p>
-
-                  {/* Badge row */}
-                  <div className="flex items-center gap-1.5 mb-5">
-                    <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
-                      {state.sunlight_grade}
-                    </span>
-                    <span className="rounded-full border border-solar/40 px-2 py-0.5 text-[11px] text-solar">
-                      ★ {state.sunlight_stars}
-                    </span>
-                  </div>
-
-                  {/* Value + CTA */}
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Untapped/yr</p>
-                    </div>
-                    <span className="rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">
-                      Explore →
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <StateCardGrid states={filteredStates} />
+          {filteredTerritories.length > 0 && (
+            <>
+              <div className="flex items-center gap-3 my-6">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Territories</span>
+                <div className="flex-1 border-t border-[var(--border)]" />
+              </div>
+              <StateCardGrid states={filteredTerritories} />
+            </>
+          )}
         </div>
       )}
 
       {/* List / table view — 11-column SolarDataTable */}
       {viewMode === 'list' && (
         <SolarDataTable
-          rows={filtered as SolarRow[]}
+          rows={filteredStates as SolarRow[]}
           sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
           sortDir={sortDir}
           onSort={toggleSort}
@@ -246,6 +249,37 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
             )
           }}
         />
+      )}
+      {viewMode === 'list' && filteredTerritories.length > 0 && (
+        <>
+          <div className="mx-6 mt-2 mb-3 flex items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Territories</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
+          <SolarDataTable
+            rows={filteredTerritories as SolarRow[]}
+            sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+            sortDir={sortDir}
+            onSort={toggleSort}
+            getRowHref={(row) => {
+              const s = row as unknown as StateKpi
+              return `/states/${nameToSlug(s.state_name)}`
+            }}
+            renderRegion={(row) => {
+              const s = row as unknown as StateKpi
+              return (
+                <span className="inline-flex items-center gap-2 hover:text-solar transition-colors">
+                  {s.flag_url ? (
+                    <img src={`${s.flag_url}?width=48`} alt="" className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]" loading="lazy" />
+                  ) : (
+                    <Map className="h-5 w-5 text-solar shrink-0" />
+                  )}
+                  {s.state_name}
+                </span>
+              )
+            }}
+          />
+        </>
       )}
 
       </div>{/* end scroll area */}
