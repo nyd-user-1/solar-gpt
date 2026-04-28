@@ -5,7 +5,6 @@ import { GeoDetailPage } from '@/components/GeoDetailPage'
 import {
   getCountyBySlug,
   getAdjacentCounties,
-  getCitiesByState,
   getZipsForCounty,
   getCountyFips,
   nameToSlug,
@@ -18,9 +17,8 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
   const county = await getCountyBySlug(slug)
   if (!county) notFound()
 
-  const [adjacent, cities, zipData, countyFips] = await Promise.all([
+  const [adjacent, zipData, countyFips] = await Promise.all([
     getAdjacentCounties(county.id, county.state_name),
-    getCitiesByState(county.state_name, 16),
     getZipsForCounty(county.state_name, county.lat_min, county.lat_max, county.lng_min, county.lng_max),
     getCountyFips(county.state_name, county.region_name),
   ])
@@ -36,9 +34,9 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
 
   const infoRows = [
     { label: 'Potential / yr', value: fmtUsd(county.untapped_annual_value_usd), highlight: true },
+    { label: 'Qualified Buildings', value: fmtNum(county.count_qualified) },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(county.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${county.sunlight_grade}  (${county.sunlight_stars}/5 ☀)` },
-    { label: 'Qualified Buildings', value: fmtNum(county.count_qualified) },
     { label: 'Existing Installs', value: fmtNum(county.existing_installs_count) },
     { label: 'Adoption Rate', value: county.adoption_rate_pct != null ? `${county.adoption_rate_pct.toFixed(1)}%` : '—' },
     { label: 'Median Install Cost', value: fmtUsd(county.median_install_cost_usd) },
@@ -47,13 +45,16 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     { label: 'GEA Region', value: county.cambium_gea ? fmtGea(county.cambium_gea) : '—' },
   ]
 
-  const carouselItems = cities.map(city => ({
-    title: city.region_name,
-    subtitle: `${fmtNum(city.count_qualified)} solar-ready buildings`,
-    href: `/cities/${nameToSlug(city.region_name)}`,
-    metric: fmtUsd(city.untapped_annual_value_usd),
-    metricLabel: 'potential/yr',
-  }))
+  const carouselItems = [...zipData]
+    .sort((a, b) => a.zip_code.localeCompare(b.zip_code))
+    .map(z => ({
+      title: z.zip_code,
+      subtitle: z.region_name
+        ? `${z.region_name} · ${fmtNum(z.count_qualified)} qualified buildings`
+        : `${fmtNum(z.count_qualified)} qualified buildings`,
+      href: `/zips/${z.zip_code}`,
+      metric: fmtUsd(z.untapped_annual_value_usd),
+    }))
 
   return (
     <GeoDetailPage
@@ -67,8 +68,10 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       listHref="/counties"
       listLabel="All Counties"
       infoRows={infoRows}
-      carouselTitle={`Top Cities in ${county.state_name}`}
+      carouselTitle="ZIP Codes"
       carouselItems={carouselItems}
+      carouselScrollable
+      defaultInfoRows={2}
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
       mapBounds={{ north: county.lat_max, south: county.lat_min, east: county.lng_max, west: county.lng_min }}

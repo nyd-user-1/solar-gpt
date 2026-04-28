@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, MessageCircle } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
@@ -47,6 +47,10 @@ export interface DetailPageProps {
   /** Optional search for carousel items */
   searchPlaceholder?: string
   onSearch?: (q: string) => void
+  /** Number of info rows shown before "expand" — default 4 */
+  defaultInfoRows?: number
+  /** When true, main carousel uses native overflow-x scroll instead of Embla */
+  carouselScrollable?: boolean
   /** Optional CTA prompt */
   ctaHref?: string
   ctaLabel?: string
@@ -88,6 +92,8 @@ export function GeoDetailPage({
   infoRows, carouselTitle, carouselItems,
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
+  defaultInfoRows = 4,
+  carouselScrollable = false,
   ctaHref, ctaLabel,
   mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, chatContext,
 }: DetailPageProps) {
@@ -95,6 +101,7 @@ export function GeoDetailPage({
   const [transitioning, setTransitioning] = useState(true)
   const [query, setQuery] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
+  const freeScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setTransitioning(true)
@@ -223,7 +230,7 @@ export function GeoDetailPage({
                   ))
                 ) : (
                   <>
-                    {infoRows.slice(0, infoExpanded ? infoRows.length : 4).map((row, i) => (
+                    {infoRows.slice(0, infoExpanded ? infoRows.length : defaultInfoRows).map((row, i) => (
                       <tr key={i} className="border-t border-[var(--border)]">
                         <td className="px-4 py-3 text-[var(--muted)]">{row.label}</td>
                         <td className={`px-4 py-3 text-right font-medium ${row.highlight ? 'text-solar' : 'text-[var(--txt)]'}`}>
@@ -257,6 +264,47 @@ export function GeoDetailPage({
 
         {/* Main carousel */}
         <div className="mb-8">
+          {carouselScrollable ? (
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--txt)]">{carouselTitle}</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => freeScrollRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+                  ><ChevronLeft className="h-4 w-4" /></button>
+                  <button
+                    onClick={() => freeScrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-white dark:bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+                  ><ChevronRight className="h-4 w-4" /></button>
+                </div>
+              </div>
+              <div ref={freeScrollRef} className="overflow-x-auto no-scrollbar">
+                <div className="flex gap-3 pb-1">
+                  {carouselItems.map(item => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="shrink-0 w-52 min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-3 flex items-center transition-all hover:bg-[var(--inp-bg)] hover:border-transparent"
+                    >
+                      <div className="flex items-center justify-between gap-2 w-full">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <p className="text-sm font-semibold text-[var(--txt)] truncate">{item.title}</p>
+                          <p className="text-xs text-[var(--muted)] truncate">{item.subtitle}</p>
+                        </div>
+                        {item.metric && (
+                          <div className="flex flex-col items-end shrink-0">
+                            <p className="text-sm font-bold text-solar">{item.metric}</p>
+                            {item.metricLabel && <p className="text-xs text-[var(--muted)]">{item.metricLabel}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
           <Carousel opts={{ align: 'start' }} className="w-full">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[var(--txt)]">{carouselTitle}</h2>
@@ -305,6 +353,7 @@ export function GeoDetailPage({
               ))}
             </CarouselContent>
           </Carousel>
+          )}
         </div>
 
         {/* Second carousel */}
