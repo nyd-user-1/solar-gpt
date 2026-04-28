@@ -40,8 +40,8 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar">
-      <div className="sticky top-0 z-20 px-6 pt-4 pb-3 bg-[var(--surface)]">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
           <input
@@ -64,6 +64,9 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
           </div>
         </div>
       </div>
+
+      {/* Scroll area */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
 
       {viewMode === 'cards' && (
         <div className="px-6 pb-8 pt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -105,9 +108,9 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
       )}
 
       {viewMode === 'list' && (
-        <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
+        <div className="mx-6 mb-8 rounded-lg border border-[var(--border)]">
           <table className="w-full min-w-[600px] text-left text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr>
                 {([
                   { key: 'name' as SortCol,     label: 'Region' },
@@ -160,6 +163,8 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
           </table>
         </div>
       )}
+
+      </div>{/* end scroll area */}
     </div>
   )
 }

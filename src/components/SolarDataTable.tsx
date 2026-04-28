@@ -157,12 +157,12 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
   const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
-    <div className="overflow-x-auto no-scrollbar mx-6 mb-8 rounded-lg border border-[var(--border)]">
+    <div className="mx-6 mb-8 rounded-lg border border-[var(--border)]">
       <table className="w-full table-fixed text-left text-sm">
-        <thead>
+        <thead className="sticky top-0 z-10">
           <tr>
             {/* Region — always visible, no tooltip */}
-            <th className="w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-10">
+            <th className="w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-20">
               <button
                 onClick={() => onSort('region')}
                 className={cn(

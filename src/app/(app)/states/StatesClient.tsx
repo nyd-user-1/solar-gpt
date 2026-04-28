@@ -119,15 +119,10 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar animate-zoom-in">
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
 
-      {/* Header */}
-      <div className="px-6 pt-4 pb-4">
-      </div>
-
-      {/* Sticky search + toolbar */}
-      <div className="sticky top-0 z-20 bg-[var(--surface)] px-6 pb-3">
-        {/* Search bar */}
+      {/* Search + toolbar — always visible above scroll area */}
+      <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
         <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
           <input
@@ -138,8 +133,6 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
             className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
           />
         </div>
-
-        {/* Toolbar */}
         <div className="flex items-center gap-1">
           <GradeFilterMenu selected={grades} onChange={setGrades} />
           <button
@@ -160,9 +153,12 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         </div>
       </div>
 
+      {/* Scroll area — handles both axes so sticky thead works */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
+
       {/* Card view */}
       {viewMode === 'cards' && (
-        <div className="px-6 pb-8">
+        <div className="px-6 pb-8 pt-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map(state => (
               <Link
@@ -252,6 +248,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         />
       )}
 
+      </div>{/* end scroll area */}
     </div>
   )
 }

@@ -81,7 +81,7 @@ export default async function ExplorePage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="px-6 pt-2 pb-16 sm:pb-10">
+        <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* Top counties horizontal scroll */}
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
