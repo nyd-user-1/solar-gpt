@@ -348,13 +348,34 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
 // ── City ──────────────────────────────────────────────────────────────────────
 export async function getAllCities(): Promise<CityKpi[]> {
   const rows = await sql`
-    SELECT id, region_name, state_name, count_qualified, existing_installs_count,
-           yearly_sunlight_kwh_total, carbon_offset_metric_tons,
-           kw_total, kw_median,
-           untapped_annual_value_usd, adoption_rate_pct,
-           sunlight_grade, sunlight_stars
-    FROM solargpt.v_city_kpis
-    ORDER BY count_qualified DESC NULLS LAST
+    SELECT sub.id, sub.region_name, sub.state_name,
+           sub.count_qualified, sub.existing_installs_count,
+           sub.yearly_sunlight_kwh_total, sub.carbon_offset_metric_tons,
+           sub.kw_total, sub.kw_median,
+           sub.untapped_annual_value_usd, sub.adoption_rate_pct,
+           sub.sunlight_grade, sub.sunlight_stars,
+           sub.percent_covered, sub.percent_qualified,
+           sub.number_of_panels_total, sub.number_of_panels_median
+    FROM (
+      SELECT DISTINCT ON (v.id)
+             v.id, v.region_name, v.state_name,
+             v.count_qualified, v.existing_installs_count,
+             v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
+             v.kw_total, v.kw_median,
+             v.untapped_annual_value_usd, v.adoption_rate_pct,
+             v.sunlight_grade, v.sunlight_stars,
+             v.percent_covered, v.percent_qualified,
+             c.number_of_panels_total, c.number_of_panels_median
+      FROM solargpt.v_city_kpis v
+      LEFT JOIN LATERAL (
+        SELECT number_of_panels_total, number_of_panels_median
+        FROM solargpt.raw_sunroof_city
+        WHERE id = v.id
+        LIMIT 1
+      ) c ON true
+      ORDER BY v.id
+    ) sub
+    ORDER BY sub.region_name ASC
   `
   return rows as CityKpi[]
 }
