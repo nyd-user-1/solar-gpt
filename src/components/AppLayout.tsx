@@ -31,6 +31,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/counties': 'Counties',
     '/cities': 'Cities & Towns',
     '/gea-regions': 'Regions',
+    '/zips': 'ZIP Codes',
     '/leads': 'Leads',
     '/explore': 'Explore',
     '/dashboard': 'Dashboards',
@@ -43,7 +44,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pageTitle = PAGE_TITLES[pathname] ?? null
 
   // Cyclic nav order for the chevron buttons (excludes utility/auth pages)
-  const NAV_CYCLE = ['/dashboard', '/explore', '/states', '/counties', '/cities', '/leads', '/gea-regions']
+  const NAV_CYCLE = ['/dashboard', '/explore', '/gea-regions', '/states', '/counties', '/cities', '/zips', '/leads']
   const navIdx = NAV_CYCLE.indexOf(pathname)
   const prevNav = navIdx >= 0 ? NAV_CYCLE[(navIdx - 1 + NAV_CYCLE.length) % NAV_CYCLE.length] : null
   const nextNav = navIdx >= 0 ? NAV_CYCLE[(navIdx + 1) % NAV_CYCLE.length] : null

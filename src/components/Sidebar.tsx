@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
-  Sun, Moon, MapPin, Map, Zap,
+  Sun, Moon, MapPin, Map, Zap, Hash,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
   Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User,
 } from 'lucide-react'
@@ -21,11 +21,12 @@ const NAV_ITEMS = [
   { to: '/free-quote',   icon: Sparkles,         label: 'Free Quote' },
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
+  { to: '/gea-regions',  icon: Zap,              label: 'Regions' },
   { to: '/states',       icon: Map,              label: 'States' },
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
+  { to: '/zips',         icon: Hash,             label: 'ZIP Codes' },
   { to: '/leads',        icon: Users,            label: 'Leads' },
-  { to: '/gea-regions',  icon: Zap,              label: 'Regions' },
 ]
 
 type MeData = { name?: string; email?: string; isAdmin?: boolean } | null

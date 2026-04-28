@@ -581,6 +581,46 @@ export async function getSiblingCities(stateName: string, excludeId: number, lim
 }
 
 // ── ZIP ───────────────────────────────────────────────────────────────────────
+export async function getAdjacentZips(zipCode: string, stateName: string): Promise<{ prev: string | null; next: string | null }> {
+  const rows = await sql`
+    WITH ordered AS (
+      SELECT zip_code,
+        LAG(zip_code)  OVER (ORDER BY zip_code) AS prev_zip,
+        LEAD(zip_code) OVER (ORDER BY zip_code) AS next_zip
+      FROM solargpt.v_zip_kpis WHERE state_name = ${stateName}
+    )
+    SELECT prev_zip, next_zip FROM ordered WHERE zip_code = ${zipCode}
+  `
+  const r = rows[0] as { prev_zip: string | null; next_zip: string | null } | undefined
+  return { prev: r?.prev_zip ?? null, next: r?.next_zip ?? null }
+}
+
+export async function getCountyForZip(stateName: string, latAvg: number, lngAvg: number): Promise<{ region_name: string; lat_min: number; lat_max: number; lng_min: number; lng_max: number } | null> {
+  const rows = await sql`
+    SELECT region_name, lat_min, lat_max, lng_min, lng_max
+    FROM solargpt.v_county_kpis
+    WHERE state_name = ${stateName}
+      AND lat_min <= ${latAvg} AND lat_max >= ${latAvg}
+      AND lng_min <= ${lngAvg} AND lng_max >= ${lngAvg}
+    ORDER BY ABS(lat_avg - ${latAvg}) + ABS(lng_avg - ${lngAvg})
+    LIMIT 1
+  `
+  return (rows[0] as { region_name: string; lat_min: number; lat_max: number; lng_min: number; lng_max: number } | undefined) ?? null
+}
+
+export async function getZipPlaceName(stateName: string, latMin: number, latMax: number, lngMin: number, lngMax: number): Promise<string | null> {
+  const rows = await sql`
+    SELECT region_name
+    FROM solargpt.v_city_kpis
+    WHERE state_name = ${stateName}
+      AND lat_avg BETWEEN ${latMin} AND ${latMax}
+      AND lng_avg BETWEEN ${lngMin} AND ${lngMax}
+    ORDER BY untapped_annual_value_usd DESC NULLS LAST
+    LIMIT 1
+  `
+  return (rows[0] as { region_name: string } | undefined)?.region_name ?? null
+}
+
 export async function getAllZips(): Promise<ZipKpi[]> {
   const rows = await sql`
     SELECT id, zip_code, state_name, count_qualified, existing_installs_count,

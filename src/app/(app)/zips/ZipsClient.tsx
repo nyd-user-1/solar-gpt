@@ -32,13 +32,7 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar">
-      <div className="px-6 pt-8 pb-6">
-        <h1 className="text-2xl font-bold text-[var(--txt)]">ZIP Codes</h1>
-        <p className="hidden sm:block text-sm text-[var(--muted)] mt-1">
-          {zips.length.toLocaleString()} ZIP codes with solar data
-        </p>
-      </div>
+    <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
 
       <div className="sticky top-0 z-20 px-6 pt-4 pb-3 bg-[var(--surface)]">
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-2">
