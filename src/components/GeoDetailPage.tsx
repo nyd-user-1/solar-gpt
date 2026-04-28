@@ -9,7 +9,8 @@ import { RegionMap, type MapMarker } from '@/components/RegionMap'
 import { ChatDrawer } from '@/components/ChatDrawer'
 import StateCountyMap from '@/components/StateCountyMap'
 import CountyZipMap from '@/components/CountyZipMap'
-import type { HeatmapPoint, CountyMapEntry, ZipMapEntry } from '@/lib/queries'
+import CensusTractMap from '@/components/CensusTractMap'
+import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -65,6 +66,8 @@ export interface DetailPageProps {
   stateCountyData?: { counties: CountyMapEntry[]; fips: string; name: string }
   /** County ZIP choropleth — when provided, renders CountyZipMap */
   countyZipData?: { zips: ZipMapEntry[]; countyFips: string; stateAbbr: string; stateName: string; countyName: string }
+  /** Census tract choropleth — when provided, renders CensusTractMap */
+  tractData?: { tracts: TractMapEntry[]; stateFips: string; parentName: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -96,7 +99,7 @@ export function GeoDetailPage({
   defaultInfoRows = 4,
   carouselScrollable = false,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -208,6 +211,16 @@ export function GeoDetailPage({
               stateAbbr={countyZipData.stateAbbr}
               stateName={countyZipData.stateName}
               countyName={countyZipData.countyName}
+              bounds={mapBounds}
+              className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : tractData && tractData.tracts.length > 0 && mapBounds ? (
+          <div className="mb-8">
+            <CensusTractMap
+              tracts={tractData.tracts}
+              stateFips={tractData.stateFips}
+              parentName={tractData.parentName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
             />

@@ -595,6 +595,27 @@ export async function getSiblingCities(stateName: string, excludeId: number, lim
 }
 
 // ── ZIP ───────────────────────────────────────────────────────────────────────
+export type TractMapEntry = {
+  geoid: string
+  count_qualified: number
+}
+
+export async function getTractsForArea(
+  stateName: string,
+  latMin: number, latMax: number,
+  lngMin: number, lngMax: number,
+): Promise<TractMapEntry[]> {
+  const rows = await sql`
+    SELECT region_name AS geoid, count_qualified
+    FROM solargpt.raw_sunroof_census_tract
+    WHERE state_name = ${stateName}
+      AND lat_avg BETWEEN ${latMin} AND ${latMax}
+      AND lng_avg BETWEEN ${lngMin} AND ${lngMax}
+    ORDER BY count_qualified DESC NULLS LAST
+  `
+  return rows as TractMapEntry[]
+}
+
 export async function getAdjacentZips(zipCode: string, stateName: string): Promise<{ prev: string | null; next: string | null }> {
   const rows = await sql`
     WITH ordered AS (

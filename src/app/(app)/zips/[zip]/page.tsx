@@ -8,8 +8,9 @@ import {
   getCountyForZip,
   getZipsForCounty,
   getZipPlaceName,
-  getHeatmapPoints,
+  getTractsForArea,
 } from '@/lib/queries'
+import { STATE_FIPS } from '@/lib/state-fips'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 
 export default async function ZipDetailPage({ params }: { params: Promise<{ zip: string }> }) {
@@ -17,12 +18,13 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
   const zipData = await getZipByCode(zip)
   if (!zipData) notFound()
 
-  const [heatmapPoints, adjacent, countyData, placeName] = await Promise.all([
-    getHeatmapPoints(zipData.lat_min, zipData.lat_max, zipData.lng_min, zipData.lng_max),
+  const [adjacent, countyData, placeName, tracts] = await Promise.all([
     getAdjacentZips(zipData.zip_code, zipData.state_name),
     getCountyForZip(zipData.state_name, zipData.lat_avg, zipData.lng_avg),
     getZipPlaceName(zipData.state_name, zipData.lat_min, zipData.lat_max, zipData.lng_min, zipData.lng_max),
+    getTractsForArea(zipData.state_name, zipData.lat_min, zipData.lat_max, zipData.lng_min, zipData.lng_max),
   ])
+  const stateFips = STATE_FIPS[zipData.state_name] ?? ''
 
   const countyZips = countyData
     ? (await getZipsForCounty(zipData.state_name, countyData.lat_min, countyData.lat_max, countyData.lng_min, countyData.lng_max))
@@ -78,9 +80,8 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
       carouselScrollable
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      mapCenter={{ lat: zipData.lat_avg, lng: zipData.lng_avg }}
       mapBounds={{ north: zipData.lat_max, south: zipData.lat_min, east: zipData.lng_max, west: zipData.lng_min }}
-      heatmapPoints={heatmapPoints}
+      tractData={tracts.length > 0 && stateFips ? { tracts, stateFips, parentName: title } : undefined}
       chatContext={`ZIP ${zipData.zip_code}, ${zipData.state_name}`}
     />
   )

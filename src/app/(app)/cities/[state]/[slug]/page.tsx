@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getCityBySlug, getAdjacentCities, getAllCitiesForState, getHeatmapPoints, nameToSlug } from '@/lib/queries'
+import { getCityBySlug, getAdjacentCities, getAllCitiesForState, getTractsForArea, nameToSlug } from '@/lib/queries'
+import { STATE_FIPS } from '@/lib/state-fips'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function CityDetailPage({ params }: { params: Promise<{ state: string; slug: string }> }) {
@@ -12,11 +13,12 @@ export default async function CityDetailPage({ params }: { params: Promise<{ sta
 
   const cityStateSlug = nameToSlug(city.state_name)
 
-  const [adjacent, allCities, heatmapPoints] = await Promise.all([
+  const [adjacent, allCities, tracts] = await Promise.all([
     getAdjacentCities(city.id, city.state_name),
     getAllCitiesForState(city.state_name),
-    getHeatmapPoints(city.lat_min, city.lat_max, city.lng_min, city.lng_max),
+    getTractsForArea(city.state_name, city.lat_min, city.lat_max, city.lng_min, city.lng_max),
   ])
+  const stateFips = STATE_FIPS[city.state_name] ?? ''
 
   const prev = adjacent.prev
     ? { label: adjacent.prev.region_name, href: `/cities/${cityStateSlug}/${nameToSlug(adjacent.prev.region_name)}` }
@@ -65,9 +67,8 @@ export default async function CityDetailPage({ params }: { params: Promise<{ sta
       carouselScrollable
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      mapCenter={{ lat: city.lat_avg, lng: city.lng_avg }}
       mapBounds={{ north: city.lat_max, south: city.lat_min, east: city.lng_max, west: city.lng_min }}
-      heatmapPoints={heatmapPoints}
+      tractData={tracts.length > 0 && stateFips ? { tracts, stateFips, parentName: city.region_name } : undefined}
       chatContext={`${city.region_name}, ${city.state_name}`}
     />
   )
