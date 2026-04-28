@@ -84,7 +84,7 @@ export default async function Explore2Page() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* GEA Region choropleth map */}
-          <GEAChoropleth counties={mapCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
+          <GEAChoropleth mode="state" counties={mapCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
 
           {/* GEA region horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">
