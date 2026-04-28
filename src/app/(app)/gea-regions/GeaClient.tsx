@@ -40,7 +40,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
       <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />

@@ -642,7 +642,7 @@ export default function FreeQuotePage() {
   const currentStep = step as QuestionStep
 
   return (
-    <div className={`flex flex-1 flex-col bg-white transition-opacity duration-150 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`flex flex-1 flex-col bg-white animate-zoom-in transition-opacity duration-150 ${animating ? 'opacity-0' : 'opacity-100'}`}>
       {/* Progress + back */}
       <div className="px-4 pt-4 pb-2 shrink-0">
         <div className="mx-auto max-w-3xl">

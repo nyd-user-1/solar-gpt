@@ -38,7 +38,7 @@ export default function LeadsPage() {
   const totalCount = filteredDb.length + filtered.length
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
 
       {/* Search + toolbar — always visible */}
       <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
