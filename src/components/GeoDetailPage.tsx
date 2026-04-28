@@ -70,7 +70,7 @@ export interface DetailPageProps {
   /** Census tract choropleth — when provided, renders CensusTractMap */
   tractData?: { tracts: TractMapEntry[]; stateFips: string; parentName: string }
   /** GEA region map — when provided, renders GEAMiniMap full-size */
-  geaMapData?: { stateNames: string[]; bounds: { north: number; south: number; east: number; west: number } }
+  geaMapData?: { stateNames: string[]; bounds: { north: number; south: number; east: number; west: number }; color?: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -233,6 +233,7 @@ export function GeoDetailPage({
             <GEAMiniMap
               stateNames={geaMapData.stateNames}
               bounds={geaMapData.bounds}
+              highlightColor={geaMapData.color}
             />
           </div>
         ) : mapCenter ? (

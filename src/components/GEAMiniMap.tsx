@@ -25,7 +25,7 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
   return null
 }
 
-function GEAStateLayer({ stateNames }: { stateNames: string[] }) {
+function GEAStateLayer({ stateNames, highlightColor = '#f59e0b' }: { stateNames: string[]; highlightColor?: string }) {
   const map = useMap()
   const initialized = useRef(false)
 
@@ -43,9 +43,9 @@ function GEAStateLayer({ stateNames }: { stateNames: string[] }) {
           const name = feature.getProperty('name') as string
           const inGea = nameSet.has(name)
           return {
-            fillColor: inGea ? '#f59e0b' : '#e2e8f0',
-            fillOpacity: inGea ? 0.55 : 0.3,
-            strokeColor: inGea ? '#d97706' : '#cbd5e1',
+            fillColor: inGea ? highlightColor : '#e2e8f0',
+            fillOpacity: inGea ? 0.6 : 0.3,
+            strokeColor: inGea ? highlightColor : '#cbd5e1',
             strokeWeight: inGea ? 1.2 : 0.5,
             strokeOpacity: 1,
             clickable: false,
@@ -60,10 +60,12 @@ function GEAStateLayer({ stateNames }: { stateNames: string[] }) {
 export default function GEAMiniMap({
   stateNames,
   bounds,
+  highlightColor,
   className = 'absolute inset-0',
 }: {
   stateNames: string[]
   bounds: Bounds
+  highlightColor?: string
   className?: string
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
@@ -81,7 +83,7 @@ export default function GEAMiniMap({
           style={{ width: '100%', height: '100%' }}
         >
           <FitBounds bounds={bounds} />
-          <GEAStateLayer stateNames={stateNames} />
+          <GEAStateLayer stateNames={stateNames} highlightColor={highlightColor} />
         </Map>
       </APIProvider>
     </div>

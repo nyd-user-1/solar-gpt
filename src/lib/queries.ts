@@ -703,6 +703,21 @@ export async function getStateBySlug(slug: string): Promise<StateKpi | null> {
 }
 
 // ── GEA ───────────────────────────────────────────────────────────────────────
+export async function getStateGeaMappings(): Promise<{ state_name: string; cambium_gea: string }[]> {
+  const rows = await sql`
+    WITH gea_counts AS (
+      SELECT state_name, cambium_gea, COUNT(*) AS cnt
+      FROM solargpt.raw_cambium_county_mapping
+      WHERE cambium_gea IS NOT NULL AND state_name IS NOT NULL
+      GROUP BY state_name, cambium_gea
+    )
+    SELECT DISTINCT ON (state_name) state_name, cambium_gea
+    FROM gea_counts
+    ORDER BY state_name, cnt DESC
+  `
+  return rows as { state_name: string; cambium_gea: string }[]
+}
+
 export async function getAllGeas(): Promise<string[]> {
   const rows = await sql`
     SELECT cambium_gea

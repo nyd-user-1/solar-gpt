@@ -8,6 +8,7 @@ import { US_STATES } from '@/lib/us-states'
 import CountyChoropleth from '@/components/CountyChoropleth'
 import { StateCardClient } from '@/components/StateCardClient'
 import GEAMiniMap from '@/components/GEAMiniMap'
+import { GEA_COLORS } from '@/lib/gea-colors'
 
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
@@ -50,7 +51,7 @@ function GeaCard({ gea, kpi, stateNames }: { gea: string; kpi: GeaKpi | null; st
       className="group relative w-full aspect-[16/9] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
     >
       {/* Mini-map replacing the gradient */}
-      <GEAMiniMap stateNames={stateNames} bounds={bounds} />
+      <GEAMiniMap stateNames={stateNames} bounds={bounds} highlightColor={GEA_COLORS[gea]} />
       {/* Scrim for text legibility */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
       {/* Hover tint */}

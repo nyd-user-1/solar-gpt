@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
 import { getAllGeas, getGeaKpi, getCountiesByGea, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
+import { getGeaColor } from '@/lib/gea-colors'
 
 export default async function GeaRegionDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -66,7 +67,7 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      geaMapData={{ stateNames: geaStateNames, bounds: { north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min } }}
+      geaMapData={{ stateNames: geaStateNames, bounds: { north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min }, color: getGeaColor(gea) }}
       chatContext={gea}
     />
   )

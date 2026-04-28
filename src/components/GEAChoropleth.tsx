@@ -6,27 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { CountyMapEntry, GeaKpi } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
-
-// Matches roughly the Cambium GEA color scheme
-const GEA_COLORS: Record<string, string> = {
-  'CAISO':              '#ef4444',
-  'ERCOT':              '#84cc16',
-  'FRCC':               '#06b6d4',
-  'ISONE':              '#60a5fa',
-  'MISO_Central':       '#10b981',
-  'MISO_North':         '#9ca3af',
-  'MISO_South':         '#c084fc',
-  'NYISO':              '#3b82f6',
-  'NorthernGrid_East':  '#f97316',
-  'NorthernGrid_West':  '#78716c',
-  'PJM_East':           '#facc15',
-  'PJM_West':           '#fb923c',
-  'SERTP':              '#f87171',
-  'SPP_N':              '#0891b2',
-  'SPP_S':              '#22d3ee',
-  'WestConnect_N':      '#a855f7',
-  'WestConnect_S':      '#7c3aed',
-}
+import { GEA_COLORS } from '@/lib/gea-colors'
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -46,11 +26,12 @@ type ChipData = { name: string; value: number; buildings: number }
 
 // State-level layer: each state colored by its dominant GEA
 function GEAStateChoroplethLayer({
-  counties, geaKpisMap, onHoverChange,
+  counties, geaKpisMap, onHoverChange, stateGeaMap,
 }: {
   counties: CountyMapEntry[]
   geaKpisMap: Record<string, GeaKpi>
   onHoverChange: (d: ChipData | null) => void
+  stateGeaMap?: Record<string, string>
 }) {
   const map = useMap()
   const router = useRouter()
@@ -60,16 +41,21 @@ function GEAStateChoroplethLayer({
     if (!map || initialized.current) return
     initialized.current = true
 
-    // Compute dominant GEA per state (most counties)
-    const stateGeaCount: Record<string, Record<string, number>> = {}
-    for (const c of counties) {
-      if (!c.cambium_gea || !c.state_name) continue
-      if (!stateGeaCount[c.state_name]) stateGeaCount[c.state_name] = {}
-      stateGeaCount[c.state_name][c.cambium_gea] = (stateGeaCount[c.state_name][c.cambium_gea] ?? 0) + 1
-    }
-    const stateDominantGea: Record<string, string> = {}
-    for (const [state, geaCounts] of Object.entries(stateGeaCount)) {
-      stateDominantGea[state] = Object.entries(geaCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0]
+    // Use pre-computed map if provided, otherwise fall back to county data
+    let stateDominantGea: Record<string, string>
+    if (stateGeaMap && Object.keys(stateGeaMap).length > 0) {
+      stateDominantGea = stateGeaMap
+    } else {
+      const stateGeaCount: Record<string, Record<string, number>> = {}
+      for (const c of counties) {
+        if (!c.cambium_gea || !c.state_name) continue
+        if (!stateGeaCount[c.state_name]) stateGeaCount[c.state_name] = {}
+        stateGeaCount[c.state_name][c.cambium_gea] = (stateGeaCount[c.state_name][c.cambium_gea] ?? 0) + 1
+      }
+      stateDominantGea = {}
+      for (const [state, geaCounts] of Object.entries(stateGeaCount)) {
+        stateDominantGea[state] = Object.entries(geaCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0]
+      }
     }
 
     fetch(STATES_URL)
@@ -169,10 +155,12 @@ export default function GEAChoropleth({
   counties,
   geaKpis,
   mode = 'county',
+  stateGeaMap,
 }: {
   counties: CountyMapEntry[]
   geaKpis: GeaKpi[]
   mode?: 'county' | 'state'
+  stateGeaMap?: Record<string, string>
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
@@ -204,7 +192,7 @@ export default function GEAChoropleth({
           style={{ width: '100%', height: '100%' }}
         >
           {mode === 'state'
-            ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
+            ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
             : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
           }
         </Map>

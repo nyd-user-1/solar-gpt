@@ -1,13 +1,14 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, getStatesForMap, type GeaKpi, type StateKpi } from '@/lib/queries'
+import { getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, getStatesForMap, getStateGeaMappings, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { US_STATES } from '@/lib/us-states'
 import GEAChoropleth from '@/components/GEAChoropleth'
 import { StateCardClient } from '@/components/StateCardClient'
 import GEAMiniMap from '@/components/GEAMiniMap'
+import { GEA_COLORS } from '@/lib/gea-colors'
 
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
@@ -31,7 +32,7 @@ function GeaScrollCard({ gea, kpi, stateNames, index }: { gea: string; kpi: GeaK
       className="group relative shrink-0 w-[calc(72vw-22px)] sm:w-[380px] aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90`} />
-      <GEAMiniMap stateNames={stateNames} bounds={bounds} />
+      <GEAMiniMap stateNames={stateNames} bounds={bounds} highlightColor={GEA_COLORS[gea]} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent pointer-events-none" />
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
       <div className="absolute top-3 right-3 rounded-full bg-black/30 backdrop-blur-sm px-2 py-1">
@@ -51,14 +52,17 @@ function GeaScrollCard({ gea, kpi, stateNames, index }: { gea: string; kpi: GeaK
 }
 
 export default async function Explore2Page() {
-  const [geas, allStates, mapCounties, mapStates] = await Promise.all([
+  const [geas, allStates, mapCounties, mapStates, stateGeaMappings] = await Promise.all([
     getAllGeas(),
     getAllStates(),
     getCountiesForMap(),
     getStatesForMap(),
+    getStateGeaMappings(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
+  const stateGeaMap: Record<string, string> = {}
+  for (const m of stateGeaMappings) stateGeaMap[m.state_name] = m.cambium_gea
   const featuredStates = allStates
     .filter(s => US_STATES.has(s.state_name))
     .sort((a, b) => a.state_name.localeCompare(b.state_name))
@@ -84,7 +88,7 @@ export default async function Explore2Page() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* GEA Region choropleth map */}
-          <GEAChoropleth mode="state" counties={mapCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
+          <GEAChoropleth mode="state" stateGeaMap={stateGeaMap} counties={mapCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
 
           {/* GEA region horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">
