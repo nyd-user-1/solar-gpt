@@ -8,6 +8,9 @@ import {
   BarChart,
   Bar,
   XAxis,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -47,6 +50,14 @@ export function DashboardHub() {
                         />
                         <XAxis dataKey="x" hide />
                       </AreaChart>
+                    ) : d.chartType === 'pie' ? (
+                      <PieChart>
+                        <Pie data={d.previewData} dataKey="y" cx="50%" cy="50%" innerRadius="30%" outerRadius="65%" animationDuration={500}>
+                          {d.previewData.map((_, i) => (
+                            <Cell key={i} fill={d.color} opacity={Math.max(0.25, 1 - i * 0.14)} />
+                          ))}
+                        </Pie>
+                      </PieChart>
                     ) : (
                       <BarChart data={d.previewData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                         <Bar dataKey="y" fill={d.color} radius={[2, 2, 0, 0]} animationDuration={500} />

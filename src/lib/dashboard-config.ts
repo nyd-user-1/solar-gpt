@@ -1,5 +1,5 @@
 export type DashboardTabId = 'state' | 'gea' | 'grade' | 'county' | 'city'
-export type MetricFormat = 'usd' | 'count' | 'percent' | 'co2_tons' | 'usd_per_mwh' | 'co2_per_mwh'
+export type MetricFormat = 'usd' | 'count' | 'percent' | 'co2_tons' | 'usd_per_mwh' | 'co2_per_mwh' | 'kwh'
 export type MetricAgg = 'sum' | 'avg'
 
 export type DashboardTab = {
@@ -17,7 +17,7 @@ export type DashboardConfig = {
   title: string
   desc: string
   color: string
-  chartType: 'area' | 'bar'
+  chartType: 'area' | 'bar' | 'pie'
   previewData: { x: number; y: number }[]
   tabs: DashboardTab[]
   headerContext: string
@@ -168,6 +168,19 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
       { id: 'grade', label: 'Grade', metric: 'untapped_lifetime_value_usd', format: 'usd', agg: 'sum', hasChildren: false },
     ],
     headerContext: '25-year opportunity',
+  },
+  {
+    slug: 'mwh-by-region',
+    title: 'MWh by Region',
+    desc: 'Annual solar energy potential by GEA region',
+    color: 'hsl(191 91% 37%)',
+    chartType: 'pie',
+    previewData: [{x:0,y:35},{x:1,y:28},{x:2,y:20},{x:3,y:12},{x:4,y:5}],
+    tabs: [
+      { id: 'gea', label: 'Region', metric: 'yearly_sunlight_kwh_total', format: 'kwh', agg: 'sum', hasChildren: true, childTab: 'state' },
+      { id: 'state', label: 'State', metric: 'yearly_sunlight_kwh_total', format: 'kwh', agg: 'sum', hasChildren: true, childTab: 'county' },
+    ],
+    headerContext: 'kWh annual solar potential',
   },
 ]
 

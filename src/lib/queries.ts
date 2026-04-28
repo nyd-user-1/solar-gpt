@@ -954,6 +954,10 @@ export async function getDashboardStateRows(metric: string): Promise<DashboardTa
       const r = await sql`SELECT state_name AS name, untapped_lifetime_value_usd AS value, untapped_lifetime_value_usd*100.0/NULLIF(SUM(untapped_lifetime_value_usd)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE untapped_lifetime_value_usd IS NOT NULL ORDER BY untapped_lifetime_value_usd DESC`
       return toRows(r as unknown[], true)
     }
+    case 'yearly_sunlight_kwh_total': {
+      const r = await sql`SELECT state_name AS name, yearly_sunlight_kwh_total AS value, yearly_sunlight_kwh_total*100.0/NULLIF(SUM(yearly_sunlight_kwh_total)OVER(),0) AS share_pct FROM solargpt.v_state_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL ORDER BY yearly_sunlight_kwh_total DESC`
+      return toRows(r as unknown[], true)
+    }
     default: return []
   }
 }
@@ -989,6 +993,10 @@ export async function getDashboardGeaRows(metric: string): Promise<DashboardTabl
     case 'lrmer_co2_per_mwh': {
       const r = await sql`SELECT cambium_gea AS name, lrmer_co2_per_mwh AS value, lrmer_co2_per_mwh*100.0/NULLIF(SUM(lrmer_co2_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL ORDER BY lrmer_co2_per_mwh DESC`
       return toGeaRows(r as unknown[], false)
+    }
+    case 'yearly_sunlight_kwh_total': {
+      const r = await sql`SELECT cambium_gea AS name, yearly_sunlight_kwh_total AS value, yearly_sunlight_kwh_total*100.0/NULLIF(SUM(yearly_sunlight_kwh_total)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE yearly_sunlight_kwh_total IS NOT NULL ORDER BY yearly_sunlight_kwh_total DESC`
+      return toGeaRows(r as unknown[], true)
     }
     default: return []
   }

@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, ChevronDown, ChevronLeft, LayoutDashboard } from 'lucide-react'
+import { ChevronRight, ChevronDown, ChevronLeft } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis,
-  Tooltip as RechartsTooltip,
+  Tooltip as RechartsTooltip, PieChart, Pie, Cell,
 } from 'recharts'
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
+import { DashboardsDrawer } from '@/components/DashboardsDrawer'
 import {
   type DashboardConfig, type DashboardTabId, type MetricFormat,
   DASHBOARD_CONFIGS,
@@ -24,6 +24,7 @@ function fmtValue(value: number, format: MetricFormat): string {
     case 'co2_tons':    return `${fmtNum(value)} t`
     case 'usd_per_mwh': return `$${value.toFixed(2)}/MWh`
     case 'co2_per_mwh': return `${value.toFixed(3)} kg/MWh`
+    case 'kwh':         return `${fmtNum(value)} kWh`
   }
 }
 
@@ -35,6 +36,7 @@ function fmtHeader(value: number, format: MetricFormat): string {
     case 'co2_tons':    return `${fmtNum(value)} t CO₂`
     case 'usd_per_mwh': return `$${value.toFixed(2)}/MWh`
     case 'co2_per_mwh': return `${value.toFixed(3)} kg/MWh`
+    case 'kwh':         return `${fmtNum(value)} kWh`
   }
 }
 
@@ -154,7 +156,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
           {/* Chart */}
           {displayChartData.length > 1 && (
-            <div className="h-20 md:h-24 mb-4 -mx-2">
+            <div className={`${config.chartType === 'pie' ? 'h-32 md:h-40' : 'h-20 md:h-24'} mb-4 -mx-2`}>
               <ResponsiveContainer width="100%" height="100%">
                 {config.chartType === 'area' ? (
                   <AreaChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
@@ -167,21 +169,29 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                     <Area type="monotone" dataKey="value" stroke={config.color} strokeWidth={1.5}
                       fill={`url(#detail-${slug})`} dot={false} animationDuration={400} />
                     <XAxis dataKey="name" hide />
-                    <RechartsTooltip
-                      contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                    <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
                       formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
-                      labelFormatter={(l) => String(l ?? '')}
-                    />
+                      labelFormatter={(l) => String(l ?? '')} />
                   </AreaChart>
+                ) : config.chartType === 'pie' ? (
+                  <PieChart>
+                    <Pie data={displayChartData} dataKey="value" nameKey="name"
+                      cx="50%" cy="50%" innerRadius="35%" outerRadius="70%" animationDuration={400}>
+                      {displayChartData.map((_, i) => (
+                        <Cell key={i} fill={config.color} opacity={Math.max(0.25, 1 - i * 0.07)} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
+                      labelFormatter={(l) => String(l ?? '')} />
+                  </PieChart>
                 ) : (
                   <BarChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                     <Bar dataKey="value" fill={config.color} radius={[2, 2, 0, 0]} animationDuration={400} />
                     <XAxis dataKey="name" hide />
-                    <RechartsTooltip
-                      contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                    <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
                       formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
-                      labelFormatter={(l) => String(l ?? '')}
-                    />
+                      labelFormatter={(l) => String(l ?? '')} />
                   </BarChart>
                 )}
               </ResponsiveContainer>
@@ -190,13 +200,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
           {/* Tab row */}
           <div className="flex items-center gap-1 flex-wrap">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--muted)] hover:text-[var(--txt)] transition-colors"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5" />
-              Dashboards
-            </Link>
+            <DashboardsDrawer />
             <div className="h-4 w-px bg-[var(--border)] mx-1" />
             {visibleTabs.map(tab => (
               <button key={tab.id} onClick={() => switchTab(tab.id)}

@@ -27,7 +27,7 @@ export function DashboardsDrawer() {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--txt)] transition-colors">
+        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--muted)] hover:text-[var(--txt)] transition-colors">
           <LayoutGrid className="h-4 w-4" />
           <span className="hidden sm:inline">Dashboards</span>
         </button>
