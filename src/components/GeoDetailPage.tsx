@@ -261,13 +261,17 @@ export function GeoDetailPage({
                     href={item.href}
                     className="block w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
                   >
-                    <div className="flex flex-col items-start text-left gap-0.5">
-                      <p className="text-sm font-semibold text-[var(--txt)]">{item.title}</p>
-                      <p className="text-xs text-[var(--muted)]">{item.subtitle}</p>
-                      {item.metric && (
-                        <p className="mt-1 text-sm font-bold text-solar">{item.metric}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--txt)] truncate">{item.title}</p>
+                        <p className="text-xs text-[var(--muted)]">{item.subtitle}</p>
+                      </div>
+                      {(item.metric || item.metricLabel) && (
+                        <div className="flex flex-col items-end shrink-0">
+                          {item.metric && <p className="text-sm font-bold text-solar">{item.metric}</p>}
+                          {item.metricLabel && <p className="text-xs text-[var(--muted)]">{item.metricLabel}</p>}
+                        </div>
                       )}
-                      {item.metricLabel && <p className="text-xs text-[var(--muted)]">{item.metricLabel}</p>}
                     </div>
                   </Link>
                 </CarouselItem>
