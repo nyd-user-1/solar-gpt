@@ -8,6 +8,13 @@ import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [dashHeader, setDashHeader] = useState<{ formatted: string; color: string } | null>(null)
+
+  useEffect(() => {
+    const handle = (e: Event) => setDashHeader((e as CustomEvent).detail)
+    window.addEventListener('solargpt:dashboard-header', handle)
+    return () => window.removeEventListener('solargpt:dashboard-header', handle)
+  }, [])
 
   // Apply admin-configurable bg color
   useEffect(() => {
@@ -102,25 +109,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="ml-3 flex-1 text-xl font-bold text-[var(--txt)]">{pageTitle}</span>
           )}
 
-          {/* Chevrons — nav pages cycle through NAV_CYCLE; all dashboard pages cycle through dashboards */}
-          {(navIdx >= 0 || isAnyDashboard) && (
+          {/* Nav chevrons — only for non-dashboard pages */}
+          {navIdx >= 0 && !isAnyDashboard && (
             <div className="flex items-center gap-2 ml-auto mr-1.5">
-              <button
-                onClick={() => isAnyDashboard && prevDashboard
-                  ? router.push(`/dashboard/${prevDashboard.slug}`)
-                  : prevNav ? router.push(prevNav) : undefined}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
-              >
+              <button onClick={() => prevNav && router.push(prevNav)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => isAnyDashboard && nextDashboard
-                  ? router.push(`/dashboard/${nextDashboard.slug}`)
-                  : nextNav ? router.push(nextNav) : undefined}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
-              >
+              <button onClick={() => nextNav && router.push(nextNav)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <ChevronRight className="h-4 w-4" />
               </button>
+            </div>
+          )}
+
+          {/* Dashboard list page — its own chevrons (loop through dashboards) */}
+          {isDashboardList && (
+            <div className="flex items-center gap-2 ml-auto mr-1.5">
+              <button onClick={() => prevDashboard && router.push(`/dashboard/${prevDashboard.slug}`)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button onClick={() => nextDashboard && router.push(`/dashboard/${nextDashboard.slug}`)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Dashboard detail — show the big number top-right (chevrons are inline in the component) */}
+          {isDashboardDetail && dashHeader && (
+            <div className="ml-auto mr-2 tabular-nums font-bold text-2xl" style={{ color: dashHeader.color }}>
+              {dashHeader.formatted}
             </div>
           )}
 
