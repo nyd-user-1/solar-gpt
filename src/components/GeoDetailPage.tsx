@@ -259,7 +259,7 @@ export function GeoDetailPage({
                 <CarouselItem key={item.href} className="basis-full sm:basis-1/2 md:basis-1/3">
                   <Link
                     href={item.href}
-                    className="block w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
+                    className="flex items-center w-full min-h-[90px] rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 transition-all hover:bg-[var(--inp-bg)] hover:border-transparent cursor-pointer"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex flex-col gap-0.5 min-w-0">
