@@ -122,9 +122,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
     <div className="flex-1 overflow-y-auto no-scrollbar animate-zoom-in">
 
       {/* Header */}
-      <div className="px-6 pt-8 pb-4">
-        <h1 className="text-2xl font-bold text-[var(--txt)]">States</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">Browse solar opportunity data by state</p>
+      <div className="px-6 pt-4 pb-4">
       </div>
 
       {/* Sticky search + toolbar */}

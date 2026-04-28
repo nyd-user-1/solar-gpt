@@ -25,6 +25,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isRoot = pathname === '/'
   const isDashboard = pathname.startsWith('/dashboard/')
+
+  const PAGE_TITLES: Record<string, string> = {
+    '/states': 'States',
+    '/counties': 'Counties',
+    '/cities': 'Cities & Towns',
+    '/gea-regions': 'GEA Regions',
+    '/leads': 'Leads',
+    '/explore': 'Explore',
+    '/dashboard': 'Dashboards',
+    '/funds': 'Funds',
+    '/glossary': 'Glossary',
+    '/profile': 'Profile',
+    '/settings': 'Settings',
+    '/admin': 'Admin',
+    '/free-quote': 'Free Quote',
+  }
+  const pageTitle = PAGE_TITLES[pathname] ?? null
   const currentSlug = isDashboard ? pathname.split('/')[2] : null
   const currentIdx = currentSlug ? DASHBOARD_CONFIGS.findIndex(c => c.slug === currentSlug) : -1
   const n = DASHBOARD_CONFIGS.length
@@ -60,6 +77,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           ) : (
             <div className="h-9 w-9" />
+          )}
+
+          {/* Page title — list pages only */}
+          {pageTitle && (
+            <span className="ml-3 flex-1 text-xl font-bold text-[var(--txt)]">{pageTitle}</span>
           )}
 
           {/* Right side: auth on root, chevrons on dashboard, nothing elsewhere */}
