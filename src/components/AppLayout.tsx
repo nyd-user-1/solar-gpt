@@ -54,9 +54,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-solar hover:bg-[var(--inp-bg)] transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
             >
-              <Sun className="h-5 w-5 fill-solar" />
+              <Sun className="h-5 w-5 text-solar fill-solar/20" />
             </button>
           ) : (
             <div className="h-9 w-9" />
