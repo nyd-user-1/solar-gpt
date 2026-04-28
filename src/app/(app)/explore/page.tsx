@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
+import { US_STATES } from '@/lib/us-states'
 
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
@@ -21,17 +22,23 @@ function StateCard({ state, index }: { state: StateKpi; index: number }) {
   return (
     <Link
       href={`/states/${nameToSlug(state.state_name)}`}
-      className="group relative shrink-0 w-[calc(50vw-22px)] sm:w-[220px] aspect-[3/4] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
+      className="group relative shrink-0 w-[calc(72vw-22px)] sm:w-[300px] aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden"
     >
+      {/* Gradient fallback */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {/* Flag as primary background */}
       {state.flag_url && (
-        <div className="absolute inset-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`${state.flag_url}?width=600`} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay" />
-        </div>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`${state.flag_url}?width=600`}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
       )}
-      <div className="absolute top-3 right-3 rounded-full bg-white/20 backdrop-blur-sm px-2 py-1">
+      {/* Bottom scrim for text legibility */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+      <div className="absolute top-3 right-3 rounded-full bg-black/30 backdrop-blur-sm px-2 py-1">
         <span className="text-xs font-bold text-white">{fmtUsd(state.untapped_annual_value_usd)}</span>
       </div>
       <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
@@ -93,9 +100,9 @@ export default async function ExplorePage() {
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
   const featuredCounties = counties.slice(0, 12)
-  const featuredStates = [...states]
-    .sort((a, b) => (b.untapped_annual_value_usd ?? 0) - (a.untapped_annual_value_usd ?? 0))
-    .slice(0, 15)
+  const featuredStates = states
+    .filter(s => US_STATES.has(s.state_name))
+    .sort((a, b) => a.state_name.localeCompare(b.state_name))
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
