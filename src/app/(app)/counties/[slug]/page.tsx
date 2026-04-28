@@ -6,7 +6,7 @@ import {
   getCountyBySlug,
   getAdjacentCounties,
   getCitiesByState,
-  getHeatmapPoints,
+  getCitiesForCountyMap,
   nameToSlug,
 } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
@@ -16,10 +16,10 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
   const county = await getCountyBySlug(slug)
   if (!county) notFound()
 
-  const [adjacent, cities, heatmapPoints] = await Promise.all([
+  const [adjacent, cities, cityMarkers] = await Promise.all([
     getAdjacentCounties(county.id, county.state_name),
     getCitiesByState(county.state_name, 16),
-    getHeatmapPoints(county.lat_min, county.lat_max, county.lng_min, county.lng_max),
+    getCitiesForCountyMap(county.region_name, county.state_name),
   ])
 
   const prev = adjacent.prev
@@ -68,8 +68,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
       ctaLabel="Get Quote"
       mapCenter={{ lat: county.lat_avg, lng: county.lng_avg }}
       mapBounds={{ north: county.lat_max, south: county.lat_min, east: county.lng_max, west: county.lng_min }}
-      mapMarkers={cities.map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
-      heatmapPoints={heatmapPoints}
+      cityMarkersData={cityMarkers}
       chatContext={`${county.region_name}, ${county.state_name}`}
     />
   )

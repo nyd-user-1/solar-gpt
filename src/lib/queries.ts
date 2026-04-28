@@ -380,6 +380,26 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
   return rows as CityKpi[]
 }
 
+export type CityMarker = {
+  id: number
+  region_name: string
+  lat_avg: number
+  lng_avg: number
+  untapped_annual_value_usd: number
+  count_qualified: number
+}
+
+export async function getCitiesForCountyMap(countyName: string, stateName: string): Promise<CityMarker[]> {
+  const rows = await sql`
+    SELECT id, region_name, lat_avg, lng_avg, untapped_annual_value_usd, count_qualified
+    FROM solargpt.v_city_kpis
+    WHERE state_name = ${stateName}
+      AND LOWER(REPLACE(county_name, ' County', '')) = LOWER(REPLACE(${countyName}, ' County', ''))
+    ORDER BY untapped_annual_value_usd DESC NULLS LAST
+  `
+  return rows as CityMarker[]
+}
+
 // ── City ──────────────────────────────────────────────────────────────────────
 export async function getAllCities(): Promise<CityKpi[]> {
   const rows = await sql`

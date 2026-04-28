@@ -7,7 +7,8 @@ import { ChevronLeft, ChevronRight, ChevronDown, Sun, Search, MapPin, MessageCir
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
 import { ChatDrawer } from '@/components/ChatDrawer'
-import type { HeatmapPoint } from '@/lib/queries'
+import CityMarkersMap from '@/components/CityMarkersMap'
+import type { HeatmapPoint, CityMarker } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -54,6 +55,8 @@ export interface DetailPageProps {
   mapMarkers?: MapMarker[]
   /** Heatmap data points for the solar potential overlay */
   heatmapPoints?: HeatmapPoint[]
+  /** City markers — when provided, renders CityMarkersMap instead of RegionMap */
+  cityMarkersData?: CityMarker[]
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -83,7 +86,7 @@ export function GeoDetailPage({
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, cityMarkersData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -166,7 +169,15 @@ export function GeoDetailPage({
         </div>
 
         {/* Map */}
-        {mapCenter && (
+        {cityMarkersData && cityMarkersData.length > 0 && mapBounds ? (
+          <div className="mb-8">
+            <CityMarkersMap
+              cities={cityMarkersData}
+              bounds={mapBounds}
+              className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : mapCenter ? (
           <div className="mb-8">
             <RegionMap
               center={mapCenter}
@@ -176,7 +187,7 @@ export function GeoDetailPage({
               className="h-64 sm:h-96 w-full"
             />
           </div>
-        )}
+        ) : null}
 
         {/* Info table */}
         <div className="mb-8">
