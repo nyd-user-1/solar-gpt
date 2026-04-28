@@ -122,7 +122,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center px-4 py-2">
+      <div className="flex items-center px-4 pt-4 pb-2">
         <span className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
         {/* Mobile: profile avatar */}
         <button
