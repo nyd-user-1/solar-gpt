@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
 import type { CountyMapEntry, StateMapEntry } from '@/lib/queries'
@@ -217,6 +217,14 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
 
+  const usDefault = useMemo<ChipData>(() => ({
+    name: 'United States',
+    value: states.reduce((s, st) => s + st.untapped_annual_value_usd, 0),
+    buildings: states.reduce((s, st) => s + st.count_qualified, 0),
+  }), [states])
+
+  const chip = hoveredInfo ?? usDefault
+
   return (
     <div className="relative w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       <APIProvider apiKey={apiKey}>
@@ -233,15 +241,11 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
         </Map>
       </APIProvider>
 
-      {/* Hover chip */}
-      <div className={`absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none transition-opacity duration-150 ${hoveredInfo ? 'opacity-100' : 'opacity-0'}`}>
-        {hoveredInfo && (
-          <>
-            <p className="text-sm font-bold text-[#1a1a1a]">{hoveredInfo.name}</p>
-            <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(hoveredInfo.value)} potential/yr</p>
-            <p className="text-[10px] text-[#666]">{fmtNum(hoveredInfo.buildings)} qualified buildings</p>
-          </>
-        )}
+      {/* Info chip — always visible, shows US aggregate by default */}
+      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
+        <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
+        <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
+        <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
       </div>
 
       {/* Legend — top left, no header */}
