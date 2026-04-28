@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import {
   Sun, Moon, MapPin, Map, Zap,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
-  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User,
+  Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User, ArrowLeftToLine,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -122,6 +122,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center px-4 pt-4 pb-2">
+        <Sun className="h-5 w-5 text-solar fill-solar/20 mr-2 shrink-0" />
         <span className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)]">SolarGPT</span>
         {/* Mobile: profile avatar */}
         <button
@@ -130,12 +131,12 @@ export function Sidebar({ onClose }: SidebarProps) {
         >
           {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
         </button>
-        {/* Sun icon — closes sidebar */}
+        {/* Collapse sidebar */}
         <button
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
         >
-          <Sun className="h-5 w-5 text-solar fill-solar/20" />
+          <ArrowLeftToLine className="h-5 w-5 text-[var(--muted)]" />
         </button>
       </div>
 

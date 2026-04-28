@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Sun, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Sun, ChevronLeft, ChevronRight, ArrowRightFromLine } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               aria-label="Open sidebar"
               className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
             >
-              <Sun className="h-5 w-5 text-solar fill-solar/20" />
+              <ArrowRightFromLine className="h-5 w-5 text-[var(--muted)]" />
             </button>
           ) : (
             <div className="h-9 w-9" />
