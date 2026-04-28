@@ -113,7 +113,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
               </div>
               <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
                 <div>
-                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Untapped/yr</p>
+                  <p className="text-xs text-[var(--muted2)] uppercase tracking-wide font-semibold">Potential/yr</p>
                   <p className="text-lg font-bold text-[var(--txt)]">{fmtUsd(county.untapped_annual_value_usd)}</p>
                 </div>
                 <div className="text-right">

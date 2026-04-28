@@ -25,7 +25,7 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
   const next = idx < sorted.length - 1 ? { label: fmtGea(sorted[idx + 1]), href: `/gea-regions/${geaToSlug(sorted[idx + 1])}` } : null
 
   const infoRows = [
-    { label: 'Untapped Value / yr', value: fmtUsd(kpi.untapped_annual_value_usd), highlight: true },
+    { label: 'Potential / yr', value: fmtUsd(kpi.untapped_annual_value_usd), highlight: true },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(kpi.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${kpi.sunlight_grade}  (${kpi.sunlight_stars}/5 ☀)` },
     { label: 'Qualified Buildings', value: fmtNum(kpi.count_qualified) },
@@ -41,7 +41,7 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
     subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
     href: `/counties/${nameToSlug(c.region_name)}`,
     metric: fmtUsd(c.untapped_annual_value_usd),
-    metricLabel: 'untapped/yr',
+    metricLabel: 'potential/yr',
   }))
 
   return (

@@ -24,7 +24,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
     : null
 
   const infoRows = [
-    { label: 'Untapped Value / yr', value: fmtUsd(city.untapped_annual_value_usd), highlight: true },
+    { label: 'Potential / yr', value: fmtUsd(city.untapped_annual_value_usd), highlight: true },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(city.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${city.sunlight_grade}  (${city.sunlight_stars}/5 ☀)` },
     { label: 'Qualified Buildings', value: fmtNum(city.count_qualified) },
@@ -41,7 +41,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ slu
     subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
     href: `/cities/${nameToSlug(c.region_name)}`,
     metric: fmtUsd(c.untapped_annual_value_usd),
-    metricLabel: 'untapped/yr',
+    metricLabel: 'potential/yr',
   }))
 
   return (

@@ -118,7 +118,7 @@ function StateCardGrid({ states }: { states: StateKpi[] }) {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Untapped/yr</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Potential/yr</p>
               </div>
               <span className="rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">Explore →</span>
             </div>

@@ -34,7 +34,7 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
   const stateFips = STATE_FIPS[state.state_name] ?? ''
 
   const infoRows = [
-    { label: 'Untapped Value / yr', value: fmtUsd(state.untapped_annual_value_usd), highlight: true },
+    { label: 'Potential / yr', value: fmtUsd(state.untapped_annual_value_usd), highlight: true },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(state.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${state.sunlight_grade}  (${state.sunlight_stars}/5 ☀)` },
     { label: 'Qualified Buildings', value: fmtNum(state.count_qualified) },
@@ -51,7 +51,7 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
     subtitle: `${fmtNum(c.count_qualified)} solar-ready buildings`,
     href: `/counties/${nameToSlug(c.region_name)}`,
     metric: fmtUsd(c.untapped_annual_value_usd),
-    metricLabel: 'untapped/yr',
+    metricLabel: 'potential/yr',
   }))
 
   return (

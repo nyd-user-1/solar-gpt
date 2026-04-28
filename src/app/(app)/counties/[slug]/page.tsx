@@ -35,7 +35,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     : null
 
   const infoRows = [
-    { label: 'Untapped Value / yr', value: fmtUsd(county.untapped_annual_value_usd), highlight: true },
+    { label: 'Potential / yr', value: fmtUsd(county.untapped_annual_value_usd), highlight: true },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(county.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${county.sunlight_grade}  (${county.sunlight_stars}/5 ☀)` },
     { label: 'Qualified Buildings', value: fmtNum(county.count_qualified) },
@@ -52,7 +52,7 @@ export default async function CountyDetailPage({ params }: { params: Promise<{ s
     subtitle: `${fmtNum(city.count_qualified)} solar-ready buildings`,
     href: `/cities/${nameToSlug(city.region_name)}`,
     metric: fmtUsd(city.untapped_annual_value_usd),
-    metricLabel: 'untapped/yr',
+    metricLabel: 'potential/yr',
   }))
 
   return (

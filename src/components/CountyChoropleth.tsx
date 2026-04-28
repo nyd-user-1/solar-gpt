@@ -195,7 +195,7 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
         </Map>
       </APIProvider>
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Untapped / yr</p>
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Potential / yr</p>
         {COUNTY_LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />

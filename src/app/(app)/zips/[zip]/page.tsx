@@ -16,7 +16,7 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
   ])
 
   const infoRows = [
-    { label: 'Untapped Value / yr', value: fmtUsd(zipData.untapped_annual_value_usd), highlight: true },
+    { label: 'Potential / yr', value: fmtUsd(zipData.untapped_annual_value_usd), highlight: true },
     { label: 'Lifetime Value (25 yr)', value: fmtUsd(zipData.untapped_lifetime_value_usd) },
     { label: 'Sunlight Grade', value: `${zipData.sunlight_grade}  (${zipData.sunlight_stars}/5 ☀)` },
     { label: 'Qualified Buildings', value: fmtNum(zipData.count_qualified) },
@@ -34,7 +34,7 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
     subtitle: `${z.state_name} · ${fmtNum(z.count_qualified)} buildings`,
     href: `/zips/${z.zip_code}`,
     metric: fmtUsd(z.untapped_annual_value_usd),
-    metricLabel: 'untapped/yr',
+    metricLabel: 'potential/yr',
   }))
 
   return (

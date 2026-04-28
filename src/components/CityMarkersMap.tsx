@@ -57,7 +57,7 @@ function MarkerLayer({ cities, bounds }: { cities: CityMarker[]; bounds: Bounds 
             key={city.id}
             position={{ lat: city.lat_avg, lng: city.lng_avg }}
             onClick={() => router.push(`/cities/${nameToSlug(city.region_name)}`)}
-            title={`${city.region_name} · ${fmtVal(city.untapped_annual_value_usd)}/yr untapped`}
+            title={`${city.region_name} · ${fmtVal(city.untapped_annual_value_usd)}/yr potential`}
           >
             <div
               className="rounded-full border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform duration-150"
@@ -126,7 +126,7 @@ export default function CityMarkersMap({
 
       {/* Legend */}
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Untapped / yr</p>
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Potential / yr</p>
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="rounded-full border border-white shadow-sm shrink-0" style={{ width: 10, height: 10, background: color }} />

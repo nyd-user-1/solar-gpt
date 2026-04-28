@@ -95,7 +95,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
 
                 {/* Metric label + CTA */}
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Untapped/yr</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Potential/yr</p>
                   <span className="rounded-lg bg-[var(--txt)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--bg)]">
                     Explore →
                   </span>
@@ -114,7 +114,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
               <tr>
                 {([
                   { key: 'name' as SortCol,     label: 'Region' },
-                  { key: 'value' as SortCol,    label: 'Untapped/yr' },
+                  { key: 'value' as SortCol,    label: 'Potential/yr' },
                   { key: 'counties' as SortCol, label: 'Counties' },
                   { key: 'adoption' as SortCol, label: 'Adoption' },
                 ]).map(col => {
