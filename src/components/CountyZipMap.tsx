@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
+import { useRouter } from 'next/navigation'
 import type { ZipMapEntry } from '@/lib/queries'
 import { fmtNum } from '@/lib/utils'
 
@@ -62,6 +63,7 @@ function ZipChoroplethLayer({
   onHoverChange: (data: ChipData | null) => void
 }) {
   const map = useMap()
+  const router = useRouter()
   const initialized = useRef(false)
 
   useEffect(() => {
@@ -92,6 +94,10 @@ function ZipChoroplethLayer({
             strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
           }
         })
+        map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          const zip = (e.feature.getProperty('ZCTA5CE10') ?? e.feature.getProperty('GEOID10')) as string
+          if (zip) router.push(`/zips/${zip}`)
+        })
         map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
           const zip = (e.feature.getProperty('ZCTA5CE10') ?? e.feature.getProperty('GEOID10')) as string
           const z = zipLookup[zip]
@@ -103,7 +109,7 @@ function ZipChoroplethLayer({
           onHoverChange(null)
         })
       })
-  }, [map, zips, stateAbbr, stateName, onHoverChange])
+  }, [map, zips, stateAbbr, stateName, onHoverChange, router])
 
   return null
 }
