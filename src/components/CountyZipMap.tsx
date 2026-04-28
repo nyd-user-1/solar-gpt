@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { ZipMapEntry } from '@/lib/queries'
-import { fmtNum } from '@/lib/utils'
+import { fmtNum, fmtUsd } from '@/lib/utils'
 
 function zipGeoJsonUrl(stateAbbr: string, stateName: string): string {
   const nameSlug = stateName.toLowerCase().replace(/ /g, '_')
@@ -160,6 +160,7 @@ export default function CountyZipMap({
             <p className="text-sm font-bold text-[#1a1a1a]">{hoveredZip.zip}</p>
             {hoveredZip.place && <p className="text-xs font-medium text-[#555]">{hoveredZip.place}</p>}
             <p className="text-[10px] text-[#666]">{fmtNum(hoveredZip.count)} qualified buildings</p>
+            <p className="text-[10px] text-[#f59e0b] font-semibold">Potential/yr {fmtUsd(hoveredZip.value)}</p>
           </>
         )}
       </div>
