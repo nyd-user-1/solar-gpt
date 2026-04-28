@@ -91,8 +91,8 @@ function SolarStars({ count }: { count: number }) {
 export default function StatesClient({ states }: { states: StateKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
-  const [sortCol, setSortCol] = useState<SortCol>('count_qualified')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [sortCol, setSortCol] = useState<SortCol>('region')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
     if (typeof window === 'undefined') return 'list'
     return (localStorage.getItem('solargpt.viewPreference.states') as 'cards' | 'list') ?? 'list'
@@ -134,7 +134,6 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           />
         </div>
         <div className="flex items-center gap-1">
-          <GradeFilterMenu selected={grades} onChange={setGrades} />
           <button
             onClick={() => { setViewMode('list'); localStorage.setItem('solargpt.viewPreference.states', 'list') }}
             className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}
@@ -147,6 +146,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           >
             <LayoutGrid className="h-5 w-5" />
           </button>
+          <GradeFilterMenu selected={grades} onChange={setGrades} />
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">{filtered.length.toLocaleString()} results</span>
           </div>
