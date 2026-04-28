@@ -24,7 +24,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const isRoot = pathname === '/'
-  const isDashboard = pathname.startsWith('/dashboard/')
+  const isDashboardDetail = pathname.startsWith('/dashboard/')
+  const isDashboardList = pathname === '/dashboard'
+  const isAnyDashboard = isDashboardDetail || isDashboardList
 
   const PAGE_TITLES: Record<string, string> = {
     '/states': 'States',
@@ -41,19 +43,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/admin': 'Admin',
     '/free-quote': 'Free Quote',
   }
-  const pageTitle = PAGE_TITLES[pathname] ?? null
 
-  // Cyclic nav order for the chevron buttons (excludes utility/auth pages)
-  const NAV_CYCLE = ['/dashboard', '/explore', '/gea-regions', '/states', '/counties', '/cities', '/zips', '/leads']
+  // Cyclic nav order — /dashboard excluded so it gets its own cycle
+  const NAV_CYCLE = ['/explore', '/gea-regions', '/states', '/counties', '/cities', '/zips', '/leads']
   const navIdx = NAV_CYCLE.indexOf(pathname)
   const prevNav = navIdx >= 0 ? NAV_CYCLE[(navIdx - 1 + NAV_CYCLE.length) % NAV_CYCLE.length] : null
   const nextNav = navIdx >= 0 ? NAV_CYCLE[(navIdx + 1) % NAV_CYCLE.length] : null
-  const currentSlug = isDashboard ? pathname.split('/')[2] : null
-  const currentIdx = currentSlug ? DASHBOARD_CONFIGS.findIndex(c => c.slug === currentSlug) : -1
-  const n = DASHBOARD_CONFIGS.length
 
-  const prevDashboard = currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx - 1 + n) % n] : null
-  const nextDashboard = currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx + 1) % n] : null
+  // Dashboard cycle — all dashboard pages use this
+  const n = DASHBOARD_CONFIGS.length
+  const currentSlug = isDashboardDetail ? pathname.split('/')[2] : null
+  const currentIdx = currentSlug ? DASHBOARD_CONFIGS.findIndex(c => c.slug === currentSlug) : -1
+  const currentDashboardTitle = currentIdx >= 0 ? DASHBOARD_CONFIGS[currentIdx].title : null
+
+  // Dashboard list page loops to last/first dashboard; detail page uses prev/next in list
+  const prevDashboard = isDashboardList
+    ? DASHBOARD_CONFIGS[n - 1]
+    : currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx - 1 + n) % n] : null
+  const nextDashboard = isDashboardList
+    ? DASHBOARD_CONFIGS[0]
+    : currentIdx >= 0 ? DASHBOARD_CONFIGS[(currentIdx + 1) % n] : null
+
+  const pageTitle = isDashboardDetail
+    ? currentDashboardTitle
+    : (PAGE_TITLES[pathname] ?? null)
 
   return (
     <div className="flex h-full overflow-hidden p-0 sm:p-[18px]">
@@ -89,17 +102,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="ml-3 flex-1 text-xl font-bold text-[var(--txt)]">{pageTitle}</span>
           )}
 
-          {/* Page-cycle chevrons — shown on all nav pages */}
-          {navIdx >= 0 && prevNav && nextNav && (
+          {/* Chevrons — nav pages cycle through NAV_CYCLE; all dashboard pages cycle through dashboards */}
+          {(navIdx >= 0 || isAnyDashboard) && (
             <div className="flex items-center gap-2 ml-auto mr-1.5">
               <button
-                onClick={() => router.push(prevNav)}
+                onClick={() => isAnyDashboard && prevDashboard
+                  ? router.push(`/dashboard/${prevDashboard.slug}`)
+                  : prevNav ? router.push(prevNav) : undefined}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={() => router.push(nextNav)}
+                onClick={() => isAnyDashboard && nextDashboard
+                  ? router.push(`/dashboard/${nextDashboard.slug}`)
+                  : nextNav ? router.push(nextNav) : undefined}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -107,7 +124,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Right side: auth on root, chevrons on dashboard, nothing elsewhere */}
+          {/* Auth buttons on root only */}
           {isRoot && (
             <div className="flex items-center gap-2 mr-1.5">
               <button
@@ -121,25 +138,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 className="rounded-full bg-[#111118] px-4 py-2 text-sm font-medium text-white hover:bg-[#2a2a2a] transition-colors"
               >
                 Sign up
-              </button>
-            </div>
-          )}
-
-          {isDashboard && prevDashboard && nextDashboard && (
-            <div className="flex items-center gap-1 mr-1.5">
-              <button
-                onClick={() => router.push(`/dashboard/${prevDashboard.slug}`)}
-                aria-label={`Previous: ${prevDashboard.title}`}
-                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-l-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => router.push(`/dashboard/${nextDashboard.slug}`)}
-                aria-label={`Next: ${nextDashboard.title}`}
-                className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-white dark:bg-[var(--surface)] rounded-r-full text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}
