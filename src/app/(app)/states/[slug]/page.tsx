@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getStateBySlug, getAllStates, getCountiesByState, getHeatmapPoints, nameToSlug } from '@/lib/queries'
+import { getStateBySlug, getAllStates, getCountiesByState, getCountiesForState, nameToSlug } from '@/lib/queries'
 import { US_STATES } from '@/lib/us-states'
+import { STATE_FIPS } from '@/lib/state-fips'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 
 export default async function StateDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -26,10 +27,11 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
   const prev = prevState ? { label: prevState.state_name, href: `/states/${nameToSlug(prevState.state_name)}` } : null
   const next = nextState ? { label: nextState.state_name, href: `/states/${nameToSlug(nextState.state_name)}` } : null
 
-  const [counties, heatmapPoints] = await Promise.all([
+  const [counties, countyMapData] = await Promise.all([
     getCountiesByState(state.state_name),
-    getHeatmapPoints(state.lat_min, state.lat_max, state.lng_min, state.lng_max),
+    getCountiesForState(state.state_name),
   ])
+  const stateFips = STATE_FIPS[state.state_name] ?? ''
 
   const infoRows = [
     { label: 'Untapped Value / yr', value: fmtUsd(state.untapped_annual_value_usd), highlight: true },
@@ -66,10 +68,8 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      mapCenter={{ lat: state.lat_avg, lng: state.lng_avg }}
       mapBounds={{ north: state.lat_max, south: state.lat_min, east: state.lng_max, west: state.lng_min }}
-      mapMarkers={counties.slice(0, 10).map(c => ({ position: { lat: c.lat_avg, lng: c.lng_avg }, label: c.region_name }))}
-      heatmapPoints={heatmapPoints}
+      stateCountyData={{ counties: countyMapData, fips: stateFips }}
       chatContext={state.state_name}
     />
   )

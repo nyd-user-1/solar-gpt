@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
+import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, getStatesForMap, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { US_STATES } from '@/lib/us-states'
@@ -93,11 +93,12 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
 }
 
 export default async function ExplorePage() {
-  const [counties, geas, states, mapCounties] = await Promise.all([
+  const [counties, geas, states, mapCounties, mapStates] = await Promise.all([
     getExploreCounties(),
     getAllGeas(),
     getAllStates(),
     getCountiesForMap(),
+    getStatesForMap(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
@@ -112,7 +113,7 @@ export default async function ExplorePage() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* County choropleth map */}
-          <CountyChoropleth counties={mapCounties} />
+          <CountyChoropleth counties={mapCounties} states={mapStates} />
 
           {/* States horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">

@@ -380,6 +380,49 @@ export async function getCitiesByState(stateName: string, limit = 20): Promise<C
   return rows as CityKpi[]
 }
 
+export type StateMapEntry = {
+  name: string
+  untapped_annual_value_usd: number
+}
+
+export async function getStatesForMap(): Promise<StateMapEntry[]> {
+  const rows = await sql`
+    SELECT state_name AS name, untapped_annual_value_usd
+    FROM solargpt.v_state_kpis
+    ORDER BY state_name
+  `
+  return rows as StateMapEntry[]
+}
+
+export async function getCountiesForState(stateName: string): Promise<CountyMapEntry[]> {
+  const rows = await sql`
+    SELECT DISTINCT ON (v.id)
+      LPAD(m.state_fips::text, 2, '0') || LPAD(m.county_fips::text, 3, '0') AS fips,
+      v.region_name,
+      v.state_name,
+      v.untapped_annual_value_usd
+    FROM solargpt.v_county_kpis v
+    JOIN LATERAL (
+      SELECT state_fips, county_fips
+      FROM solargpt.raw_cambium_county_mapping
+      WHERE LOWER(state_name) = LOWER(v.state_name)
+        AND (
+          LOWER(county_name || ' County')      = LOWER(v.region_name) OR
+          LOWER(county_name || ' Parish')      = LOWER(v.region_name) OR
+          LOWER(county_name || ' Borough')     = LOWER(v.region_name) OR
+          LOWER(county_name || ' Municipality')= LOWER(v.region_name) OR
+          LOWER(county_name || ' Census Area') = LOWER(v.region_name) OR
+          LOWER(county_name || ' city')        = LOWER(v.region_name) OR
+          LOWER(county_name)                   = LOWER(v.region_name)
+        )
+      LIMIT 1
+    ) m ON true
+    WHERE v.state_name = ${stateName}
+    ORDER BY v.id
+  `
+  return rows as CountyMapEntry[]
+}
+
 export type CityMarker = {
   id: number
   region_name: string

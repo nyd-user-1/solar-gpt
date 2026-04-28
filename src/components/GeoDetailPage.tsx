@@ -8,7 +8,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { RegionMap, type MapMarker } from '@/components/RegionMap'
 import { ChatDrawer } from '@/components/ChatDrawer'
 import CityMarkersMap from '@/components/CityMarkersMap'
-import type { HeatmapPoint, CityMarker } from '@/lib/queries'
+import StateCountyMap from '@/components/StateCountyMap'
+import type { HeatmapPoint, CityMarker, CountyMapEntry } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -57,6 +58,8 @@ export interface DetailPageProps {
   heatmapPoints?: HeatmapPoint[]
   /** City markers — when provided, renders CityMarkersMap instead of RegionMap */
   cityMarkersData?: CityMarker[]
+  /** State county choropleth — when provided, renders StateCountyMap */
+  stateCountyData?: { counties: CountyMapEntry[]; fips: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -86,7 +89,7 @@ export function GeoDetailPage({
   carousel2Title, carousel2Items,
   searchPlaceholder, onSearch,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, cityMarkersData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, cityMarkersData, stateCountyData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -169,7 +172,16 @@ export function GeoDetailPage({
         </div>
 
         {/* Map */}
-        {cityMarkersData && cityMarkersData.length > 0 && mapBounds ? (
+        {stateCountyData && stateCountyData.counties.length > 0 && mapBounds ? (
+          <div className="mb-8">
+            <StateCountyMap
+              counties={stateCountyData.counties}
+              stateFips={stateCountyData.fips}
+              bounds={mapBounds}
+              className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : cityMarkersData && cityMarkersData.length > 0 && mapBounds ? (
           <div className="mb-8">
             <CityMarkersMap
               cities={cityMarkersData}

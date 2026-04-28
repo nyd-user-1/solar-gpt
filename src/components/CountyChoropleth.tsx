@@ -1,18 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
-import type { CountyMapEntry } from '@/lib/queries'
+import type { CountyMapEntry, StateMapEntry } from '@/lib/queries'
 
-const GEOJSON_URL =
-  'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
+const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
+const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
+const ZOOM_THRESHOLD = 6
 
 function nameToSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-function valueColor(v: number): string {
+// County values (individual counties, up to ~$2B)
+function countyColor(v: number): string {
   if (v >= 1_000_000_000) return '#92400e'
   if (v >= 500_000_000)   return '#b45309'
   if (v >= 200_000_000)   return '#d97706'
@@ -21,7 +23,27 @@ function valueColor(v: number): string {
   return '#fef3c7'
 }
 
-const LEGEND = [
+// State values (aggregated, up to ~$23B)
+function stateColor(v: number): string {
+  if (v >= 15_000_000_000) return '#92400e'
+  if (v >= 8_000_000_000)  return '#b45309'
+  if (v >= 4_000_000_000)  return '#d97706'
+  if (v >= 1_500_000_000)  return '#f59e0b'
+  if (v >= 500_000_000)    return '#fbbf24'
+  return '#fef3c7'
+}
+
+const MAP_STYLE = [
+  { featureType: 'all', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#cccccc' }, { visibility: 'on' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dbeafe' }] },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f8f8f8' }] },
+  { featureType: 'road', elementType: 'all', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
+]
+
+const COUNTY_LEGEND = [
   { color: '#92400e', label: '$1B+' },
   { color: '#b45309', label: '$500M – $1B' },
   { color: '#d97706', label: '$200M – $500M' },
@@ -30,95 +52,120 @@ const LEGEND = [
   { color: '#fef3c7', label: '< $10M' },
 ]
 
-// Minimal grayscale map style so choropleth colors pop
-const MAP_STYLE = [
-  { featureType: 'all', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#cccccc' }, { visibility: 'on' }] },
-  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#dddddd' }, { visibility: 'on' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dbeafe' }] },
-  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f8f8f8' }] },
-  { featureType: 'road', elementType: 'all', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.locality', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+const STATE_LEGEND = [
+  { color: '#92400e', label: '$15B+' },
+  { color: '#b45309', label: '$8B – $15B' },
+  { color: '#d97706', label: '$4B – $8B' },
+  { color: '#f59e0b', label: '$1.5B – $4B' },
+  { color: '#fbbf24', label: '$500M – $1.5B' },
+  { color: '#fef3c7', label: '< $500M' },
 ]
 
-function ChoroplethLayer({ counties }: { counties: CountyMapEntry[] }) {
+function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
   const map = useMap()
   const router = useRouter()
   const initialized = useRef(false)
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
+  const stateLayerRef = useRef<google.maps.Data | null>(null)
+  const countiesReadyRef = useRef(false)
+  const zoomListenerRef = useRef<google.maps.MapsEventListener | null>(null)
 
   useEffect(() => {
     if (!map || initialized.current) return
     initialized.current = true
-    setStatus('loading')
 
-    // Build FIPS → county lookup
-    const lookup: Record<string, CountyMapEntry> = {}
-    for (const c of counties) {
-      if (c.fips) lookup[c.fips] = c
+    // Lookups
+    const countyLookup: Record<string, CountyMapEntry> = {}
+    for (const c of counties) { if (c.fips) countyLookup[c.fips] = c }
+    const stateLookup: Record<string, StateMapEntry> = {}
+    for (const s of states) { stateLookup[s.name] = s }
+
+    const isHighZoom = () => (map.getZoom() ?? 4) > ZOOM_THRESHOLD
+
+    const applyZoom = () => {
+      const high = isHighZoom()
+      stateLayerRef.current?.setMap(high ? null : map)
+      if (countiesReadyRef.current) {
+        map.data.setStyle((feature: google.maps.Data.Feature) => {
+          if (!high) return { visible: false }
+          const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
+          const c = countyLookup[fips]
+          return {
+            fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
+            fillOpacity: c ? 0.75 : 0.15,
+            strokeColor: '#ffffff', strokeWeight: 0.4, strokeOpacity: 0.8,
+          }
+        })
+      }
     }
 
-    fetch(GEOJSON_URL)
+    // ── State layer ──
+    const stateLayer = new google.maps.Data()
+    stateLayerRef.current = stateLayer
+
+    fetch(STATES_URL)
+      .then(r => r.json())
+      .then((geojson: object) => {
+        stateLayer.addGeoJson(geojson)
+        stateLayer.setStyle((feature: google.maps.Data.Feature) => {
+          const name = feature.getProperty('name') as string
+          const s = stateLookup[name]
+          return {
+            fillColor: s ? stateColor(s.untapped_annual_value_usd) : '#e5e7eb',
+            fillOpacity: 0.75, strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
+          }
+        })
+        stateLayer.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          const name = e.feature.getProperty('name') as string
+          if (name) router.push(`/states/${nameToSlug(name)}`)
+        })
+        stateLayer.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+          stateLayer.overrideStyle(e.feature, { strokeWeight: 2.5, strokeColor: '#f59e0b', fillOpacity: 0.92 })
+        })
+        stateLayer.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
+          stateLayer.revertStyle(e.feature)
+        })
+        stateLayer.setMap(map)
+      })
+
+    // ── County layer ──
+    fetch(COUNTIES_URL)
       .then(r => r.json())
       .then((geojson: object) => {
         map.data.addGeoJson(geojson)
-
-        map.data.setStyle((feature: google.maps.Data.Feature) => {
-          const fips =
-            (feature.getProperty('STATEFP') as string) +
-            (feature.getProperty('COUNTYFP') as string)
-          const county = lookup[fips]
-          return {
-            fillColor: county ? valueColor(county.untapped_annual_value_usd) : '#e5e7eb',
-            fillOpacity: county ? 0.75 : 0.2,
-            strokeColor: '#ffffff',
-            strokeWeight: 0.4,
-            strokeOpacity: 0.8,
-            cursor: county ? 'pointer' : 'default',
-          }
-        })
-
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
-          const fips =
-            (e.feature.getProperty('STATEFP') as string) +
-            (e.feature.getProperty('COUNTYFP') as string)
-          const county = lookup[fips]
-          if (county) router.push(`/counties/${nameToSlug(county.region_name)}`)
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const c = countyLookup[fips]
+          if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
         })
-
         map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
-          map.data.overrideStyle(e.feature, {
-            strokeWeight: 2,
-            strokeColor: '#f59e0b',
-            fillOpacity: 0.95,
-          })
+          map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
         })
-
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
         })
-
-        setStatus('done')
+        countiesReadyRef.current = true
+        applyZoom()
       })
-      .catch(() => setStatus('done'))
-  }, [map, counties, router])
 
-  return (
-    <>
-      {status === 'loading' && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-          <span className="text-xs text-[var(--muted)] bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-            Loading county data…
-          </span>
-        </div>
-      )}
-    </>
-  )
+    // ── Zoom listener ──
+    zoomListenerRef.current = map.addListener('zoom_changed', applyZoom)
+
+    return () => {
+      zoomListenerRef.current?.remove()
+      stateLayerRef.current?.setMap(null)
+    }
+  }, [map, counties, states, router])
+
+  return null
 }
 
-export default function CountyChoropleth({ counties }: { counties: CountyMapEntry[] }) {
+export default function CountyChoropleth({
+  counties,
+  states,
+}: {
+  counties: CountyMapEntry[]
+  states: StateMapEntry[]
+}) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 
   return (
@@ -133,16 +180,14 @@ export default function CountyChoropleth({ counties }: { counties: CountyMapEntr
           styles={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
         >
-          <ChoroplethLayer counties={counties} />
+          <DualChoroplethLayer counties={counties} states={states} />
         </Map>
       </APIProvider>
 
-      {/* Legend */}
+      {/* Legend — county scale shown always; state label shown at low zoom via CSS trick */}
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">
-          Untapped / yr
-        </p>
-        {LEGEND.map(({ color, label }) => (
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Untapped / yr</p>
+        {COUNTY_LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
             <span className="text-[10px] text-[var(--txt)]">{label}</span>
