@@ -111,8 +111,15 @@ export default async function ExplorePage() {
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
-          {/* States horizontal scroll */}
+          {/* County choropleth map */}
           <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">Map</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
+          <CountyChoropleth counties={mapCounties} />
+
+          {/* States horizontal scroll */}
+          <div className="flex items-center gap-3 mt-10 mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">State</span>
             <div className="flex-1 border-t border-[var(--border)]" />
           </div>
@@ -134,13 +141,6 @@ export default async function ExplorePage() {
               <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
             ))}
           </div>
-
-          {/* County choropleth map */}
-          <div className="flex items-center gap-3 mt-10 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">Map</span>
-            <div className="flex-1 border-t border-[var(--border)]" />
-          </div>
-          <CountyChoropleth counties={mapCounties} />
 
           {/* Counties horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">
