@@ -544,24 +544,34 @@ export async function getCityById(id: number): Promise<CityKpi | null> {
   return (rows[0] as CityKpi) ?? null
 }
 
-export async function getCityBySlug(slug: string): Promise<CityKpi | null> {
+export async function getCityBySlug(stateSlug: string, citySlug: string): Promise<CityKpi | null> {
   const rows = await sql`
     SELECT * FROM solargpt.v_city_kpis
-    WHERE REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') = ${slug}
-    ORDER BY count_qualified DESC NULLS LAST
+    WHERE REGEXP_REPLACE(lower(state_name), '[^a-z0-9]+', '-', 'g') = ${stateSlug}
+      AND REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') = ${citySlug}
     LIMIT 1
   `
   return (rows[0] as CityKpi) ?? null
+}
+
+export async function getAllCitiesForState(stateName: string): Promise<Pick<CityKpi, 'id' | 'region_name' | 'state_name' | 'count_qualified' | 'untapped_annual_value_usd'>[]> {
+  const rows = await sql`
+    SELECT id, region_name, state_name, count_qualified, untapped_annual_value_usd
+    FROM solargpt.v_city_kpis
+    WHERE state_name = ${stateName}
+    ORDER BY region_name ASC
+  `
+  return rows as Pick<CityKpi, 'id' | 'region_name' | 'state_name' | 'count_qualified' | 'untapped_annual_value_usd'>[]
 }
 
 export async function getAdjacentCities(id: number, stateName: string): Promise<{ prev: CityKpi | null; next: CityKpi | null }> {
   const rows = await sql`
     WITH ordered AS (
       SELECT id, region_name,
-        LAG(id)          OVER (ORDER BY untapped_annual_value_usd DESC) AS prev_id,
-        LEAD(id)         OVER (ORDER BY untapped_annual_value_usd DESC) AS next_id,
-        LAG(region_name) OVER (ORDER BY untapped_annual_value_usd DESC) AS prev_name,
-        LEAD(region_name)OVER (ORDER BY untapped_annual_value_usd DESC) AS next_name
+        LAG(id)          OVER (ORDER BY region_name) AS prev_id,
+        LEAD(id)         OVER (ORDER BY region_name) AS next_id,
+        LAG(region_name) OVER (ORDER BY region_name) AS prev_name,
+        LEAD(region_name)OVER (ORDER BY region_name) AS next_name
       FROM solargpt.v_city_kpis WHERE state_name = ${stateName}
     )
     SELECT prev_id, next_id, prev_name, next_name FROM ordered WHERE id = ${id}

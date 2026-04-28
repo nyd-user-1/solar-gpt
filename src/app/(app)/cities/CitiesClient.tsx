@@ -130,7 +130,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             {visibleRows.map(city => (
               <Link
                 key={city.id}
-                href={`/cities/${nameToSlug(city.region_name)}`}
+                href={`/cities/${nameToSlug(city.state_name)}/${nameToSlug(city.region_name)}`}
                 className="flex flex-col rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-5 transition-all hover:shadow-xl hover:border-solar"
               >
                 <div className="flex items-center gap-3 mb-3">
@@ -176,7 +176,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             }]}
             getRowHref={(row) => {
               const c = row as unknown as CityKpi
-              return `/cities/${nameToSlug(c.region_name)}`
+              return `/cities/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`
             }}
             renderRegion={(row) => {
               const c = row as unknown as CityKpi
