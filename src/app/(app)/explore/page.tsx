@@ -84,7 +84,6 @@ export default async function ExplorePage() {
         <div className="px-6 pt-2 pb-16 sm:pb-10">
 
           {/* Top counties horizontal scroll */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mb-4">County</h2>
           <div className="-mx-6 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 px-4 snap-x snap-mandatory pb-2">
               {featured.map((county, i) => (
@@ -93,8 +92,8 @@ export default async function ExplorePage() {
             </div>
           </div>
 
-          {/* GEA Regions grid */}
-          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">GEA Region</h2>
+          {/* Regions grid */}
+          <h2 className="text-xl font-bold text-[var(--txt)] mt-8 mb-4">Region</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {geas.map((gea, i) => (
               <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} logoUrl={geaLogos[gea]} />

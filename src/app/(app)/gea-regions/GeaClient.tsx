@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Zap, List, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Zap, List, LayoutGrid, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { cn, fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
@@ -41,18 +41,12 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar">
-      <div className="px-6 pt-4 pb-6">
-        <p className="hidden sm:block text-sm text-[var(--muted)]">
-          NREL Cambium grid energy areas · {geas.length} regions
-        </p>
-      </div>
-
       <div className="sticky top-0 z-20 px-6 pt-4 pb-3 bg-[var(--surface)]">
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
           <input
             type="text"
-            placeholder="Search GEA regions…"
+            placeholder="Search regions…"
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
@@ -116,7 +110,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
             <thead>
               <tr>
                 {([
-                  { key: 'name' as SortCol,     label: 'GEA Region' },
+                  { key: 'name' as SortCol,     label: 'Region' },
                   { key: 'value' as SortCol,    label: 'Untapped/yr' },
                   { key: 'counties' as SortCol, label: 'Counties' },
                   { key: 'adoption' as SortCol, label: 'Adoption' },
@@ -124,15 +118,22 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                   const active = sortCol === col.key
                   return (
                     <th key={col.key} className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)]">
-                      <button
-                        onClick={() => toggleSort(col.key)}
-                        className={cn('inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide',
-                          active ? 'text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]'
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => toggleSort(col.key)}
+                          className={cn('inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide',
+                            active ? 'text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]'
+                          )}
+                        >
+                          {col.label}
+                          {active ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null}
+                        </button>
+                        {col.key === 'name' && (
+                          <Link href="/glossary#gea-regions" title="Grid Energy Areas (GEA) — NREL Cambium grid regions" className="text-[var(--muted)] hover:text-solar transition-colors">
+                            <Info className="h-3 w-3" />
+                          </Link>
                         )}
-                      >
-                        {col.label}
-                        {active ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null}
-                      </button>
+                      </div>
                     </th>
                   )
                 })}

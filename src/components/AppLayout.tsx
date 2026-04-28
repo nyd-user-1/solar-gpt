@@ -30,7 +30,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/states': 'States',
     '/counties': 'Counties',
     '/cities': 'Cities & Towns',
-    '/gea-regions': 'GEA Regions',
+    '/gea-regions': 'Regions',
     '/leads': 'Leads',
     '/explore': 'Explore',
     '/dashboard': 'Dashboards',

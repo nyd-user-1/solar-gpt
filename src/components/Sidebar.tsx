@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
   { to: '/leads',        icon: Users,            label: 'Leads' },
-  { to: '/gea-regions',  icon: Zap,              label: 'GEA Regions' },
+  { to: '/gea-regions',  icon: Zap,              label: 'Regions' },
 ]
 
 type MeData = { name?: string; email?: string; isAdmin?: boolean } | null
@@ -151,7 +151,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           { to: '/explore',     icon: Compass,       label: 'Explore' },
           { to: '/states',      icon: Map,           label: 'States' },
           { to: '/counties',    icon: MapPin,        label: 'Counties' },
-          { to: '/gea-regions', icon: Zap,           label: 'GEA' },
+          { to: '/gea-regions', icon: Zap,           label: 'Regions' },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
