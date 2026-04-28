@@ -101,10 +101,12 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
     ? childrenMap[focusedRow.id].map(r => ({ name: r.name, value: r.value }))
     : chartData
 
-  // For MWh dashboard sort A-Z; others keep value-desc order
+  // For MWh dashboard: show all A-Z; others: top 25 by value
   const displayChartData = isMwhDashboard
     ? [...rawDisplayChartData].sort((a, b) => a.name.localeCompare(b.name))
     : rawDisplayChartData.slice(0, 25)
+
+  // API also caps child rows at 30 for county — pass all through for chart
 
   // Send total to AppLayout header
   useEffect(() => {
@@ -181,20 +183,18 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                       labelFormatter={(l) => String(l ?? '')} />
                   </AreaChart>
                 ) : isMwhDashboard ? (
-                  <BarChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 32, left: 8 }}>
+                  <BarChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 20, left: 8 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis
                       dataKey="name"
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={6}
-                      interval={Math.max(0, Math.floor(displayChartData.length / 12) - 1)}
-                      tick={{ fontSize: 10, fill: 'var(--muted-foreground, #6b7280)' }}
-                      tickFormatter={(v: string) => v.length > 10 ? v.slice(0, 9) + '…' : v}
-                      angle={-35}
-                      textAnchor="end"
+                      tickMargin={8}
+                      minTickGap={40}
+                      tick={{ fontSize: 10, fill: '#9ca3af' }}
+                      tickFormatter={(v: string) => v.length > 12 ? v.slice(0, 11) + '…' : v}
                     />
-                    <Bar dataKey="value" fill={config.color} radius={[2, 2, 0, 0]} animationDuration={400} />
+                    <Bar dataKey="value" fill={config.color} radius={[2, 2, 0, 0]} animationDuration={400} maxBarSize={20} />
                     <RechartsTooltip
                       cursor={{ fill: 'var(--inp-bg)', opacity: 0.5 }}
                       contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}

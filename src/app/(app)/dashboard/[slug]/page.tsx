@@ -39,7 +39,7 @@ export default async function DashboardDetailPage({
     getDashboardHeaderTotal(slug).catch(() => 0),
   ])
 
-  const chartData = initialRows.slice(0, 25).map(r => ({ name: r.name, value: r.value }))
+  const chartData = initialRows.map(r => ({ name: r.name, value: r.value }))
 
   return (
     <DashboardDetailClient
