@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { CountyMapEntry } from '@/lib/queries'
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
+const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
 
 function nameToSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -53,7 +54,7 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
   return null
 }
 
-function CountyChoroplethLayer({ counties, stateFips, bounds }: { counties: CountyMapEntry[]; stateFips: string; bounds: Bounds }) {
+function CountyChoroplethLayer({ counties, stateFips, stateName, bounds }: { counties: CountyMapEntry[]; stateFips: string; stateName: string; bounds: Bounds }) {
   const map = useMap()
   const router = useRouter()
   const initialized = useRef(false)
@@ -65,40 +66,59 @@ function CountyChoroplethLayer({ counties, stateFips, bounds }: { counties: Coun
     const lookup: Record<string, CountyMapEntry> = {}
     for (const c of counties) { if (c.fips) lookup[c.fips] = c }
 
-    fetch(COUNTIES_URL)
-      .then(r => r.json())
-      .then((geojson: { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] }) => {
-        // Filter to this state only
-        const filtered = {
-          type: 'FeatureCollection',
-          features: geojson.features.filter(f => f.properties.STATEFP === stateFips),
+    // Load county GeoJSON and state border in parallel
+    Promise.all([
+      fetch(COUNTIES_URL).then(r => r.json()),
+      fetch(STATES_URL).then(r => r.json()),
+    ]).then(([countyGeojson, stateGeojson]: [
+      { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] },
+      { type: string; features: { id: string; properties: { name: string }; geometry: object; type: string }[] }
+    ]) => {
+      // ── County choropleth ──
+      const filtered = {
+        type: 'FeatureCollection',
+        features: countyGeojson.features.filter(f => f.properties.STATEFP === stateFips),
+      }
+      map.data.addGeoJson(filtered)
+      map.data.setStyle((feature: google.maps.Data.Feature) => {
+        const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
+        const c = lookup[fips]
+        return {
+          fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
+          fillOpacity: c ? 0.75 : 0.2,
+          strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
         }
-        map.data.addGeoJson(filtered)
-
-        map.data.setStyle((feature: google.maps.Data.Feature) => {
-          const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
-          const c = lookup[fips]
-          return {
-            fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
-            fillOpacity: c ? 0.75 : 0.2,
-            strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
-          }
-        })
-
-        map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
-          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
-          const c = lookup[fips]
-          if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
-        })
-
-        map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
-          map.data.overrideStyle(e.feature, { strokeWeight: 2.5, strokeColor: '#f59e0b', fillOpacity: 0.95 })
-        })
-        map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
-          map.data.revertStyle(e.feature)
-        })
       })
-  }, [map, counties, stateFips, bounds, router])
+      map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
+        const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+        const c = lookup[fips]
+        if (c) router.push(`/counties/${nameToSlug(c.region_name)}`)
+      })
+      map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+        map.data.overrideStyle(e.feature, { strokeWeight: 2.5, strokeColor: '#f59e0b', fillOpacity: 0.95 })
+      })
+      map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
+        map.data.revertStyle(e.feature)
+      })
+
+      // ── State border overlay ──
+      const stateFeature = stateGeojson.features.find(
+        f => f.properties.name === stateName
+      )
+      if (stateFeature) {
+        const borderLayer = new google.maps.Data()
+        borderLayer.addGeoJson({ type: 'FeatureCollection', features: [stateFeature] })
+        borderLayer.setStyle({
+          fillOpacity: 0,
+          strokeColor: '#f59e0b',
+          strokeWeight: 2.5,
+          strokeOpacity: 1,
+          clickable: false,
+        } as google.maps.Data.StyleOptions)
+        borderLayer.setMap(map)
+      }
+    })
+  }, [map, counties, stateFips, stateName, bounds, router])
 
   return null
 }
@@ -106,11 +126,13 @@ function CountyChoroplethLayer({ counties, stateFips, bounds }: { counties: Coun
 export default function StateCountyMap({
   counties,
   stateFips,
+  stateName,
   bounds,
   className = 'h-64 sm:h-96 w-full',
 }: {
   counties: CountyMapEntry[]
   stateFips: string
+  stateName: string
   bounds: Bounds
   className?: string
 }) {
@@ -130,7 +152,7 @@ export default function StateCountyMap({
           style={{ width: '100%', height: '100%' }}
         >
           <FitBounds bounds={bounds} />
-          <CountyChoroplethLayer counties={counties} stateFips={stateFips} bounds={bounds} />
+          <CountyChoroplethLayer counties={counties} stateFips={stateFips} stateName={stateName} bounds={bounds} />
         </Map>
       </APIProvider>
 

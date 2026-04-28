@@ -13,7 +13,6 @@ function nameToSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-// County values (individual counties, up to ~$2B)
 function countyColor(v: number): string {
   if (v >= 1_000_000_000) return '#92400e'
   if (v >= 500_000_000)   return '#b45309'
@@ -23,7 +22,6 @@ function countyColor(v: number): string {
   return '#fef3c7'
 }
 
-// State values (aggregated, up to ~$23B)
 function stateColor(v: number): string {
   if (v >= 15_000_000_000) return '#92400e'
   if (v >= 8_000_000_000)  return '#b45309'
@@ -52,50 +50,73 @@ const COUNTY_LEGEND = [
   { color: '#fef3c7', label: '< $10M' },
 ]
 
-const STATE_LEGEND = [
-  { color: '#92400e', label: '$15B+' },
-  { color: '#b45309', label: '$8B – $15B' },
-  { color: '#d97706', label: '$4B – $8B' },
-  { color: '#f59e0b', label: '$1.5B – $4B' },
-  { color: '#fbbf24', label: '$500M – $1.5B' },
-  { color: '#fef3c7', label: '< $500M' },
-]
-
 function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
   const map = useMap()
   const router = useRouter()
   const initialized = useRef(false)
   const stateLayerRef = useRef<google.maps.Data | null>(null)
   const countiesReadyRef = useRef(false)
-  const zoomListenerRef = useRef<google.maps.MapsEventListener | null>(null)
+  const lastHoveredNameRef = useRef<string | null>(null)
+  const currentHoveredRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!map || initialized.current) return
     initialized.current = true
 
-    // Lookups
     const countyLookup: Record<string, CountyMapEntry> = {}
     for (const c of counties) { if (c.fips) countyLookup[c.fips] = c }
     const stateLookup: Record<string, StateMapEntry> = {}
     for (const s of states) { stateLookup[s.name] = s }
 
-    const isHighZoom = () => (map.getZoom() ?? 4) > ZOOM_THRESHOLD
+    const isHigh = () => (map.getZoom() ?? 4) > ZOOM_THRESHOLD
+
+    // Recompute the state layer style in one place
+    const refreshStateStyle = () => {
+      const high = isHigh()
+      stateLayerRef.current?.setStyle((feature: google.maps.Data.Feature) => {
+        const name = feature.getProperty('name') as string
+        const isLast = name === lastHoveredNameRef.current
+        const isCurr = name === currentHoveredRef.current
+
+        if (high) {
+          return {
+            fillOpacity: 0,
+            strokeColor: (isLast || isCurr) ? '#f59e0b' : '#d1d5db',
+            strokeWeight: (isLast || isCurr) ? 2.5 : 0.8,
+            strokeOpacity: (isLast || isCurr) ? 1 : 0.5,
+            clickable: false,
+          }
+        }
+        const s = stateLookup[name]
+        return {
+          fillColor: s ? stateColor(s.untapped_annual_value_usd) : '#e5e7eb',
+          fillOpacity: isCurr ? 0.92 : 0.75,
+          strokeColor: isCurr ? '#f59e0b' : '#ffffff',
+          strokeWeight: isCurr ? 2.5 : 0.8,
+          strokeOpacity: 0.9,
+          clickable: true,
+        }
+      })
+    }
+
+    const applyCountyStyle = () => {
+      if (!countiesReadyRef.current) return
+      const high = isHigh()
+      map.data.setStyle((feature: google.maps.Data.Feature) => {
+        if (!high) return { visible: false }
+        const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
+        const c = countyLookup[fips]
+        return {
+          fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
+          fillOpacity: c ? 0.75 : 0.15,
+          strokeColor: '#ffffff', strokeWeight: 0.4, strokeOpacity: 0.8,
+        }
+      })
+    }
 
     const applyZoom = () => {
-      const high = isHighZoom()
-      stateLayerRef.current?.setMap(high ? null : map)
-      if (countiesReadyRef.current) {
-        map.data.setStyle((feature: google.maps.Data.Feature) => {
-          if (!high) return { visible: false }
-          const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
-          const c = countyLookup[fips]
-          return {
-            fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
-            fillOpacity: c ? 0.75 : 0.15,
-            strokeColor: '#ffffff', strokeWeight: 0.4, strokeOpacity: 0.8,
-          }
-        })
-      }
+      refreshStateStyle()
+      applyCountyStyle()
     }
 
     // ── State layer ──
@@ -106,25 +127,24 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
       .then(r => r.json())
       .then((geojson: object) => {
         stateLayer.addGeoJson(geojson)
-        stateLayer.setStyle((feature: google.maps.Data.Feature) => {
-          const name = feature.getProperty('name') as string
-          const s = stateLookup[name]
-          return {
-            fillColor: s ? stateColor(s.untapped_annual_value_usd) : '#e5e7eb',
-            fillOpacity: 0.75, strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
-          }
-        })
+        refreshStateStyle()
+        stateLayer.setMap(map)
+
         stateLayer.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          if (isHigh()) return
           const name = e.feature.getProperty('name') as string
           if (name) router.push(`/states/${nameToSlug(name)}`)
         })
         stateLayer.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
-          stateLayer.overrideStyle(e.feature, { strokeWeight: 2.5, strokeColor: '#f59e0b', fillOpacity: 0.92 })
+          const name = e.feature.getProperty('name') as string
+          lastHoveredNameRef.current = name
+          currentHoveredRef.current = name
+          refreshStateStyle()
         })
-        stateLayer.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
-          stateLayer.revertStyle(e.feature)
+        stateLayer.addListener('mouseout', () => {
+          currentHoveredRef.current = null
+          refreshStateStyle()
         })
-        stateLayer.setMap(map)
       })
 
     // ── County layer ──
@@ -144,14 +164,12 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
           map.data.revertStyle(e.feature)
         })
         countiesReadyRef.current = true
-        applyZoom()
+        applyCountyStyle()
       })
 
-    // ── Zoom listener ──
-    zoomListenerRef.current = map.addListener('zoom_changed', applyZoom)
-
+    const zoomListener = map.addListener('zoom_changed', applyZoom)
     return () => {
-      zoomListenerRef.current?.remove()
+      zoomListener.remove()
       stateLayerRef.current?.setMap(null)
     }
   }, [map, counties, states, router])
@@ -159,15 +177,8 @@ function DualChoroplethLayer({ counties, states }: { counties: CountyMapEntry[];
   return null
 }
 
-export default function CountyChoropleth({
-  counties,
-  states,
-}: {
-  counties: CountyMapEntry[]
-  states: StateMapEntry[]
-}) {
+export default function CountyChoropleth({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-
   return (
     <div className="relative w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       <APIProvider apiKey={apiKey}>
@@ -183,8 +194,6 @@ export default function CountyChoropleth({
           <DualChoroplethLayer counties={counties} states={states} />
         </Map>
       </APIProvider>
-
-      {/* Legend — county scale shown always; state label shown at low zoom via CSS trick */}
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
         <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Untapped / yr</p>
         {COUNTY_LEGEND.map(({ color, label }) => (

@@ -69,7 +69,7 @@ export default async function StateDetailPage({ params }: { params: Promise<{ sl
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
       mapBounds={{ north: state.lat_max, south: state.lat_min, east: state.lng_max, west: state.lng_min }}
-      stateCountyData={{ counties: countyMapData, fips: stateFips }}
+      stateCountyData={{ counties: countyMapData, fips: stateFips, name: state.state_name }}
       chatContext={state.state_name}
     />
   )

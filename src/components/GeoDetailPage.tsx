@@ -59,7 +59,7 @@ export interface DetailPageProps {
   /** City markers — when provided, renders CityMarkersMap instead of RegionMap */
   cityMarkersData?: CityMarker[]
   /** State county choropleth — when provided, renders StateCountyMap */
-  stateCountyData?: { counties: CountyMapEntry[]; fips: string }
+  stateCountyData?: { counties: CountyMapEntry[]; fips: string; name: string }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -177,6 +177,7 @@ export function GeoDetailPage({
             <StateCountyMap
               counties={stateCountyData.counties}
               stateFips={stateCountyData.fips}
+              stateName={stateCountyData.name}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
             />
