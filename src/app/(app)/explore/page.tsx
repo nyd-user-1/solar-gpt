@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
+import { getExploreCounties, getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, type CountyKpi, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { US_STATES } from '@/lib/us-states'
+import CountyChoropleth from '@/components/CountyChoropleth'
 
 const CARD_GRADIENTS = [
   'from-amber-400 to-orange-500',
@@ -92,10 +93,11 @@ function GeaCard({ gea, kpi, index }: { gea: string; kpi: GeaKpi | null; index: 
 }
 
 export default async function ExplorePage() {
-  const [counties, geas, states] = await Promise.all([
+  const [counties, geas, states, mapCounties] = await Promise.all([
     getExploreCounties(),
     getAllGeas(),
     getAllStates(),
+    getCountiesForMap(),
   ])
 
   const geaKpis = await Promise.all(geas.map(g => getGeaKpi(g)))
@@ -132,6 +134,13 @@ export default async function ExplorePage() {
               <GeaCard key={gea} gea={gea} kpi={geaKpis[i]} index={i} />
             ))}
           </div>
+
+          {/* County choropleth map */}
+          <div className="flex items-center gap-3 mt-10 mb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] shrink-0">Map</span>
+            <div className="flex-1 border-t border-[var(--border)]" />
+          </div>
+          <CountyChoropleth counties={mapCounties} />
 
           {/* Counties horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">

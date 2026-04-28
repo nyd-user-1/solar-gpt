@@ -275,6 +275,41 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
   return rows as CountyKpi[]
 }
 
+export type CountyMapEntry = {
+  fips: string
+  region_name: string
+  state_name: string
+  untapped_annual_value_usd: number
+}
+
+export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
+  const rows = await sql`
+    SELECT DISTINCT ON (v.id)
+      LPAD(m.state_fips::text, 2, '0') || LPAD(m.county_fips::text, 3, '0') AS fips,
+      v.region_name,
+      v.state_name,
+      v.untapped_annual_value_usd
+    FROM solargpt.v_county_kpis v
+    JOIN LATERAL (
+      SELECT state_fips, county_fips
+      FROM solargpt.raw_cambium_county_mapping
+      WHERE LOWER(state_name) = LOWER(v.state_name)
+        AND (
+          LOWER(county_name || ' County')      = LOWER(v.region_name) OR
+          LOWER(county_name || ' Parish')      = LOWER(v.region_name) OR
+          LOWER(county_name || ' Borough')     = LOWER(v.region_name) OR
+          LOWER(county_name || ' Municipality')= LOWER(v.region_name) OR
+          LOWER(county_name || ' Census Area') = LOWER(v.region_name) OR
+          LOWER(county_name || ' city')        = LOWER(v.region_name) OR
+          LOWER(county_name)                   = LOWER(v.region_name)
+        )
+      LIMIT 1
+    ) m ON true
+    ORDER BY v.id
+  `
+  return rows as CountyMapEntry[]
+}
+
 export type CountyCatalogEntry = {
   id: number
   region_name: string
