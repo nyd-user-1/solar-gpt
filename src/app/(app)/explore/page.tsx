@@ -85,13 +85,20 @@ export default async function ExplorePage() {
     .filter(s => US_STATES.has(s.state_name))
     .sort((a, b) => a.state_name.localeCompare(b.state_name))
 
-  // Build GEA → unique state names map from county data
-  const geaStateMap = new Map<string, Set<string>>()
+  // Build GEA → state names, requiring ≥5 counties in the GEA to include a state
+  // (prevents states with only 1-2 boundary counties from showing the whole state)
+  const geaStateCountMap = new Map<string, Map<string, number>>()
   for (const c of mapCounties) {
     if (c.cambium_gea) {
-      if (!geaStateMap.has(c.cambium_gea)) geaStateMap.set(c.cambium_gea, new Set())
-      geaStateMap.get(c.cambium_gea)!.add(c.state_name)
+      if (!geaStateCountMap.has(c.cambium_gea)) geaStateCountMap.set(c.cambium_gea, new Map())
+      const sm = geaStateCountMap.get(c.cambium_gea)!
+      sm.set(c.state_name, (sm.get(c.state_name) ?? 0) + 1)
     }
+  }
+  const getGeaStateNames = (gea: string): string[] => {
+    const sm = geaStateCountMap.get(gea)
+    if (!sm) return []
+    return Array.from(sm.entries()).filter(([, n]) => n >= 5).map(([s]) => s)
   }
 
   return (
@@ -126,7 +133,7 @@ export default async function ExplorePage() {
                 key={gea}
                 gea={gea}
                 kpi={geaKpis[i]}
-                stateNames={Array.from(geaStateMap.get(gea) ?? [])}
+                stateNames={getGeaStateNames(gea)}
               />
             ))}
           </div>

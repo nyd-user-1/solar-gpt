@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { nameToSlug } from '@/lib/queries'
 import { fmtUsd } from '@/lib/utils'
 import type { StateKpi } from '@/lib/queries'
@@ -18,9 +17,17 @@ const CARD_GRADIENTS = [
 ]
 
 export function StateCardClient({ state, index }: { state: StateKpi; index: number }) {
-  const router = useRouter()
   const gradient = CARD_GRADIENTS[(index + 5) % CARD_GRADIENTS.length]
   const href = `/states/${nameToSlug(state.state_name)}`
+
+  const zoomToState = () => {
+    window.dispatchEvent(new CustomEvent('solargpt:state-zoom', {
+      detail: {
+        name: state.state_name,
+        bounds: { north: state.lat_max, south: state.lat_min, east: state.lng_max, west: state.lng_min },
+      },
+    }))
+  }
 
   const highlight = () =>
     window.dispatchEvent(new CustomEvent('solargpt:state-highlight', { detail: { name: state.state_name } }))
@@ -32,7 +39,7 @@ export function StateCardClient({ state, index }: { state: StateKpi; index: numb
       className="group relative shrink-0 w-[calc(72vw-22px)] sm:w-[300px] aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer"
       onMouseEnter={highlight}
       onMouseLeave={unhighlight}
-      onClick={() => router.push(href)}
+      onClick={zoomToState}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
       {state.flag_url && (
@@ -45,15 +52,23 @@ export function StateCardClient({ state, index }: { state: StateKpi; index: numb
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+
+      {/* State name — top left */}
+      <div className="absolute top-3 left-3 bg-black/30 backdrop-blur-sm rounded-lg px-2 py-1">
+        <p className="text-sm font-bold text-white leading-snug">{state.state_name}</p>
+      </div>
+
+      {/* Value — top right */}
       <div className="absolute top-3 right-3 rounded-full bg-black/30 backdrop-blur-sm px-2 py-1">
         <span className="text-xs font-bold text-white">{fmtUsd(state.untapped_annual_value_usd)}</span>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 flex items-end justify-between">
-        <p className="text-sm font-bold text-white leading-snug">{state.state_name}</p>
+
+      {/* Detail button — bottom right */}
+      <div className="absolute bottom-3 right-3">
         <Link
           href={href}
           onClick={e => e.stopPropagation()}
-          className="relative z-10 text-[10px] font-semibold text-white/90 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full hover:bg-white/40 transition-colors shrink-0 ml-2"
+          className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-[#f59e0b] hover:bg-[#d97706] px-2.5 py-1.5 rounded-full transition-colors shadow-sm"
         >
           Detail →
         </Link>

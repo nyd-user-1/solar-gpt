@@ -187,17 +187,28 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
     }
   }, [map, counties, states, router, onHoverChange])
 
-  // Listen for state highlight events from external components (e.g. state cards)
+  // Listen for state highlight/zoom events from external components (e.g. state cards)
   useEffect(() => {
-    const handle = (e: Event) => {
+    const handleHighlight = (e: Event) => {
       const name = (e as CustomEvent<{ name: string | null }>).detail.name
       lastHoveredNameRef.current = name
       currentHoveredRef.current = name
       refreshStyleRef.current?.()
     }
-    window.addEventListener('solargpt:state-highlight', handle)
-    return () => window.removeEventListener('solargpt:state-highlight', handle)
-  }, [])
+    const handleZoom = (e: Event) => {
+      const { name, bounds } = (e as CustomEvent<{ name: string; bounds: { north: number; south: number; east: number; west: number } }>).detail
+      lastHoveredNameRef.current = name
+      currentHoveredRef.current = name
+      refreshStyleRef.current?.()
+      if (map) map.fitBounds(bounds, 80)
+    }
+    window.addEventListener('solargpt:state-highlight', handleHighlight)
+    window.addEventListener('solargpt:state-zoom', handleZoom)
+    return () => {
+      window.removeEventListener('solargpt:state-highlight', handleHighlight)
+      window.removeEventListener('solargpt:state-zoom', handleZoom)
+    }
+  }, [map])
 
   return null
 }

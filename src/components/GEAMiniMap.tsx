@@ -20,7 +20,7 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
   const map = useMap()
   useEffect(() => {
     if (!map) return
-    map.fitBounds(bounds, 0)
+    map.fitBounds(bounds, 40)
   }, [map, bounds])
   return null
 }
