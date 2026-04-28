@@ -150,7 +150,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           renderRegion={(row) => {
             const c = row as unknown as CountyKpi
             return (
-              <span className="truncate block hover:text-solar transition-colors">{c.region_name}</span>
+              <span className="truncate block group-hover/row:text-solar transition-colors">{c.region_name}</span>
             )
           }}
         />

@@ -234,7 +234,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
           renderRegion={(row) => {
             const s = row as unknown as StateKpi
             return (
-              <span className="inline-flex items-center gap-2 hover:text-solar transition-colors">
+              <span className="inline-flex items-center gap-2 group-hover/row:text-solar transition-colors">
                 {s.flag_url ? (
                   <img
                     src={`${s.flag_url}?width=48`}
@@ -270,7 +270,7 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
             renderRegion={(row) => {
               const s = row as unknown as StateKpi
               return (
-                <span className="inline-flex items-center gap-2 hover:text-solar transition-colors">
+                <span className="inline-flex items-center gap-2 group-hover/row:text-solar transition-colors">
                   {s.flag_url ? (
                     <img src={`${s.flag_url}?width=48`} alt="" className="h-5 w-8 object-cover rounded-sm shrink-0 border border-[var(--border)]" loading="lazy" />
                   ) : (
