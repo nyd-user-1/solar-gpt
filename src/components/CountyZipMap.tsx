@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { ZipMapEntry } from '@/lib/queries'
-
-const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
+import { fmtUsd, fmtNum } from '@/lib/utils'
 
 function zipGeoJsonUrl(stateAbbr: string, stateName: string): string {
   const nameSlug = stateName.toLowerCase().replace(/ /g, '_')
@@ -43,6 +42,7 @@ const LEGEND = [
 ]
 
 type Bounds = { north: number; south: number; east: number; west: number }
+type HoveredZip = { zip: string; value: number; count: number }
 
 function FitBounds({ bounds }: { bounds: Bounds }) {
   const map = useMap()
@@ -54,12 +54,15 @@ function FitBounds({ bounds }: { bounds: Bounds }) {
 }
 
 function ZipChoroplethLayer({
-  zips, countyFips, stateAbbr, stateName,
+  zips,
+  stateAbbr,
+  stateName,
+  onHoverChange,
 }: {
   zips: ZipMapEntry[]
-  countyFips: string
   stateAbbr: string
   stateName: string
+  onHoverChange: (info: HoveredZip | null) => void
 }) {
   const map = useMap()
   const initialized = useRef(false)
@@ -72,66 +75,44 @@ function ZipChoroplethLayer({
     for (const z of zips) zipLookup[z.zip_code] = z
     const zipSet = new Set(Object.keys(zipLookup))
 
-    const stateFips2 = countyFips.slice(0, 2)
-    const countyFips3 = countyFips.slice(2, 5)
-
-    Promise.all([
-      fetch(zipGeoJsonUrl(stateAbbr, stateName)).then(r => r.json()),
-      fetch(COUNTIES_URL).then(r => r.json()),
-    ]).then(([zipGeojson, countyGeojson]: [
-      { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] },
-      { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] }
-    ]) => {
-      // ── ZIP choropleth (filtered to our data set) ──
-      const filteredZips = {
-        type: 'FeatureCollection',
-        features: zipGeojson.features.filter(f => {
-          const zip = f.properties.ZCTA5CE10 ?? f.properties.GEOID10
-          return zipSet.has(zip)
-        }),
-      }
-      map.data.addGeoJson(filteredZips)
-      map.data.setStyle((feature: google.maps.Data.Feature) => {
-        const zip = (feature.getProperty('ZCTA5CE10') ?? feature.getProperty('GEOID10')) as string
-        const z = zipLookup[zip]
-        return {
-          fillColor: z ? zipColor(z.untapped_annual_value_usd) : '#e5e7eb',
-          fillOpacity: z ? 0.75 : 0.2,
-          strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
+    fetch(zipGeoJsonUrl(stateAbbr, stateName))
+      .then(r => r.json())
+      .then((zipGeojson: { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] }) => {
+        const filteredZips = {
+          type: 'FeatureCollection',
+          features: zipGeojson.features.filter(f => {
+            const zip = f.properties.ZCTA5CE10 ?? f.properties.GEOID10
+            return zipSet.has(zip)
+          }),
         }
+        map.data.addGeoJson(filteredZips)
+        map.data.setStyle((feature: google.maps.Data.Feature) => {
+          const zip = (feature.getProperty('ZCTA5CE10') ?? feature.getProperty('GEOID10')) as string
+          const z = zipLookup[zip]
+          return {
+            fillColor: z ? zipColor(z.untapped_annual_value_usd) : '#e5e7eb',
+            fillOpacity: z ? 0.75 : 0.2,
+            strokeColor: '#ffffff', strokeWeight: 0.8, strokeOpacity: 0.9,
+          }
+        })
+        map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+          const zip = (e.feature.getProperty('ZCTA5CE10') ?? e.feature.getProperty('GEOID10')) as string
+          const z = zipLookup[zip]
+          map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
+          onHoverChange(z ? { zip: z.zip_code, value: z.untapped_annual_value_usd, count: z.count_qualified } : null)
+        })
+        map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
+          map.data.revertStyle(e.feature)
+          onHoverChange(null)
+        })
       })
-      map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
-        map.data.overrideStyle(e.feature, { strokeWeight: 2, strokeColor: '#f59e0b', fillOpacity: 0.95 })
-      })
-      map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
-        map.data.revertStyle(e.feature)
-      })
-
-      // ── County border overlay (orange) ──
-      const countyFeature = countyGeojson.features.find(
-        f => f.properties.STATEFP === stateFips2 && f.properties.COUNTYFP === countyFips3
-      )
-      if (countyFeature) {
-        const borderLayer = new google.maps.Data()
-        borderLayer.addGeoJson({ type: 'FeatureCollection', features: [countyFeature] })
-        borderLayer.setStyle({
-          fillOpacity: 0,
-          strokeColor: '#f59e0b',
-          strokeWeight: 2.5,
-          strokeOpacity: 1,
-          clickable: false,
-        } as google.maps.Data.StyleOptions)
-        borderLayer.setMap(map)
-      }
-    })
-  }, [map, zips, countyFips, stateAbbr, stateName])
+  }, [map, zips, stateAbbr, stateName, onHoverChange])
 
   return null
 }
 
 export default function CountyZipMap({
   zips,
-  countyFips,
   stateAbbr,
   stateName,
   bounds,
@@ -146,6 +127,7 @@ export default function CountyZipMap({
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const center = { lat: (bounds.north + bounds.south) / 2, lng: (bounds.east + bounds.west) / 2 }
+  const [hoveredZip, setHoveredZip] = useState<HoveredZip | null>(null)
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-sm ${className}`}>
@@ -162,19 +144,33 @@ export default function CountyZipMap({
           <FitBounds bounds={bounds} />
           <ZipChoroplethLayer
             zips={zips}
-            countyFips={countyFips}
             stateAbbr={stateAbbr}
             stateName={stateName}
+            onHoverChange={setHoveredZip}
           />
         </Map>
       </APIProvider>
 
+      {/* Hover info chip */}
+      <div
+        className={`absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none transition-opacity duration-150 ${hoveredZip ? 'opacity-100' : 'opacity-0'}`}
+      >
+        {hoveredZip && (
+          <>
+            <p className="text-sm font-bold text-[#1a1a1a]">ZIP {hoveredZip.zip}</p>
+            <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(hoveredZip.value)} untapped/yr</p>
+            <p className="text-[10px] text-[#666]">{fmtNum(hoveredZip.count)} qualified buildings</p>
+          </>
+        )}
+      </div>
+
+      {/* Legend */}
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Untapped / yr</p>
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#999] mb-1.5">Untapped / yr</p>
         {LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
-            <span className="text-[10px] text-[var(--txt)]">{label}</span>
+            <span className="text-[10px] text-[#333]">{label}</span>
           </div>
         ))}
       </div>
