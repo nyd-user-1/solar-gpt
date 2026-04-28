@@ -218,7 +218,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 <td
                   key={col.key}
                   className={cn(
-                    'px-3 py-3 text-[var(--muted)] text-xs transition-colors group-hover/row:text-[var(--txt)]',
+                    'px-3 py-3 text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar',
                     !col.mobile && 'hidden md:table-cell',
                   )}
                 >
@@ -229,7 +229,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
                 <td
                   key={col.key}
                   className={cn(
-                    'px-3 py-3 tabular-nums text-left text-[var(--muted)] text-xs transition-colors group-hover/row:text-[var(--txt)]',
+                    'px-3 py-3 tabular-nums text-left text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar',
                     !col.mobile && 'hidden md:table-cell',
                   )}
                 >

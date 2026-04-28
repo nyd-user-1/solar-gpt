@@ -544,11 +544,11 @@ export async function getCityById(id: number): Promise<CityKpi | null> {
   return (rows[0] as CityKpi) ?? null
 }
 
-export async function getCityBySlug(slug: string, stateName = 'New York'): Promise<CityKpi | null> {
+export async function getCityBySlug(slug: string): Promise<CityKpi | null> {
   const rows = await sql`
     SELECT * FROM solargpt.v_city_kpis
     WHERE REGEXP_REPLACE(lower(region_name), '[^a-z0-9]+', '-', 'g') = ${slug}
-    AND state_name = ${stateName}
+    ORDER BY count_qualified DESC NULLS LAST
     LIMIT 1
   `
   return (rows[0] as CityKpi) ?? null
@@ -631,7 +631,9 @@ export async function getAllZips(): Promise<ZipKpi[]> {
            yearly_sunlight_kwh_total, carbon_offset_metric_tons,
            kw_total, kw_median,
            untapped_annual_value_usd, adoption_rate_pct,
-           sunlight_grade, sunlight_stars
+           sunlight_grade, sunlight_stars,
+           percent_covered, percent_qualified,
+           number_of_panels_total, number_of_panels_median
     FROM solargpt.v_zip_kpis
     ORDER BY count_qualified DESC NULLS LAST
     LIMIT 2000

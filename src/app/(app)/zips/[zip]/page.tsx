@@ -31,7 +31,7 @@ export default async function ZipDetailPage({ params }: { params: Promise<{ zip:
     : []
 
   const title = placeName
-    ? `${zipData.zip_code} (${placeName})`
+    ? `${zipData.zip_code} • ${placeName}`
     : zipData.zip_code
 
   const prev = adjacent.prev ? { label: adjacent.prev, href: `/zips/${adjacent.prev}` } : null
