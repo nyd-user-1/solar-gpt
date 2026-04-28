@@ -395,7 +395,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
       </div>
 
       <p className="text-center text-[10px] text-[var(--muted2)] mt-2">
-        AI-powered solar intelligence · Data from Google Sunroof &amp; NREL Cambium
+        AI-powered solar intelligence · Data from Google Sunroof &amp; NREL Cambium · Design &amp; Development by NYSgpt
       </p>
     </div>
   )
