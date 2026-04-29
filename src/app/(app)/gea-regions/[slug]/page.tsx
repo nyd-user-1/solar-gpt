@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { GeoDetailPage } from '@/components/GeoDetailPage'
-import { getAllGeas, getGeaKpi, getCountiesByGea, getAllCambiumCountiesForMap, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
+import { getAllGeas, getGeaKpi, getCountiesByGea, getAllCambiumCountiesForMap, getCountiesByGeaForMap, geaToSlug, slugToGea, nameToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { getGeaColor } from '@/lib/gea-colors'
 
@@ -12,10 +12,11 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
   const gea = slugToGea(slug, allGeas)
   if (!gea) notFound()
 
-  const [kpi, counties, cambiumCounties] = await Promise.all([
+  const [kpi, counties, cambiumCounties, geaCounties] = await Promise.all([
     getGeaKpi(gea),
     getCountiesByGea(gea),
     getAllCambiumCountiesForMap(),
+    getCountiesByGeaForMap(gea),
   ])
   if (!kpi) notFound()
 
@@ -68,7 +69,7 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
       searchPlaceholder="Search counties…"
       ctaHref="/leads/new"
       ctaLabel="Get Quote"
-      geaFocusMapData={{ cambiumCounties, focusGea: gea, bounds: { north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min } }}
+      geaCountyMapData={{ cambiumCounties, geaCounties, sunroofCounties: counties, focusGea: gea, bounds: { north: kpi.lat_max, south: kpi.lat_min, east: kpi.lng_max, west: kpi.lng_min } }}
       chatContext={gea}
     />
   )

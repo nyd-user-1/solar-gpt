@@ -12,7 +12,8 @@ import CountyZipMap from '@/components/CountyZipMap'
 import CensusTractMap from '@/components/CensusTractMap'
 import GEAMiniMap from '@/components/GEAMiniMap'
 import GEAFocusMap from '@/components/GEAFocusMap'
-import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry, CambiumCountyMapEntry } from '@/lib/queries'
+import GEACountyMap from '@/components/GEACountyMap'
+import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry, CambiumCountyMapEntry, CambiumCountyNameEntry } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -74,6 +75,8 @@ export interface DetailPageProps {
   geaMapData?: { stateNames: string[]; bounds: { north: number; south: number; east: number; west: number }; color?: string }
   /** GEA county choropleth — preferred over geaMapData when provided */
   geaFocusMapData?: { cambiumCounties: CambiumCountyMapEntry[]; focusGea: string; bounds: { north: number; south: number; east: number; west: number } }
+  /** Interactive GEA county map with click-to-route */
+  geaCountyMapData?: { cambiumCounties: CambiumCountyMapEntry[]; geaCounties: CambiumCountyNameEntry[]; sunroofCounties: { fips?: string; untapped_annual_value_usd: number }[]; focusGea: string; bounds: { north: number; south: number; east: number; west: number } }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -105,7 +108,7 @@ export function GeoDetailPage({
   defaultInfoRows = 4,
   carouselScrollable = false,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, geaMapData, geaFocusMapData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, geaMapData, geaFocusMapData, geaCountyMapData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -229,6 +232,16 @@ export function GeoDetailPage({
               parentName={tractData.parentName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : geaCountyMapData ? (
+          <div className="mb-8">
+            <GEACountyMap
+              cambiumCounties={geaCountyMapData.cambiumCounties}
+              geaCounties={geaCountyMapData.geaCounties}
+              sunroofCounties={geaCountyMapData.sunroofCounties}
+              focusGea={geaCountyMapData.focusGea}
+              bounds={geaCountyMapData.bounds}
             />
           </div>
         ) : geaFocusMapData ? (
