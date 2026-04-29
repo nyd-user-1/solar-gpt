@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       FROM solargpt.v_county_kpis
       WHERE cambium_gea = ${gea}
       ORDER BY untapped_annual_value_usd DESC
-      LIMIT 15
+      LIMIT 10
     `,
     sql`
       SELECT cost_per_mwh, lrmer_co2_per_mwh
