@@ -187,18 +187,24 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
       const addr: SelectedAddress = { description: s.description, lat: geo.lat, lng: geo.lng }
       setSelectedAddress(addr)
       setDrawerOpen(true)
-      // Auto-submit chat simultaneously with drawer opening
-      submitWithAddress(`Ask about this property: ${s.description}`, addr, null)
       setSolarLoading(true)
+      // Fetch solar data before submitting so the AI gets real property-specific data
       const solarRes = await fetch(`/api/solar?lat=${geo.lat}&lng=${geo.lng}`)
       const solarData = await solarRes.json()
+      let insight: SolarInsight | null = null
       if (!solarRes.ok || solarData.error) {
         setSolarError(solarData.error ?? 'Solar API not available for this address')
       } else {
-        setSolarInsight(solarData as SolarInsight)
+        insight = solarData as SolarInsight
+        setSolarInsight(insight)
       }
-    } catch { setSolarError('Could not fetch solar data') }
-    finally { setSolarLoading(false) }
+      setSolarLoading(false)
+      // Submit chat now with full solar insight injected into system prompt
+      submitWithAddress(`Tell me about the solar potential for this property: ${s.description}`, addr, insight)
+    } catch {
+      setSolarError('Could not fetch solar data')
+      setSolarLoading(false)
+    }
   }, [submitWithAddress])
 
   const clearAddress = useCallback(() => {

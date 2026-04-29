@@ -78,7 +78,7 @@ function DrawerContent({ open, onClose, address, lat, lng, insight, loading, err
       <div className="relative h-full w-full sm:w-[380px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4 shrink-0">
-          <span className="flex-1 text-base font-semibold text-[var(--txt)] truncate">{address || 'Solar Analysis'}</span>
+          <span className="flex-1 text-base font-semibold text-[var(--txt)]">Solar Assistant</span>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors shrink-0"
