@@ -6,18 +6,28 @@ export async function GET(req: NextRequest) {
   if (!lat || !lng) return NextResponse.json({ error: 'Missing lat/lng' }, { status: 400 })
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=50&requiredQuality=LOW&view=FULL_LAYERS&key=${key}`
+  // Use IMAGERY_AND_ANNUAL_FLUX_LAYERS — only request what we need (annual flux + imagery)
+  // pixelSizeMeters=0.5 gives the highest resolution available
+  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&pixelSizeMeters=0.5&view=IMAGERY_AND_ANNUAL_FLUX_LAYERS&key=${key}`
 
   const res = await fetch(url)
+  const raw = await res.json().catch(() => ({}))
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    return NextResponse.json({ error: err?.error?.message ?? 'Data layers unavailable' }, { status: res.status })
+    console.error('[solar-layers] API error:', res.status, raw?.error?.message)
+    return NextResponse.json({
+      error: raw?.error?.message ?? `Solar API ${res.status}`,
+      status: res.status,
+    }, { status: res.status })
   }
 
-  const data = await res.json()
+  console.log('[solar-layers] quality:', raw.imageryQuality, 'annualFlux?', !!raw.annualFluxUrl, 'bbox?', !!raw.boundingBox)
+
   return NextResponse.json({
-    annualFluxUrl: data.annualFluxUrl ?? null,
-    boundingBox: data.boundingBox ?? null,
-    imageryQuality: data.imageryQuality ?? null,
+    annualFluxUrl: raw.annualFluxUrl ?? null,
+    boundingBox: raw.boundingBox ?? null,
+    imageryQuality: raw.imageryQuality ?? null,
+    // Pass through for debugging
+    debug: { hasDsm: !!raw.dsmUrl, hasRgb: !!raw.rgbUrl, hasMask: !!raw.maskUrl },
   })
 }

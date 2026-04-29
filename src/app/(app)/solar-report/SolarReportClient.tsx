@@ -225,11 +225,13 @@ export default function SolarReportClient() {
     // Fetch building insights + data layers in parallel
     Promise.all([
       fetch(`/api/solar?lat=${lat}&lng=${lng}`).then(r => r.json()),
-      fetch(`/api/solar-layers?lat=${lat}&lng=${lng}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/solar-layers?lat=${lat}&lng=${lng}`).then(r => r.json()).catch(e => { console.warn('[solar-layers] fetch error', e); return null }),
     ]).then(([solarData, layersData]) => {
       if (solarData.error) setError(solarData.error)
       else setInsight(solarData as SolarInsight)
+      console.log('[solar-layers] response:', layersData)
       if (layersData && !layersData.error) setLayers(layersData as LayersData)
+      else if (layersData?.error) console.warn('[solar-layers] error from API:', layersData.error, layersData.status)
     }).catch(() => setError('Could not fetch solar data'))
       .finally(() => setLoading(false))
   }, [lat, lng])
