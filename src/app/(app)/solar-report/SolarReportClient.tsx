@@ -10,7 +10,14 @@ import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { SolarInsight } from '@/lib/solar-types'
 import { SolarFluxOverlay, type BoundingBox } from '@/components/SolarFluxOverlay'
 
-type LayersData = { annualFluxUrl: string | null; boundingBox: BoundingBox | null }
+type LayersData = {
+  annualFluxUrl: string | null
+  monthlyFluxUrl: string | null
+  dsmUrl: string | null
+  boundingBox: BoundingBox | null
+  imageryQuality: string | null
+  _keys?: string[]
+}
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 
@@ -229,9 +236,9 @@ export default function SolarReportClient() {
     ]).then(([solarData, layersData]) => {
       if (solarData.error) setError(solarData.error)
       else setInsight(solarData as SolarInsight)
-      console.log('[solar-layers] response:', layersData)
+      console.log('[solar-layers] keys:', layersData?._keys, '| annualFlux:', !!layersData?.annualFluxUrl, '| monthly:', !!layersData?.monthlyFluxUrl, '| quality:', layersData?.imageryQuality)
       if (layersData && !layersData.error) setLayers(layersData as LayersData)
-      else if (layersData?.error) console.warn('[solar-layers] error from API:', layersData.error, layersData.status)
+      else console.warn('[solar-layers] error:', layersData?.error)
     }).catch(() => setError('Could not fetch solar data'))
       .finally(() => setLoading(false))
   }, [lat, lng])
@@ -254,9 +261,9 @@ export default function SolarReportClient() {
               style={{ width: '100%', height: '100%' }}
             >
               <AddressMarker lat={lat} lng={lng} />
-              {layers?.annualFluxUrl && layers.boundingBox && (
+              {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && layers.boundingBox && (
                 <SolarFluxOverlay
-                  annualFluxUrl={layers.annualFluxUrl}
+                  annualFluxUrl={layers.annualFluxUrl ?? layers.monthlyFluxUrl!}
                   boundingBox={layers.boundingBox}
                 />
               )}

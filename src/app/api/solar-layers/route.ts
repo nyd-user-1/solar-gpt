@@ -6,28 +6,37 @@ export async function GET(req: NextRequest) {
   if (!lat || !lng) return NextResponse.json({ error: 'Missing lat/lng' }, { status: 400 })
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  // Use IMAGERY_AND_ANNUAL_FLUX_LAYERS — only request what we need (annual flux + imagery)
-  // pixelSizeMeters=0.5 gives the highest resolution available
-  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&pixelSizeMeters=0.5&view=IMAGERY_AND_ANNUAL_FLUX_LAYERS&key=${key}`
+  // Request all flux layers; no pixelSize restriction, no quality restriction
+  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&view=FULL_LAYERS&key=${key}`
 
   const res = await fetch(url)
   const raw = await res.json().catch(() => ({}))
 
   if (!res.ok) {
     console.error('[solar-layers] API error:', res.status, raw?.error?.message)
-    return NextResponse.json({
-      error: raw?.error?.message ?? `Solar API ${res.status}`,
-      status: res.status,
-    }, { status: res.status })
+    return NextResponse.json({ error: raw?.error?.message ?? `Solar API ${res.status}` }, { status: res.status })
   }
 
-  console.log('[solar-layers] quality:', raw.imageryQuality, 'annualFlux?', !!raw.annualFluxUrl, 'bbox?', !!raw.boundingBox)
+  // Log everything server-side so Vercel logs show the full picture
+  console.log('[solar-layers]', {
+    quality: raw.imageryQuality,
+    keys: Object.keys(raw),
+    hasAnnualFlux: !!raw.annualFluxUrl,
+    hasBbox: !!raw.boundingBox,
+    hasDsm: !!raw.dsmUrl,
+    hasRgb: !!raw.rgbUrl,
+    hasMonthly: !!raw.monthlyFluxUrls?.length,
+  })
 
+  // Return everything useful — client picks what to render
   return NextResponse.json({
     annualFluxUrl: raw.annualFluxUrl ?? null,
+    // Fallback: first monthly flux image (e.g. Aug = index 7, peak sun)
+    monthlyFluxUrl: raw.monthlyFluxUrls?.[7] ?? raw.monthlyFluxUrls?.[0] ?? null,
+    dsmUrl: raw.dsmUrl ?? null,
     boundingBox: raw.boundingBox ?? null,
     imageryQuality: raw.imageryQuality ?? null,
-    // Pass through for debugging
-    debug: { hasDsm: !!raw.dsmUrl, hasRgb: !!raw.rgbUrl, hasMask: !!raw.maskUrl },
+    // Surface all top-level keys so client can debug
+    _keys: Object.keys(raw),
   })
 }
