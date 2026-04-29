@@ -60,10 +60,10 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     chartType: 'bar',
     previewData: [{x:0,y:6},{x:1,y:8},{x:2,y:15},{x:3,y:25},{x:4,y:10},{x:5,y:4},{x:6,y:2}],
     tabs: [
-      { id: 'grade', label: 'Grade', metric: 'count_qualified', format: 'count', agg: 'sum', hasChildren: true, childTab: 'state' },
       { id: 'state', label: 'State', metric: 'count_qualified', format: 'count', agg: 'sum', hasChildren: true, childTab: 'county' },
+      { id: 'gea', label: 'Region', metric: 'count_qualified', format: 'count', agg: 'sum', hasChildren: true, childTab: 'state' },
     ],
-    headerContext: 'states analyzed',
+    headerContext: 'qualified buildings',
   },
   {
     slug: 'existing-installs',
