@@ -160,7 +160,9 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
     }
   }, [slug, activeTabId, expandedIds, childrenMap, focusedRow])
 
-  const sortedRows = [...rows].sort((a, b) => a.name.localeCompare(b.name))
+  const sortedRows = config.sortDefault === 'value'
+    ? [...rows].sort((a, b) => b.value - a.value)
+    : [...rows].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">

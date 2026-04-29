@@ -21,6 +21,7 @@ export type DashboardConfig = {
   previewData: { x: number; y: number }[]
   tabs: DashboardTab[]
   headerContext: string
+  sortDefault?: 'name' | 'value'
 }
 
 export const DASHBOARD_CONFIGS: DashboardConfig[] = [
@@ -82,6 +83,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'top-counties',
     title: 'Top Counties',
     desc: 'Top 20 counties by untapped value',
+    sortDefault: 'value',
     color: 'hsl(280 67% 55%)',
     chartType: 'bar',
     previewData: [{x:0,y:80},{x:1,y:65},{x:2,y:55},{x:3,y:45},{x:4,y:38},{x:5,y:30},{x:6,y:25},{x:7,y:20},{x:8,y:15},{x:9,y:10}],
@@ -95,6 +97,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'top-cities',
     title: 'Top Cities',
     desc: 'Top 20 cities by untapped value',
+    sortDefault: 'value',
     color: 'hsl(340 82% 52%)',
     chartType: 'bar',
     previewData: [{x:0,y:80},{x:1,y:65},{x:2,y:55},{x:3,y:45},{x:4,y:38},{x:5,y:30},{x:6,y:25},{x:7,y:20},{x:8,y:15},{x:9,y:10}],
