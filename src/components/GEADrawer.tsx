@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, ExternalLink } from 'lucide-react'
+import { X, ExternalLink, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
@@ -24,13 +24,69 @@ type GeaKpiData = {
   yearly_sunlight_kwh_total: number
   sunlight_grade: string
   county_count: number
+  cars_off_road_equivalent: number
+  homes_powered_equivalent: number
+}
+
+type CambiumMetrics = {
+  cost_per_mwh: number
+  lrmer_co2_per_mwh: number
+} | null
+
+// Shared table components — single unified design
+function TableHeader({ cols }: { cols: string[] }) {
+  return (
+    <div
+      className="grid px-3 py-2.5 bg-[var(--inp-bg)] border-b border-[var(--border)]"
+      style={{ gridTemplateColumns: cols.length === 2 ? '1fr auto' : '1fr auto auto' }}
+    >
+      {cols.map(c => (
+        <span key={c} className={`text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide ${c !== cols[0] ? 'text-right' : ''}`}>{c}</span>
+      ))}
+    </div>
+  )
+}
+
+function KpiRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-2.5 border-b border-[var(--border)] last:border-b-0">
+      <span className="text-sm text-[var(--muted)]">{label}</span>
+      <span className="text-sm font-semibold text-[var(--txt)]">{value}</span>
+    </div>
+  )
+}
+
+function AccordionSection({
+  title, open, onToggle, children,
+}: {
+  title: string; open: boolean; onToggle: () => void; children: React.ReactNode
+}) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full pt-1 pb-2 group"
+      >
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] group-hover:text-[var(--txt)] transition-colors">{title}</p>
+        <ChevronDown className={`h-3.5 w-3.5 text-[var(--muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="rounded-xl border border-[var(--border)] overflow-hidden mb-1">
+          {children}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
   const router = useRouter()
   const color = getGeaColor(gea)
-  const [data, setData] = useState<{ kpi: GeaKpiData; topCounties: TopCounty[] } | null>(null)
+  const [data, setData] = useState<{ kpi: GeaKpiData; cambiumMetrics: CambiumMetrics; topCounties: TopCounty[] } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sections, setSections] = useState({ grid: true, solar: true, impact: true })
+
+  const toggle = (k: keyof typeof sections) => setSections(s => ({ ...s, [k]: !s[k] }))
 
   useEffect(() => {
     setLoading(true)
@@ -41,15 +97,13 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
       .catch(() => setLoading(false))
   }, [gea])
 
-  const kpiRows = data ? [
-    { label: 'Annual Potential', value: fmtUsd(data.kpi.untapped_annual_value_usd) },
-    { label: 'Lifetime Value (25yr)', value: fmtUsd(data.kpi.untapped_lifetime_value_usd) },
-    { label: 'Qualified Buildings', value: fmtNum(data.kpi.count_qualified) },
-    { label: 'Existing Installs', value: fmtNum(data.kpi.existing_installs_count) },
-    { label: 'Adoption Rate', value: data.kpi.adoption_rate_pct != null ? `${data.kpi.adoption_rate_pct.toFixed(1)}%` : '—' },
-    { label: 'Sunlight Grade', value: data.kpi.sunlight_grade ?? '—' },
-    { label: 'Counties', value: fmtNum(data.kpi.county_count) },
-  ] : []
+  // Impact calculations
+  const impact = data && data.cambiumMetrics ? (() => {
+    const mwh = (data.kpi.yearly_sunlight_kwh_total ?? 0) / 1000
+    const co2Tons = (mwh * (data.cambiumMetrics!.lrmer_co2_per_mwh ?? 0)) / 1000
+    const costOffset = mwh * (data.cambiumMetrics!.cost_per_mwh ?? 0)
+    return { co2Tons, costOffset }
+  })() : null
 
   return (
     <div className="h-full w-full sm:w-[360px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl sm:shadow-none">
@@ -78,34 +132,46 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
             <div className="h-5 w-5 rounded-full border-2 border-[var(--border)] border-t-solar animate-spin" />
           </div>
         ) : data ? (
-          <div className="px-4 py-4 flex flex-col gap-5">
-            {/* KPI table */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">Region Overview</p>
-              <div className="rounded-xl border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
-                {kpiRows.map(row => (
-                  <div key={row.label} className="flex items-center justify-between px-3 py-2.5">
-                    <span className="text-sm text-[var(--muted)]">{row.label}</span>
-                    <span className="text-sm font-semibold text-[var(--txt)]">{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="px-4 py-4 flex flex-col gap-4">
 
-            {/* Top counties table */}
+            {/* Module 1: Grid Economics (Cambium) */}
+            <AccordionSection title="Grid Economics" open={sections.grid} onToggle={() => toggle('grid')}>
+              <TableHeader cols={['Metric', 'Value']} />
+              <KpiRow label="Marginal Cost" value={data.cambiumMetrics ? `$${data.cambiumMetrics.cost_per_mwh.toFixed(2)}/MWh` : '—'} />
+              <KpiRow label="Emissions Intensity" value={data.cambiumMetrics ? `${data.cambiumMetrics.lrmer_co2_per_mwh.toFixed(1)} kg CO₂/MWh` : '—'} />
+            </AccordionSection>
+
+            {/* Module 2: Solar Potential (Sunroof) */}
+            <AccordionSection title="Solar Potential" open={sections.solar} onToggle={() => toggle('solar')}>
+              <TableHeader cols={['Metric', 'Value']} />
+              <KpiRow label="Annual Potential" value={fmtUsd(data.kpi.untapped_annual_value_usd)} />
+              <KpiRow label="Lifetime Value (25yr)" value={fmtUsd(data.kpi.untapped_lifetime_value_usd)} />
+              <KpiRow label="Qualified Buildings" value={fmtNum(data.kpi.count_qualified)} />
+              <KpiRow label="Existing Installs" value={fmtNum(data.kpi.existing_installs_count)} />
+              <KpiRow label="Adoption Rate" value={data.kpi.adoption_rate_pct != null ? `${data.kpi.adoption_rate_pct.toFixed(1)}%` : '—'} />
+              <KpiRow label="Sunlight Grade" value={data.kpi.sunlight_grade ?? '—'} />
+              <KpiRow label="Counties" value={fmtNum(data.kpi.county_count)} />
+            </AccordionSection>
+
+            {/* Module 3: Potential Impact */}
+            <AccordionSection title="Potential Impact" open={sections.impact} onToggle={() => toggle('impact')}>
+              <TableHeader cols={['If All Untapped Solar Installed', 'Est./yr']} />
+              <KpiRow label="CO₂ Offset" value={impact ? `${fmtNum(Math.round(impact.co2Tons))} tons` : '—'} />
+              <KpiRow label="Grid Cost Offset" value={impact ? fmtUsd(impact.costOffset) : '—'} />
+              <KpiRow label="Homes Powered" value={fmtNum(data.kpi.homes_powered_equivalent)} />
+              <KpiRow label="Cars Off Road Equiv." value={fmtNum(data.kpi.cars_off_road_equivalent)} />
+            </AccordionSection>
+
+            {/* Top Counties table — always visible */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">Top Counties</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] pt-1 pb-2">Top Counties</p>
               <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-1.5 bg-[var(--inp-bg)] border-b border-[var(--border)]">
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">County</span>
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">Buildings</span>
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">Potential/yr</span>
-                </div>
+                <TableHeader cols={['County', 'Buildings', 'Potential/yr']} />
                 <div className="divide-y divide-[var(--border)]">
                   {data.topCounties.map((c, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2 items-center">
+                    <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2.5 items-center">
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-[var(--txt)] truncate">{c.region_name}</p>
+                        <p className="text-sm font-medium text-[var(--txt)] truncate">{c.region_name}</p>
                         <p className="text-[10px] text-[var(--muted)]">{c.state_name}</p>
                       </div>
                       <span className="text-xs text-[var(--muted)] tabular-nums">{fmtNum(c.count_qualified)}</span>
@@ -115,6 +181,7 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
                 </div>
               </div>
             </div>
+
           </div>
         ) : (
           <div className="flex items-center justify-center h-40">
@@ -127,7 +194,7 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
       <div className="shrink-0 px-4 pb-4 pt-3 border-t border-[var(--border)]">
         <button
           onClick={() => router.push(`/gea-regions/${geaToSlug(gea)}`)}
-          className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+          className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ background: color }}
         >
           View Full Region Detail →
