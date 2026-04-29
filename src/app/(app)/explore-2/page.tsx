@@ -79,7 +79,7 @@ export default async function Explore2Page() {
   const getGeaStateNames = (gea: string): string[] => {
     const sm = geaStateCountMap.get(gea)
     if (!sm) return []
-    return Array.from(sm.entries()).filter(([, n]) => n >= 5).map(([s]) => s)
+    return Array.from(sm.entries()).filter(([, n]) => n >= 1).map(([s]) => s)
   }
 
   return (

@@ -18,10 +18,10 @@ export default async function GeaRegionDetailPage({ params }: { params: Promise<
   ])
   if (!kpi) notFound()
 
-  // Build state names for GEA map (require ≥5 counties per state)
+  // Build state names for GEA map (any county in GEA = state highlighted)
   const stateCountMap = new Map<string, number>()
   for (const c of counties) stateCountMap.set(c.state_name, (stateCountMap.get(c.state_name) ?? 0) + 1)
-  const geaStateNames = Array.from(stateCountMap.entries()).filter(([, n]) => n >= 5).map(([s]) => s)
+  const geaStateNames = Array.from(stateCountMap.entries()).filter(([, n]) => n >= 1).map(([s]) => s)
 
   const sorted = [...allGeas].sort()
   const idx = sorted.indexOf(gea)
