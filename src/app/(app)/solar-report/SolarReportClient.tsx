@@ -7,6 +7,9 @@ import { Sun, ChevronDown, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { SolarInsight } from '@/lib/solar-types'
+import { SolarFluxOverlay, type BoundingBox } from '@/components/SolarFluxOverlay'
+
+type LayersData = { annualFluxUrl: string | null; boundingBox: BoundingBox | null }
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 
@@ -217,19 +220,22 @@ export default function SolarReportClient() {
   const [insight, setInsight] = useState<SolarInsight | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [layers, setLayers] = useState<LayersData | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!lat || !lng) { setLoading(false); setError('No location provided'); return }
-    fetch(`/api/solar?lat=${lat}&lng=${lng}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.error) setError(d.error)
-        else setInsight(d as SolarInsight)
-      })
-      .catch(() => setError('Could not fetch solar data'))
+    // Fetch building insights + data layers in parallel
+    Promise.all([
+      fetch(`/api/solar?lat=${lat}&lng=${lng}`).then(r => r.json()),
+      fetch(`/api/solar-layers?lat=${lat}&lng=${lng}`).then(r => r.json()).catch(() => null),
+    ]).then(([solarData, layersData]) => {
+      if (solarData.error) setError(solarData.error)
+      else setInsight(solarData as SolarInsight)
+      if (layersData && !layersData.error) setLayers(layersData as LayersData)
+    }).catch(() => setError('Could not fetch solar data'))
       .finally(() => setLoading(false))
   }, [lat, lng])
 
@@ -252,6 +258,12 @@ export default function SolarReportClient() {
               style={{ width: '100%', height: '100%' }}
             >
               <AddressMarker lat={lat} lng={lng} />
+              {layers?.annualFluxUrl && layers.boundingBox && (
+                <SolarFluxOverlay
+                  annualFluxUrl={layers.annualFluxUrl}
+                  boundingBox={layers.boundingBox}
+                />
+              )}
             </Map>
           </APIProvider>
         ) : (
