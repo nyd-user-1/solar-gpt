@@ -9,19 +9,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const gea = Object.keys(GEA_COLORS).find(k => k.toLowerCase().replace(/_/g, '-') === slug)
   if (!gea) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const [kpiRows, topCountiesRows] = await Promise.all([
-    sql`SELECT * FROM solargpt.v_gea_kpis WHERE cambium_gea = ${gea} LIMIT 1`,
+  const [kpiRows, topCountiesRows, cambiumRows] = await Promise.all([
+    sql`SELECT * FROM solargpt.v_gea_kpis WHERE cambium_gea = ${gea} LIMIT 1`.catch(() => []),
     sql`
       SELECT region_name, state_name, untapped_annual_value_usd, count_qualified
       FROM solargpt.v_county_kpis
       WHERE cambium_gea = ${gea}
       ORDER BY untapped_annual_value_usd DESC
       LIMIT 10
-    `,
+    `.catch(() => []),
+    sql`
+      SELECT cost_per_mwh, lrmer_co2_per_mwh
+      FROM solargpt.raw_cambium_gea_metrics
+      WHERE cambium_gea = ${gea}
+      LIMIT 1
+    `.catch(() => []),
   ])
 
   return NextResponse.json({
     kpi: kpiRows[0] ?? null,
+    cambiumMetrics: cambiumRows[0] ?? null,
     topCounties: topCountiesRows,
   })
 }
