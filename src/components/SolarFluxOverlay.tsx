@@ -55,15 +55,17 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
 
     async function load() {
       try {
-        // Dynamically import geotiff to avoid SSR issues
-        const GeoTIFF = await import('geotiff')
+        const { fromArrayBuffer } = await import('geotiff')
 
         const res = await fetch(fetchUrl)
-        if (!res.ok || cancelled) return
+        if (!res.ok || cancelled) {
+          console.warn('[SolarFlux] proxy fetch failed:', res.status)
+          return
+        }
         const buf = await res.arrayBuffer()
         if (cancelled) return
 
-        const tiff = await GeoTIFF.fromArrayBuffer(buf)
+        const tiff = await fromArrayBuffer(buf)
         const image = await tiff.getImage()
         const rasters = await image.readRasters()
         if (cancelled) return
@@ -122,8 +124,9 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
           { opacity }
         )
         overlayRef.current.setMap(map)
+        console.log('[SolarFlux] overlay rendered', w, 'x', h, 'pixels, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
       } catch (err) {
-        console.warn('Solar flux overlay:', err)
+        console.warn('[SolarFlux] overlay error:', err)
       }
     }
 

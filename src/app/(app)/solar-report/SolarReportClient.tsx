@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Sun, ChevronDown, ArrowLeft } from 'lucide-react'
+// Sun is still used in the empty-state fallback below
 import Link from 'next/link'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { SolarInsight } from '@/lib/solar-types'
@@ -96,13 +97,7 @@ function SolarSidePanel({
         <Link href="/new-chat" className="flex items-center gap-1 text-[var(--muted)] hover:text-[var(--txt)] transition-colors shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[var(--txt)] truncate">{address || 'Solar Report'}</p>
-        </div>
-        <div className="flex items-center gap-1.5 text-solar shrink-0">
-          <Sun className="h-4 w-4" />
-          <span className="text-xs font-bold text-[var(--txt)]">SolarGPT</span>
-        </div>
+        <span className="text-sm font-semibold text-[var(--txt)]">Solar Assistant Report</span>
       </div>
 
       {/* Big KPIs */}
@@ -252,7 +247,6 @@ export default function SolarReportClient() {
               mapTypeId="satellite"
               defaultCenter={mapCenter}
               defaultZoom={19}
-              tilt={45}
               disableDefaultUI
               gestureHandling="greedy"
               style={{ width: '100%', height: '100%' }}
