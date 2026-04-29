@@ -120,26 +120,32 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
   // API also caps child rows at 30 for county — pass all through for chart
 
+  // Dashboard cycle
+  const n = DASHBOARD_CONFIGS.length
+  const currentIdx = DASHBOARD_CONFIGS.findIndex(c => c.slug === slug)
+  const prevSlug = DASHBOARD_CONFIGS[(currentIdx - 1 + n) % n].slug
+  const nextSlug = DASHBOARD_CONFIGS[(currentIdx + 1) % n].slug
+
   // Send total to AppLayout header.
   // setTimeout(fn, 0) defers past the current effect flush so AppLayout's
   // listener (parent effect, runs after children) is set up before we fire.
   useEffect(() => {
     const tid = setTimeout(() => {
       window.dispatchEvent(new CustomEvent('solargpt:dashboard-header', {
-        detail: { formatted: fmtHeader(displayTotal, activeTab.format), color: config.color }
+        detail: {
+          formatted: fmtHeader(displayTotal, activeTab.format),
+          color: config.color,
+          context: config.headerContext,
+          prevSlug,
+          nextSlug,
+        }
       }))
     }, 0)
     return () => {
       clearTimeout(tid)
       window.dispatchEvent(new CustomEvent('solargpt:dashboard-header', { detail: null }))
     }
-  }, [displayTotal, activeTab.format, config.color])
-
-  // Dashboard cycle
-  const n = DASHBOARD_CONFIGS.length
-  const currentIdx = DASHBOARD_CONFIGS.findIndex(c => c.slug === slug)
-  const prevSlug = DASHBOARD_CONFIGS[(currentIdx - 1 + n) % n].slug
-  const nextSlug = DASHBOARD_CONFIGS[(currentIdx + 1) % n].slug
+  }, [displayTotal, activeTab.format, config.color, config.headerContext, prevSlug, nextSlug])
 
   const switchTab = useCallback(async (tabId: DashboardTabId) => {
     if (tabId === activeTabId) return
@@ -172,9 +178,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
     }
   }, [slug, activeTabId, expandedIds, childrenMap, focusedRow])
 
-  const sortedRows = config.sortDefault === 'value'
-    ? [...rows].sort((a, b) => b.value - a.value)
-    : [...rows].sort((a, b) => a.name.localeCompare(b.name))
+  const sortedRows = [...rows].sort((a, b) => b.value - a.value)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -271,16 +275,6 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                     : 'text-[var(--muted)] hover:text-[var(--txt)]',
                 )}>{tab.label}</button>
             ))}
-            <div className="ml-auto flex items-center gap-1.5">
-              <button onClick={() => router.push(`/dashboard/${prevSlug}`)}
-                className="h-7 w-7 rounded-full border border-[var(--border)] inline-flex items-center justify-center text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => router.push(`/dashboard/${nextSlug}`)}
-                className="h-7 w-7 rounded-full border border-[var(--border)] inline-flex items-center justify-center text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -311,6 +305,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                 onToggle={() => toggleRow(row)}
                 format={activeTab.format} color={config.color}
                 tabId={activeTabId} childTabId={activeTab.childTab}
+                childFormat={activeTab.childFormat}
               />
             ))}
             <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_120px_80px] gap-4 px-4 md:px-6 py-4 bg-[var(--surface)] font-semibold text-[var(--txt)]">
@@ -325,10 +320,10 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
   )
 }
 
-function DashboardRow({ row, isExpanded, isChildLoading, children, onToggle, format, color, tabId, childTabId }: {
+function DashboardRow({ row, isExpanded, isChildLoading, children, onToggle, format, color, tabId, childTabId, childFormat }: {
   row: DashboardTableRow; isExpanded: boolean; isChildLoading: boolean
   children: DashboardTableRow[] | null; onToggle: () => void
-  format: MetricFormat; color: string; tabId: DashboardTabId; childTabId?: DashboardTabId
+  format: MetricFormat; color: string; tabId: DashboardTabId; childTabId?: DashboardTabId; childFormat?: MetricFormat
 }) {
   const router = useRouter()
   const href = getRowHref(row, tabId)
@@ -374,7 +369,7 @@ function DashboardRow({ row, isExpanded, isChildLoading, children, onToggle, for
                 className="group/row grid grid-cols-[1fr_auto] md:grid-cols-[1fr_120px_80px] gap-4 px-4 md:px-6 py-3 pl-10 md:pl-14 items-center hover:bg-[var(--inp-bg)] transition-colors cursor-pointer"
               >
                 <span className="text-sm text-[var(--txt)] group-hover/row:text-solar truncate transition-colors">{child.name}</span>
-                <span className="text-right text-sm text-[var(--muted)] group-hover/row:text-solar tabular-nums transition-colors">{fmtValue(child.value, format)}</span>
+                <span className="text-right text-sm text-[var(--muted)] group-hover/row:text-solar tabular-nums transition-colors">{fmtValue(child.value, childFormat ?? format)}</span>
                 <div className="hidden md:flex items-center gap-2">
                   <div className="flex-1 h-1 bg-[var(--border)] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${Math.min(child.sharePct, 100)}%`, backgroundColor: color, opacity: 0.6 }} />

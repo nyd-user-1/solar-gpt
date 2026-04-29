@@ -10,6 +10,7 @@ export type DashboardTab = {
   agg: MetricAgg
   hasChildren: boolean
   childTab?: DashboardTabId
+  childFormat?: MetricFormat
 }
 
 export type DashboardConfig = {
@@ -44,6 +45,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'adoption-rate',
     title: 'Adoption Rate',
     desc: 'Solar adoption % by state',
+    sortDefault: 'value',
     color: 'hsl(217 91% 60%)',
     chartType: 'bar',
     previewData: [{x:0,y:80},{x:1,y:60},{x:2,y:50},{x:3,y:40},{x:4,y:30},{x:5,y:25},{x:6,y:20},{x:7,y:15},{x:8,y:10},{x:9,y:8}],
@@ -58,6 +60,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'sunlight-grade',
     title: 'Sunlight Grade',
     desc: 'State distribution by grade A+ → F',
+    sortDefault: 'value',
     color: 'hsl(32 95% 50%)',
     chartType: 'bar',
     previewData: [{x:0,y:6},{x:1,y:8},{x:2,y:15},{x:3,y:25},{x:4,y:10},{x:5,y:4},{x:6,y:2}],
@@ -71,6 +74,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'existing-installs',
     title: 'Existing Installs',
     desc: 'Solar systems already installed by state',
+    sortDefault: 'value',
     color: 'hsl(32 95% 50%)',
     chartType: 'bar',
     previewData: [{x:0,y:65},{x:1,y:50},{x:2,y:40},{x:3,y:30},{x:4,y:22},{x:5,y:18},{x:6,y:12},{x:7,y:9},{x:8,y:6},{x:9,y:4}],
@@ -112,11 +116,12 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'marginal-cost',
     title: 'Marginal Cost',
     desc: '$/MWh by GEA region',
+    sortDefault: 'value',
     color: 'hsl(217 91% 60%)',
     chartType: 'bar',
     previewData: [{x:0,y:40},{x:1,y:70},{x:2,y:55},{x:3,y:30},{x:4,y:90},{x:5,y:45},{x:6,y:60},{x:7,y:35},{x:8,y:50},{x:9,y:25}],
     tabs: [
-      { id: 'gea', label: 'GEA', metric: 'cost_per_mwh', format: 'usd_per_mwh', agg: 'avg', hasChildren: false },
+      { id: 'gea', label: 'GEA', metric: 'cost_per_mwh', format: 'usd_per_mwh', agg: 'avg', hasChildren: true, childTab: 'state', childFormat: 'usd' as MetricFormat },
     ],
     headerContext: '$/MWh marginal cost',
   },
@@ -124,11 +129,12 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'emissions-intensity',
     title: 'Emissions Intensity',
     desc: 'LRMER kg CO₂/MWh by GEA',
+    sortDefault: 'value',
     color: 'hsl(0 84% 60%)',
     chartType: 'bar',
     previewData: [{x:0,y:60},{x:1,y:45},{x:2,y:35},{x:3,y:55},{x:4,y:70},{x:5,y:40},{x:6,y:50},{x:7,y:30},{x:8,y:65},{x:9,y:20}],
     tabs: [
-      { id: 'gea', label: 'GEA', metric: 'lrmer_co2_per_mwh', format: 'co2_per_mwh', agg: 'avg', hasChildren: false },
+      { id: 'gea', label: 'GEA', metric: 'lrmer_co2_per_mwh', format: 'co2_per_mwh', agg: 'avg', hasChildren: true, childTab: 'state', childFormat: 'usd' as MetricFormat },
     ],
     headerContext: 'kg CO₂/MWh avg',
   },
@@ -136,6 +142,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'carbon-offset',
     title: 'Carbon Offset',
     desc: 'Annual CO₂ offset potential by state',
+    sortDefault: 'value',
     color: 'hsl(160 60% 45%)',
     chartType: 'area',
     previewData: [{x:0,y:8},{x:1,y:10},{x:2,y:14},{x:3,y:18},{x:4,y:16},{x:5,y:20},{x:6,y:22},{x:7,y:19},{x:8,y:24},{x:9,y:28}],
@@ -149,6 +156,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'qualified-buildings',
     title: 'Qualified Buildings',
     desc: 'Solar-ready building count by state',
+    sortDefault: 'value',
     color: 'hsl(32 95% 50%)',
     chartType: 'bar',
     previewData: [{x:0,y:65},{x:1,y:50},{x:2,y:40},{x:3,y:30},{x:4,y:22},{x:5,y:18},{x:6,y:12},{x:7,y:9},{x:8,y:6},{x:9,y:4}],
@@ -163,6 +171,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'lifetime-value',
     title: 'Lifetime Value',
     desc: '25-year projected value by state',
+    sortDefault: 'value',
     color: 'hsl(280 67% 55%)',
     chartType: 'area',
     previewData: [{x:0,y:8},{x:1,y:12},{x:2,y:22},{x:3,y:28},{x:4,y:18},{x:5,y:24},{x:6,y:30},{x:7,y:22},{x:8,y:26},{x:9,y:20}],
@@ -177,6 +186,7 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     slug: 'mwh-by-region',
     title: 'MWh by Region',
     desc: 'Annual solar energy potential by state',
+    sortDefault: 'value',
     color: 'hsl(191 91% 37%)',
     chartType: 'area',
     previewData: [{x:0,y:18},{x:1,y:28},{x:2,y:14},{x:3,y:32},{x:4,y:20},{x:5,y:38},{x:6,y:24},{x:7,y:30},{x:8,y:16},{x:9,y:26}],

@@ -1124,6 +1124,11 @@ export async function getDashboardStateInGeaRows(gea: string, metric: string): P
       const r = await sql`SELECT state_name AS name, SUM(untapped_lifetime_value_usd) AS value, SUM(untapped_lifetime_value_usd)*100.0/NULLIF(SUM(SUM(untapped_lifetime_value_usd))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND untapped_lifetime_value_usd IS NOT NULL GROUP BY state_name ORDER BY value DESC`
       return toRows(r as unknown[], false)
     }
+    case 'cost_per_mwh':
+    case 'lrmer_co2_per_mwh': {
+      const r = await sql`SELECT state_name AS name, SUM(untapped_annual_value_usd) AS value, SUM(untapped_annual_value_usd)*100.0/NULLIF(SUM(SUM(untapped_annual_value_usd))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND untapped_annual_value_usd IS NOT NULL GROUP BY state_name ORDER BY value DESC`
+      return toRows(r as unknown[], false)
+    }
     case 'yearly_sunlight_kwh_total': {
       const r = await sql`SELECT state_name AS name, SUM(yearly_sunlight_kwh_total) AS value, SUM(yearly_sunlight_kwh_total)*100.0/NULLIF(SUM(SUM(yearly_sunlight_kwh_total))OVER(),0) AS share_pct FROM solargpt.v_county_kpis WHERE cambium_gea=${gea} AND yearly_sunlight_kwh_total IS NOT NULL GROUP BY state_name ORDER BY value DESC`
       return toRows(r as unknown[], false)

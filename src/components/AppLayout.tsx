@@ -8,7 +8,10 @@ import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [dashHeader, setDashHeader] = useState<{ formatted: string; color: string } | null>(null)
+  const [dashHeader, setDashHeader] = useState<{
+    formatted: string; color: string; context: string;
+    prevSlug: string; nextSlug: string;
+  } | null>(null)
 
   useEffect(() => {
     const handle = (e: Event) => setDashHeader((e as CustomEvent).detail)
@@ -138,10 +141,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Dashboard detail — show the big number top-right (chevrons are inline in the component) */}
+          {/* Dashboard detail — chevrons + big number top-right */}
           {isDashboardDetail && dashHeader && (
-            <div className="ml-auto mr-2 tabular-nums font-bold text-2xl" style={{ color: dashHeader.color }}>
-              {dashHeader.formatted}
+            <div className="ml-auto flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => router.push(`/dashboard/${dashHeader.prevSlug}`)}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => router.push(`/dashboard/${dashHeader.nextSlug}`)}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="tabular-nums font-bold text-2xl leading-tight" style={{ color: dashHeader.color }}>
+                  {dashHeader.formatted}
+                </div>
+                <div className="text-xs text-[var(--muted)] mt-0.5">{dashHeader.context}</div>
+              </div>
             </div>
           )}
 
