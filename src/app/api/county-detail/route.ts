@@ -16,6 +16,7 @@ export async function GET(req: Request) {
         sunlight_grade, carbon_offset_metric_tons,
         median_annual_savings_usd, homes_powered_equivalent,
         cars_off_road_equivalent, median_payback_years,
+        yearly_sunlight_kwh_total, cambium_gea,
         lat_min, lat_max, lng_min, lng_max
       FROM solargpt.v_county_kpis
       WHERE region_name = ${region} AND state_name = ${state}
@@ -40,8 +41,25 @@ export async function GET(req: Request) {
     `.catch(() => []),
   ])
 
+  const county = countyRows[0] as { cambium_gea?: string; yearly_sunlight_kwh_total?: number } | undefined
+
+  // Fetch GEA Cambium metrics for this county's region
+  const cambiumRows = county?.cambium_gea
+    ? await sql`
+        SELECT
+          marginal_energy_usd_per_mwh  AS cost_per_mwh,
+          lrmer_kg_co2_per_mwh         AS lrmer_co2_per_mwh,
+          levelized_energy_usd_per_mwh AS levelized_cost_per_mwh,
+          levelized_co2e_kg_per_mwh    AS levelized_co2_per_mwh
+        FROM solargpt.raw_cambium_gea_metrics
+        WHERE cambium_gea = ${county.cambium_gea}
+        LIMIT 1
+      `.catch(() => [])
+    : []
+
   return NextResponse.json({
-    kpi: countyRows[0] ?? null,
+    kpi: county ?? null,
+    cambiumMetrics: cambiumRows[0] ?? null,
     topZips: zipRows,
   })
 }
