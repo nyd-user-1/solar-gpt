@@ -1,55 +1,27 @@
 import { NextResponse } from 'next/server'
-import { getGeaKpi } from '@/lib/queries'
 import { sql } from '@/lib/db'
+import { GEA_COLORS } from '@/lib/gea-colors'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
-  try {
-    const { slug } = await params
+  const { slug } = await params
 
-    // Resolve GEA name from slug using Cambium table (covers all 18 GEAs)
-    const geaRows = await sql`
-      SELECT cambium_gea FROM solargpt.raw_cambium_gea_metrics
-      WHERE LOWER(REPLACE(cambium_gea, '_', '-')) = ${slug}
-      LIMIT 1
-    `
-    const gea = (geaRows[0] as { cambium_gea: string } | undefined)?.cambium_gea
-    if (!gea) {
-      // Fallback: try matching directly (e.g. NYISO slug is 'nyiso', gea is 'NYISO')
-      const allGeaRows = await sql`SELECT DISTINCT cambium_gea FROM solargpt.raw_cambium_gea_metrics`
-      const matched = (allGeaRows as { cambium_gea: string }[]).find(
-        r => r.cambium_gea.toLowerCase().replace(/_/g, '-') === slug
-      )?.cambium_gea
-      if (!matched) return NextResponse.json({ error: 'Not found', slug }, { status: 404 })
+  // Resolve GEA name from code — no DB lookup needed
+  const gea = Object.keys(GEA_COLORS).find(k => k.toLowerCase().replace(/_/g, '-') === slug)
+  if (!gea) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-      return handleGea(matched)
-    }
-
-    return handleGea(gea)
-  } catch (err) {
-    console.error('[GEA API]', err)
-    return NextResponse.json({ error: String(err) }, { status: 500 })
-  }
-}
-
-async function handleGea(gea: string) {
-  const [kpi, topCountiesRows, cambiumRows] = await Promise.all([
-    getGeaKpi(gea).catch(() => null),
+  const [kpiRows, topCountiesRows] = await Promise.all([
+    sql`SELECT * FROM solargpt.v_gea_kpis WHERE cambium_gea = ${gea} LIMIT 1`,
     sql`
       SELECT region_name, state_name, untapped_annual_value_usd, count_qualified
       FROM solargpt.v_county_kpis
       WHERE cambium_gea = ${gea}
       ORDER BY untapped_annual_value_usd DESC
       LIMIT 10
-    `.catch(() => []),
-    sql`
-      SELECT cost_per_mwh, lrmer_co2_per_mwh
-      FROM solargpt.raw_cambium_gea_metrics
-      WHERE cambium_gea = ${gea}
-      LIMIT 1
     `,
   ])
 
-  const cambiumMetrics = (cambiumRows[0] as { cost_per_mwh: number; lrmer_co2_per_mwh: number } | undefined) ?? null
-
-  return NextResponse.json({ gea, kpi, cambiumMetrics, topCounties: topCountiesRows })
+  return NextResponse.json({
+    kpi: kpiRows[0] ?? null,
+    topCounties: topCountiesRows,
+  })
 }
