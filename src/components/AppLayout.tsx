@@ -46,7 +46,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/zips': 'ZIP Codes',
     '/leads': 'Leads',
     '/explore': 'Explore',
-    '/explore-2': 'Explore (Regions)',
+    '/grid': 'Grid',
     '/dashboard': 'Dashboards',
     '/glossary': 'Glossary',
     '/profile': 'Profile',
@@ -56,7 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Cyclic nav order — /dashboard excluded so it gets its own cycle
-  const NAV_CYCLE = ['/explore', '/explore-2', '/gea-regions', '/states', '/counties', '/cities', '/zips', '/leads']
+  const NAV_CYCLE = ['/explore', '/grid', '/gea-regions', '/states', '/counties', '/cities', '/zips', '/leads']
   const navIdx = NAV_CYCLE.indexOf(pathname)
   const prevNav = navIdx >= 0 ? NAV_CYCLE[(navIdx - 1 + NAV_CYCLE.length) % NAV_CYCLE.length] : null
   const nextNav = navIdx >= 0 ? NAV_CYCLE[(navIdx + 1) % NAV_CYCLE.length] : null

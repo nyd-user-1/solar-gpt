@@ -21,7 +21,8 @@ const NAV_ITEMS = [
   { to: '/free-quote',   icon: Sparkles,         label: 'Report' },
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
-  { to: '/gea-regions',  icon: Zap,              label: 'Regions' },
+  { to: '/grid',         icon: Zap,              label: 'Grid' },
+  { to: '/gea-regions',  icon: Map,              label: 'Regions' },
   { to: '/states',       icon: Map,              label: 'States' },
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
@@ -150,9 +151,9 @@ export function Sidebar({ onClose }: SidebarProps) {
         {[
           { to: '/',            icon: MessageCircle, label: 'Chat' },
           { to: '/explore',     icon: Compass,       label: 'Explore' },
+          { to: '/grid',        icon: Zap,           label: 'Grid' },
           { to: '/states',      icon: Map,           label: 'States' },
           { to: '/counties',    icon: MapPin,        label: 'Counties' },
-          { to: '/gea-regions', icon: Zap,           label: 'Regions' },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
