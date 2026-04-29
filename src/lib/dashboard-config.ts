@@ -174,8 +174,8 @@ export const DASHBOARD_CONFIGS: DashboardConfig[] = [
     title: 'MWh by Region',
     desc: 'Annual solar energy potential by state',
     color: 'hsl(191 91% 37%)',
-    chartType: 'bar',
-    previewData: [{x:0,y:35},{x:1,y:28},{x:2,y:20},{x:3,y:12},{x:4,y:5}],
+    chartType: 'area',
+    previewData: [{x:0,y:18},{x:1,y:28},{x:2,y:14},{x:3,y:32},{x:4,y:20},{x:5,y:38},{x:6,y:24},{x:7,y:30},{x:8,y:16},{x:9,y:26}],
     tabs: [
       { id: 'state', label: 'State', metric: 'yearly_sunlight_kwh_total', format: 'kwh', agg: 'sum', hasChildren: true, childTab: 'county' },
       { id: 'gea', label: 'Region', metric: 'yearly_sunlight_kwh_total', format: 'kwh', agg: 'sum', hasChildren: true, childTab: 'state' },
