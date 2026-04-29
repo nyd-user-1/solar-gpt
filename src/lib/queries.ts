@@ -284,6 +284,20 @@ export type CountyMapEntry = {
   cambium_gea: string | null
 }
 
+// All counties from Cambium mapping (complete US coverage, no Sunroof join)
+export type CambiumCountyMapEntry = { fips: string; cambium_gea: string }
+
+export async function getAllCambiumCountiesForMap(): Promise<CambiumCountyMapEntry[]> {
+  const rows = await sql`
+    SELECT
+      LPAD(state_fips::text, 2, '0') || LPAD(county_fips::text, 3, '0') AS fips,
+      cambium_gea
+    FROM solargpt.raw_cambium_county_mapping
+    WHERE cambium_gea IS NOT NULL
+  `
+  return rows as CambiumCountyMapEntry[]
+}
+
 export async function getCountiesForMap(): Promise<CountyMapEntry[]> {
   const rows = await sql`
     SELECT DISTINCT ON (v.id)

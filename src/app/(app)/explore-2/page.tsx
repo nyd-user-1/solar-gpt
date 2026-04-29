@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, getStatesForMap, getStateGeaMappings, type GeaKpi, type StateKpi } from '@/lib/queries'
+import { getAllGeas, getGeaKpi, getAllStates, getCountiesForMap, getAllCambiumCountiesForMap, getStatesForMap, getStateGeaMappings, type GeaKpi, type StateKpi } from '@/lib/queries'
 import { nameToSlug, geaToSlug } from '@/lib/queries'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { US_STATES } from '@/lib/us-states'
@@ -52,10 +52,11 @@ function GeaScrollCard({ gea, kpi, stateNames, index }: { gea: string; kpi: GeaK
 }
 
 export default async function Explore2Page() {
-  const [geas, allStates, mapCounties, mapStates, stateGeaMappings] = await Promise.all([
+  const [geas, allStates, mapCounties, cambiumCounties, mapStates, stateGeaMappings] = await Promise.all([
     getAllGeas(),
     getAllStates(),
     getCountiesForMap(),
+    getAllCambiumCountiesForMap(),
     getStatesForMap(),
     getStateGeaMappings(),
   ])
@@ -88,7 +89,7 @@ export default async function Explore2Page() {
         <div className="px-6 pt-6 pb-16 sm:pb-10">
 
           {/* GEA Region choropleth map */}
-          <GEAChoropleth mode="county" counties={mapCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
+          <GEAChoropleth mode="cambium" counties={mapCounties} cambiumCounties={cambiumCounties} geaKpis={geaKpis.filter(Boolean) as import('@/lib/queries').GeaKpi[]} />
 
           {/* GEA region horizontal scroll */}
           <div className="flex items-center gap-3 mt-10 mb-4">

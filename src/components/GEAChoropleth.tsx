@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
-import type { CountyMapEntry, GeaKpi } from '@/lib/queries'
+import type { CountyMapEntry, GeaKpi, CambiumCountyMapEntry } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { GEA_COLORS } from '@/lib/gea-colors'
@@ -93,6 +93,65 @@ function GEAStateChoroplethLayer({
   return null
 }
 
+// Full-coverage county layer using Cambium data (all ~3100 counties)
+function GEACambiumCountyLayer({
+  cambiumCounties, geaKpisMap, onHoverChange,
+}: {
+  cambiumCounties: CambiumCountyMapEntry[]
+  geaKpisMap: Record<string, GeaKpi>
+  onHoverChange: (d: ChipData | null) => void
+}) {
+  const map = useMap()
+  const router = useRouter()
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!map || initialized.current) return
+    initialized.current = true
+
+    const fipsToGea: Record<string, string> = {}
+    for (const c of cambiumCounties) {
+      fipsToGea[c.fips] = c.cambium_gea
+    }
+
+    fetch(COUNTIES_URL)
+      .then(r => r.json())
+      .then((geojson: { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] }) => {
+        map.data.addGeoJson(geojson)
+        map.data.setStyle((feature: google.maps.Data.Feature) => {
+          const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
+          const gea = fipsToGea[fips]
+          const color = gea ? (GEA_COLORS[gea] ?? '#e5e7eb') : '#e5e7eb'
+          return {
+            fillColor: color,
+            fillOpacity: gea ? 0.72 : 0.15,
+            strokeColor: '#ffffff',
+            strokeWeight: 0.3,
+            strokeOpacity: 0.6,
+          }
+        })
+        map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+          map.data.overrideStyle(e.feature, { strokeWeight: 1.5, strokeColor: '#1f2937', fillOpacity: 0.92 })
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const gea = fipsToGea[fips]
+          const kpi = gea ? geaKpisMap[gea] : null
+          onHoverChange(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified } : null)
+        })
+        map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
+          map.data.revertStyle(e.feature)
+          onHoverChange(null)
+        })
+        map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const gea = fipsToGea[fips]
+          if (gea) router.push(`/gea-regions/${geaToSlug(gea)}`)
+        })
+      })
+  }, [map, cambiumCounties, geaKpisMap, onHoverChange, router])
+
+  return null
+}
+
 function GEAChoroplethLayer({
   counties, geaKpisMap, onHoverChange,
 }: {
@@ -153,13 +212,15 @@ function GEAChoroplethLayer({
 
 export default function GEAChoropleth({
   counties,
+  cambiumCounties,
   geaKpis,
   mode = 'county',
   stateGeaMap,
 }: {
   counties: CountyMapEntry[]
+  cambiumCounties?: CambiumCountyMapEntry[]
   geaKpis: GeaKpi[]
-  mode?: 'county' | 'state'
+  mode?: 'county' | 'state' | 'cambium'
   stateGeaMap?: Record<string, string>
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
@@ -191,7 +252,9 @@ export default function GEAChoropleth({
           styles={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
         >
-          {mode === 'state'
+          {mode === 'cambium' && cambiumCounties
+            ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
+            : mode === 'state'
             ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
             : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
           }
