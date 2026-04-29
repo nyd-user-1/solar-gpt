@@ -184,7 +184,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
 
           {/* Chart */}
           {displayChartData.length > 1 && (
-            <div className={`${isMwhDashboard ? 'h-40 md:h-52' : 'h-20 md:h-24'} mb-4 -mx-2`}>
+            <div className="h-40 md:h-52 mb-4 -mx-2">
               <ResponsiveContainer width="100%" height="100%">
                 {config.chartType === 'area' ? (
                   <AreaChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
