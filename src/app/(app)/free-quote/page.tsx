@@ -668,7 +668,7 @@ export default function FreeQuotePage() {
             {/* ADDRESS */}
             {currentStep === 'address' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-6">Find Your Solar Potential</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">Generate your tailored solar energy report.</h2>
                 <div className="relative">
                   <div className="flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 focus-within:border-[#e8751c] transition-colors">
                     <MapPin className="h-5 w-5 text-gray-400 shrink-0" />

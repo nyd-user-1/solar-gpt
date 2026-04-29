@@ -49,7 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/profile': 'Profile',
     '/settings': 'Settings',
     '/admin': 'Admin',
-    '/free-quote': 'Free Quote',
+    '/free-quote': 'Report',
   }
 
   // Cyclic nav order — /dashboard excluded so it gets its own cycle

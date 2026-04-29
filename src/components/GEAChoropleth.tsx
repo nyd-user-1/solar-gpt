@@ -206,7 +206,7 @@ export default function GEAChoropleth({
       </div>
 
       {/* GEA color legend */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none max-h-[60%] overflow-hidden">
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-auto max-h-[80%] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
         {Object.entries(GEA_COLORS).map(([gea, color]) => (
           <div key={gea} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
             <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />

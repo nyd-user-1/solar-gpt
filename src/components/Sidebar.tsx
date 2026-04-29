@@ -18,7 +18,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { to: '/',             icon: MessageCircle,    label: 'New Chat' },
-  { to: '/free-quote',   icon: Sparkles,         label: 'Free Quote' },
+  { to: '/free-quote',   icon: Sparkles,         label: 'Report' },
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
   { to: '/gea-regions',  icon: Zap,              label: 'Regions' },
