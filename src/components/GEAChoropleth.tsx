@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import type { CountyMapEntry, GeaKpi, CambiumCountyMapEntry } from '@/lib/queries'
 import { fmtUsd, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
-import { GEA_COLORS } from '@/lib/gea-colors'
+import { GEA_COLORS, getGeaColor } from '@/lib/gea-colors'
+import { GEADrawer } from '@/components/GEADrawer'
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -21,7 +22,7 @@ const MAP_STYLE = [
   { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
 ]
 
-type ChipData = { name: string; value: number; buildings: number }
+type ChipData = { name: string; value: number; buildings: number; color?: string }
 
 function GEAStateChoroplethLayer({
   counties, geaKpisMap, onHoverChange, stateGeaMap,
@@ -185,7 +186,7 @@ function GEACambiumCountyLayer({
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
           const kpi = gea ? geaKpisMapRef.current[gea] : null
-          onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified } : null)
+          onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified, color: GEA_COLORS[gea] } : null)
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
@@ -241,6 +242,7 @@ export default function GEAChoropleth({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
   const [legendHoveredGea, setLegendHoveredGea] = useState<string | null>(null)
+  const [selectedGea, setSelectedGea] = useState<string | null>(null)
 
   const geaKpisMap = useMemo(() => {
     const m: Record<string, GeaKpi> = {}
@@ -255,63 +257,73 @@ export default function GEAChoropleth({
   }), [geaKpis])
 
   const legendChip = legendHoveredGea && geaKpisMap[legendHoveredGea]
-    ? { name: legendHoveredGea.replace(/_/g, ' '), value: geaKpisMap[legendHoveredGea].untapped_annual_value_usd, buildings: geaKpisMap[legendHoveredGea].count_qualified }
+    ? {
+        name: legendHoveredGea.replace(/_/g, ' '),
+        value: geaKpisMap[legendHoveredGea].untapped_annual_value_usd,
+        buildings: geaKpisMap[legendHoveredGea].count_qualified,
+        color: getGeaColor(legendHoveredGea),
+      }
     : null
 
   const chip = legendChip ?? hoveredInfo ?? usDefault
+  const chipColor = chip.color ?? '#f59e0b'
 
   return (
-    <div className={`relative ${className}`}>
-      <APIProvider apiKey={apiKey}>
-        <Map
-          defaultCenter={{ lat: 38, lng: -97 }}
-          defaultZoom={4}
-          gestureHandling="cooperative"
-          disableDefaultUI
-          zoomControl
-          styles={MAP_STYLE}
-          style={{ width: '100%', height: '100%' }}
-        >
-          {mode === 'cambium' && cambiumCounties
-            ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={legendHoveredGea} />
-            : mode === 'state'
-            ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
-            : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
-          }
-        </Map>
-      </APIProvider>
+    <>
+      <GEADrawer gea={selectedGea} onClose={() => setSelectedGea(null)} />
+      <div className={`relative ${className}`}>
+        <APIProvider apiKey={apiKey}>
+          <Map
+            defaultCenter={{ lat: 38, lng: -97 }}
+            defaultZoom={4}
+            gestureHandling="cooperative"
+            disableDefaultUI
+            zoomControl
+            styles={MAP_STYLE}
+            style={{ width: '100%', height: '100%' }}
+          >
+            {mode === 'cambium' && cambiumCounties
+              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={legendHoveredGea} />
+              : mode === 'state'
+              ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
+              : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
+            }
+          </Map>
+        </APIProvider>
 
-      {/* Legend + info chip — stacked top-left panel */}
-      <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto">
-        {/* Legend */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
-          <div className="grid grid-cols-2 gap-x-4">
-            {Object.entries(GEA_COLORS).map(([gea, color]) => (
-              <div
-                key={gea}
-                className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
-                  legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
-                }`}
-                onMouseEnter={() => setLegendHoveredGea(gea)}
-                onMouseLeave={() => setLegendHoveredGea(null)}
-              >
-                <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
-                <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
-                  {gea.replace(/_/g, ' ')}
-                </span>
-              </div>
-            ))}
+        {/* Legend + info chip — stacked top-left panel */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto">
+          {/* Legend */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm min-w-[290px]">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
+            <div className="grid grid-cols-2 gap-x-4">
+              {Object.entries(GEA_COLORS).map(([gea, color]) => (
+                <div
+                  key={gea}
+                  className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
+                    legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
+                  }`}
+                  onMouseEnter={() => setLegendHoveredGea(gea)}
+                  onMouseLeave={() => setLegendHoveredGea(null)}
+                  onClick={() => setSelectedGea(gea)}
+                >
+                  <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
+                  <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                    {gea.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Info chip — full width of legend */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
+            <p className="text-[13px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
+            <p className="text-[13px] font-semibold mt-0.5" style={{ color: chipColor }}>{fmtUsd(chip.value)} potential/yr</p>
+            <p className="text-[11px] text-[#666] mt-0.5">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>
         </div>
-
-        {/* Info chip — full width of legend, slightly larger text */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
-          <p className="text-[13px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
-          <p className="text-[13px] font-semibold text-[#f59e0b] mt-0.5">{fmtUsd(chip.value)} potential/yr</p>
-          <p className="text-[11px] text-[#666] mt-0.5">{fmtNum(chip.buildings)} qualified buildings</p>
-        </div>
       </div>
-    </div>
+    </>
   )
 }
