@@ -351,7 +351,7 @@ function DashboardRow({ row, isExpanded, isChildLoading, children, onToggle, for
       )}
 
       {isExpanded && sortedChildren && sortedChildren.length > 0 && (
-        <div className="border-t border-[var(--border)] bg-[var(--inp-bg)]/40">
+        <div className="border-t border-[var(--border)] bg-[var(--inp-bg)]/40 divide-y divide-[var(--border)]">
           {sortedChildren.map(child => {
             const childHref = childTabId ? getRowHref(child, childTabId, row.name) : null
             return (
