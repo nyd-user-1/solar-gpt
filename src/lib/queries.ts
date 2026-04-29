@@ -1000,11 +1000,11 @@ export async function getDashboardGeaRows(metric: string): Promise<DashboardTabl
       return toGeaRows(r as unknown[], true)
     }
     case 'cost_per_mwh': {
-      const r = await sql`SELECT cambium_gea AS name, cost_per_mwh AS value, cost_per_mwh*100.0/NULLIF(SUM(cost_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL ORDER BY cost_per_mwh DESC`
+      const r = await sql`SELECT cambium_gea AS name, marginal_energy_usd_per_mwh AS value, marginal_energy_usd_per_mwh*100.0/NULLIF(SUM(marginal_energy_usd_per_mwh)OVER(),0) AS share_pct FROM solargpt.raw_cambium_gea_metrics WHERE marginal_energy_usd_per_mwh IS NOT NULL ORDER BY marginal_energy_usd_per_mwh DESC`
       return toGeaRows(r as unknown[], false)
     }
     case 'lrmer_co2_per_mwh': {
-      const r = await sql`SELECT cambium_gea AS name, lrmer_co2_per_mwh AS value, lrmer_co2_per_mwh*100.0/NULLIF(SUM(lrmer_co2_per_mwh)OVER(),0) AS share_pct FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL ORDER BY lrmer_co2_per_mwh DESC`
+      const r = await sql`SELECT cambium_gea AS name, lrmer_kg_co2_per_mwh AS value, lrmer_kg_co2_per_mwh*100.0/NULLIF(SUM(lrmer_kg_co2_per_mwh)OVER(),0) AS share_pct FROM solargpt.raw_cambium_gea_metrics WHERE lrmer_kg_co2_per_mwh IS NOT NULL ORDER BY lrmer_kg_co2_per_mwh DESC`
       return toGeaRows(r as unknown[], false)
     }
     case 'yearly_sunlight_kwh_total': {
@@ -1188,11 +1188,11 @@ export async function getDashboardHeaderTotal(slug: string): Promise<number> {
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'marginal-cost': {
-        const r = await sql`SELECT AVG(cost_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE cost_per_mwh IS NOT NULL`
+        const r = await sql`SELECT AVG(marginal_energy_usd_per_mwh) AS v FROM solargpt.raw_cambium_gea_metrics WHERE marginal_energy_usd_per_mwh IS NOT NULL`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'emissions-intensity': {
-        const r = await sql`SELECT AVG(lrmer_co2_per_mwh) AS v FROM solargpt.v_gea_kpis WHERE lrmer_co2_per_mwh IS NOT NULL`
+        const r = await sql`SELECT AVG(lrmer_kg_co2_per_mwh) AS v FROM solargpt.raw_cambium_gea_metrics WHERE lrmer_kg_co2_per_mwh IS NOT NULL`
         return Number((r[0] as { v: unknown }).v ?? 0)
       }
       case 'carbon-offset': {
