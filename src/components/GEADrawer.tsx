@@ -41,6 +41,9 @@ export type CountyDrawerData = {
   stateSlug: string
 }
 
+// Coerce DB numeric-as-string to number
+function n(v: unknown): number { return Number(v) }
+
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 function KpiRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
@@ -79,35 +82,36 @@ function GridEconomicsSection({
   open: boolean
   onToggle: () => void
 }) {
-  const cost2025 = annualCosts.find(r => r.year === 2025)?.energy_usd_per_mwh
   const cost2030 = annualCosts.find(r => r.year === 2030)?.energy_usd_per_mwh
   const cost2050 = annualCosts.find(r => r.year === 2050)?.energy_usd_per_mwh
   const co2_2025 = annualLrmer.find(r => r.year === 2025)?.co2_kg_per_mwh
   const co2_2050 = annualLrmer.find(r => r.year === 2050)?.co2_kg_per_mwh
 
-  // Decarbonization direction
-  const decarb = co2_2025 && co2_2050
-    ? `${((1 - co2_2050 / co2_2025) * 100).toFixed(0)}% by 2050`
+  const co2_2025n = co2_2025 != null ? n(co2_2025) : null
+  const co2_2050n = co2_2050 != null ? n(co2_2050) : null
+
+  const decarb = co2_2025n && co2_2050n
+    ? `${((1 - co2_2050n / co2_2025n) * 100).toFixed(0)}% by 2050`
     : null
 
   return (
     <AccordionSection title="Grid Economics" open={open} onToggle={onToggle}>
-      <KpiRow label="Marginal Cost (2025)" value={cambium ? `$${cambium.cost_per_mwh.toFixed(2)}/MWh` : '—'} />
+      <KpiRow label="Marginal Cost (2025)" value={cambium ? `$${n(cambium.cost_per_mwh).toFixed(2)}/MWh` : '—'} />
       {cambium?.levelized_cost_per_mwh != null && (
-        <KpiRow label="Levelized Cost (LCOE)" value={`$${cambium.levelized_cost_per_mwh.toFixed(2)}/MWh`} />
+        <KpiRow label="Levelized Cost (LCOE)" value={`$${n(cambium.levelized_cost_per_mwh).toFixed(2)}/MWh`} />
       )}
       {cost2030 != null && (
-        <KpiRow label="2030 Cost Projection" value={`$${cost2030.toFixed(2)}/MWh`} />
+        <KpiRow label="2030 Cost Projection" value={`$${n(cost2030).toFixed(2)}/MWh`} />
       )}
       {cost2050 != null && (
-        <KpiRow label="2050 Cost Projection" value={`$${cost2050.toFixed(2)}/MWh`} />
+        <KpiRow label="2050 Cost Projection" value={`$${n(cost2050).toFixed(2)}/MWh`} />
       )}
-      <KpiRow label="Emissions Intensity (2025)" value={cambium ? `${cambium.lrmer_co2_per_mwh.toFixed(1)} kg CO₂/MWh` : '—'} />
+      <KpiRow label="Emissions Intensity (2025)" value={cambium ? `${n(cambium.lrmer_co2_per_mwh).toFixed(1)} kg CO₂/MWh` : '—'} />
       {cambium?.levelized_co2_per_mwh != null && (
-        <KpiRow label="Levelized CO₂ Rate" value={`${cambium.levelized_co2_per_mwh.toFixed(1)} kg CO₂/MWh`} />
+        <KpiRow label="Levelized CO₂ Rate" value={`${n(cambium.levelized_co2_per_mwh).toFixed(1)} kg CO₂/MWh`} />
       )}
-      {co2_2050 != null && (
-        <KpiRow label="2050 Emissions Intensity" value={`${co2_2050.toFixed(1)} kg CO₂/MWh`} />
+      {co2_2050n != null && (
+        <KpiRow label="2050 Emissions Intensity" value={`${co2_2050n.toFixed(1)} kg CO₂/MWh`} />
       )}
       {decarb && (
         <KpiRow label="Grid Decarbonization" value={decarb} highlight />
@@ -127,9 +131,9 @@ function PotentialImpactSection({
   open: boolean
   onToggle: () => void
 }) {
-  const mwh = kwhTotal / 1000
-  const co2Tons = cambium ? (mwh * cambium.lrmer_co2_per_mwh) / 1000 : null
-  const costOffset = cambium ? mwh * cambium.cost_per_mwh : null
+  const mwh = n(kwhTotal) / 1000
+  const co2Tons = cambium ? (mwh * n(cambium.lrmer_co2_per_mwh)) / 1000 : null
+  const costOffset = cambium ? mwh * n(cambium.cost_per_mwh) : null
   const co2Tons25yr = co2Tons ? co2Tons * 25 : null
 
   return (
