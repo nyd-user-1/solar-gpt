@@ -318,9 +318,10 @@ export default function GEAChoropleth({
 
           {/* Info chip — full width of legend */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
-            <p className="text-[13px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
-            <p className="text-[13px] font-semibold mt-0.5" style={{ color: chipColor }}>{fmtUsd(chip.value)} potential/yr</p>
-            <p className="text-[11px] text-[#666] mt-0.5">{fmtNum(chip.buildings)} qualified buildings</p>
+            <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
+            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{fmtUsd(chip.value)}</p>
+            <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
+            <p className="text-[11px] text-[#666] mt-2">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>
         </div>
       </div>
