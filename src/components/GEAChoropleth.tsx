@@ -7,7 +7,7 @@ import type { CountyMapEntry, GeaKpi, CambiumCountyMapEntry } from '@/lib/querie
 import { fmtUsd, fmtUsdFull, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { GEA_COLORS, getGeaColor } from '@/lib/gea-colors'
-import { GEADrawer } from '@/components/GEADrawer'
+import { GEADrawer, type CountyDrawerData } from '@/components/GEADrawer'
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -149,7 +149,9 @@ function GEAChoroplethLayer({
   return null
 }
 
-type SunroofEntry = { name: string; value: number; buildings: number }
+function toSlug(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') }
+
+type SunroofEntry = { name: string; state: string; value: number; buildings: number }
 
 // Full-coverage Cambium county layer — separate load + style effects so hoveredGea can re-style
 function GEACambiumCountyLayer({
@@ -160,7 +162,7 @@ function GEACambiumCountyLayer({
   onHoverChange: (d: ChipData | null) => void
   hoveredGea: string | null
   sunroofLookup: Record<string, SunroofEntry>
-  onCountyClick: (gea: string) => void
+  onCountyClick: (gea: string | null, sunroof: SunroofEntry | null) => void
 }) {
   const map = useMap()
   const loadedRef = useRef(false)
@@ -198,8 +200,9 @@ function GEACambiumCountyLayer({
           if (sunroof) {
             onHoverRef.current({ name: sunroof.name, value: sunroof.value, buildings: sunroof.buildings, color })
           } else {
-            const kpi = gea ? geaKpisMapRef.current[gea] : null
-            onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified, color } : null)
+            // County exists but no Sunroof data — show county name with no value sentinel
+            const countyName = (e.feature.getProperty('NAME') as string ?? '') + ' County'
+            onHoverRef.current({ name: countyName, value: -1, buildings: 0, color })
           }
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
@@ -209,7 +212,8 @@ function GEACambiumCountyLayer({
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
-          if (gea) onCountyClickRef.current(gea)
+          const sunroof = sunroofLookupRef.current[fips]
+          onCountyClickRef.current(gea ?? null, sunroof ?? null)
         })
         setDataLoaded(true)
       })
@@ -258,14 +262,15 @@ export default function GEAChoropleth({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
   const [legendHoveredGea, setLegendHoveredGea] = useState<string | null>(null)
-  const [pinnedGea, setPinnedGea] = useState<string | null>(null)   // click-locked GEA
-  const [selectedGea, setSelectedGea] = useState<string | null>(null) // drawer open
+  const [pinnedGea, setPinnedGea] = useState<string | null>(null)
+  const [selectedGea, setSelectedGea] = useState<string | null>(null)
+  const [selectedCounty, setSelectedCounty] = useState<CountyDrawerData | null>(null)
 
   // FIPS → county Sunroof data for county-level chip on hover
   const sunroofLookup = useMemo<Record<string, SunroofEntry>>(() => {
     const m: Record<string, SunroofEntry> = {}
     for (const c of sunroofCounties) {
-      if (c.fips) m[c.fips] = { name: c.region_name, value: c.untapped_annual_value_usd, buildings: c.count_qualified }
+      if (c.fips) m[c.fips] = { name: c.region_name, state: c.state_name, value: c.untapped_annual_value_usd, buildings: c.count_qualified }
     }
     return m
   }, [sunroofCounties])
@@ -297,15 +302,34 @@ export default function GEAChoropleth({
   const chip = legendChip ?? hoveredInfo ?? pinnedChip ?? usDefault
   const chipColor = chip.color ?? '#f59e0b'
 
-  // When a county is clicked on the map: open the GEA drawer for that region
-  const handleCountyClick = (gea: string) => {
-    setPinnedGea(gea)
-    setSelectedGea(gea)
+  const handleCountyClick = (gea: string | null, sunroof: SunroofEntry | null) => {
+    if (sunroof && gea) {
+      setPinnedGea(gea)
+      setSelectedGea(gea)
+      setSelectedCounty({
+        name: sunroof.name,
+        state: sunroof.state,
+        value: sunroof.value,
+        buildings: sunroof.buildings,
+        gea,
+        countySlug: toSlug(sunroof.name),
+        stateSlug: toSlug(sunroof.state),
+      })
+    } else if (gea) {
+      setPinnedGea(gea)
+      setSelectedGea(gea)
+      setSelectedCounty(null)
+    }
   }
 
   return (
     <>
-      <GEADrawer gea={selectedGea} onClose={() => { setSelectedGea(null); setPinnedGea(null) }} />
+      <GEADrawer
+        gea={selectedGea}
+        county={selectedCounty}
+        onClose={() => { setSelectedGea(null); setPinnedGea(null); setSelectedCounty(null) }}
+        onCountyBack={() => setSelectedCounty(null)}
+      />
       <div className={`relative ${className}`}>
         <APIProvider apiKey={apiKey}>
           <Map
@@ -345,11 +369,9 @@ export default function GEAChoropleth({
                     onMouseLeave={() => setLegendHoveredGea(null)}
                     onClick={() => {
                       if (isPinned) {
-                        setPinnedGea(null)
-                        setSelectedGea(null)
+                        setPinnedGea(null); setSelectedGea(null); setSelectedCounty(null)
                       } else {
-                        setPinnedGea(gea)
-                        setSelectedGea(gea)
+                        setPinnedGea(gea); setSelectedGea(gea); setSelectedCounty(null)
                       }
                     }}
                   >
@@ -366,7 +388,7 @@ export default function GEAChoropleth({
           {/* Info chip — full width of legend */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
             <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
-            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{fmtUsdFull(chip.value)}</p>
+            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{chip.value === -1 ? '—' : fmtUsdFull(chip.value)}</p>
             <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
             <p className="text-[11px] text-[#666] mt-2">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>

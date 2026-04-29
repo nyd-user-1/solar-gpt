@@ -2,18 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, ExternalLink, ChevronDown } from 'lucide-react'
+import { X, ExternalLink, ChevronDown, ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { getGeaColor } from '@/lib/gea-colors'
 
-type TopCounty = {
-  region_name: string
-  state_name: string
-  untapped_annual_value_usd: number
-  count_qualified: number
-}
+type TopCounty = { region_name: string; state_name: string; untapped_annual_value_usd: number }
 
 type GeaKpiData = {
   untapped_annual_value_usd: number
@@ -29,6 +24,16 @@ type GeaKpiData = {
 }
 
 type CambiumMetrics = { cost_per_mwh: number; lrmer_co2_per_mwh: number } | null
+
+export type CountyDrawerData = {
+  name: string        // e.g. "St. Bernard Parish"
+  state: string       // e.g. "Louisiana"
+  value: number
+  buildings: number
+  gea: string
+  countySlug: string  // url slug for county page
+  stateSlug: string
+}
 
 function KpiRow({ label, value }: { label: string; value: string }) {
   return (
@@ -56,12 +61,55 @@ function AccordionSection({ title, open, onToggle, children }: {
   )
 }
 
-function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
+// County-level view shown when user clicks a specific county
+function CountyView({ county, onBack, onClose }: { county: CountyDrawerData; onBack: () => void; onClose: () => void }) {
+  const router = useRouter()
+  const color = getGeaColor(county.gea)
+
+  return (
+    <div className="h-full w-full sm:w-[360px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl sm:shadow-none">
+      <div className="flex items-center gap-2 px-4 py-4 border-b border-[var(--border)] shrink-0">
+        <button onClick={onBack} className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[var(--txt)] truncate">{county.name}</p>
+          <p className="text-[10px] text-[var(--muted)]">{county.state}</p>
+        </div>
+        <button onClick={() => router.push(`/counties/${county.stateSlug}/${county.countySlug}`)}
+          className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
+          <ExternalLink className="h-4 w-4" />
+        </button>
+        <button onClick={onClose} className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+          <KpiRow label="Annual Potential" value={fmtUsd(county.value)} />
+          <KpiRow label="Qualified Buildings" value={fmtNum(county.buildings)} />
+          <KpiRow label="GEA Region" value={fmtGea(county.gea)} />
+        </div>
+      </div>
+
+      <div className="shrink-0 px-4 pb-4 pt-3 border-t border-[var(--border)]">
+        <button onClick={() => router.push(`/counties/${county.stateSlug}/${county.countySlug}`)}
+          className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: color }}>
+          View County Detail →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function GEAView({ gea, onClose }: { gea: string; onClose: () => void }) {
   const router = useRouter()
   const color = getGeaColor(gea)
   const [data, setData] = useState<{ kpi: GeaKpiData | null; cambiumMetrics: CambiumMetrics; topCounties: TopCounty[] } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sections, setSections] = useState({ grid: true, solar: true, impact: true })
+  const [sections, setSections] = useState({ grid: true, solar: true, impact: true, counties: true })
   const toggle = (k: keyof typeof sections) => setSections(s => ({ ...s, [k]: !s[k] }))
 
   useEffect(() => {
@@ -89,8 +137,7 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
           className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
           <ExternalLink className="h-4 w-4" />
         </button>
-        <button onClick={onClose}
-          className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
+        <button onClick={onClose} className="rounded-full p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -102,7 +149,6 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
           </div>
         ) : data ? (
           <div className="px-4 py-4 flex flex-col gap-4">
-
             <AccordionSection title="Grid Economics" open={sections.grid} onToggle={() => toggle('grid')}>
               <KpiRow label="Marginal Cost" value={data.cambiumMetrics ? `$${data.cambiumMetrics.cost_per_mwh.toFixed(2)}/MWh` : '—'} />
               <KpiRow label="Emissions Intensity" value={data.cambiumMetrics ? `${data.cambiumMetrics.lrmer_co2_per_mwh.toFixed(1)} kg CO₂/MWh` : '—'} />
@@ -126,25 +172,18 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
             </AccordionSection>
 
             {data.topCounties.length > 0 && (
-              <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-                <div className="px-4 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
-                  <span className="text-sm font-semibold text-[var(--txt)]">Top Counties</span>
-                </div>
-                <div className="divide-y divide-[var(--border)]">
-                  {data.topCounties.map((c, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-4 py-2.5 items-center">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--txt)] truncate">{c.region_name}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{c.state_name}</p>
-                      </div>
-                      <span className="text-xs text-[var(--muted)] tabular-nums">{fmtNum(c.count_qualified)}</span>
-                      <span className="text-xs font-semibold tabular-nums" style={{ color }}>{fmtUsd(c.untapped_annual_value_usd)}</span>
+              <AccordionSection title="Top Counties" open={sections.counties} onToggle={() => toggle('counties')}>
+                {data.topCounties.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)]">
+                    <div className="min-w-0 mr-3">
+                      <p className="text-sm font-medium text-[var(--txt)] truncate">{c.region_name}</p>
+                      <p className="text-[10px] text-[var(--muted)]">{c.state_name}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color }}>{fmtUsd(c.untapped_annual_value_usd)}</span>
+                  </div>
+                ))}
+              </AccordionSection>
             )}
-
           </div>
         ) : (
           <div className="flex items-center justify-center h-40">
@@ -164,18 +203,31 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
   )
 }
 
-export function GEADrawer({ gea, onClose }: { gea: string | null; onClose: () => void }) {
+export function GEADrawer({ gea, county, onClose, onCountyBack }: {
+  gea: string | null
+  county?: CountyDrawerData | null
+  onClose: () => void
+  onCountyBack?: () => void
+}) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
   if (!mounted) return null
   const root = document.getElementById('chat-panel-root')
   if (!root) return null
+
+  const open = !!(gea || county)
+
   return createPortal(
-    <div className={`fixed inset-0 z-50 sm:static sm:inset-auto sm:z-auto shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${gea ? 'w-full sm:w-[360px] sm:ml-[18px]' : 'w-0'}`}>
-      {gea && (
+    <div className={`fixed inset-0 z-50 sm:static sm:inset-auto sm:z-auto shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${open ? 'w-full sm:w-[360px] sm:ml-[18px]' : 'w-0'}`}>
+      {open && (
         <>
           <div className="absolute inset-0 bg-black/40 sm:hidden" onClick={onClose} />
-          <div className="relative h-full"><DrawerContent gea={gea} onClose={onClose} /></div>
+          <div className="relative h-full">
+            {county
+              ? <CountyView county={county} onBack={onCountyBack ?? onClose} onClose={onClose} />
+              : gea ? <GEAView gea={gea} onClose={onClose} /> : null
+            }
+          </div>
         </>
       )}
     </div>,
