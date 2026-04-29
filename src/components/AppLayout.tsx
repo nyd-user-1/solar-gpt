@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Sun, ChevronLeft, ChevronRight, ArrowRightFromLine, ArrowLeftToLine } from 'lucide-react'
+import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -100,8 +100,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
           >
             {sidebarOpen
-              ? <ArrowLeftToLine className="h-5 w-5 text-[var(--txt)]" />
-              : <ArrowRightFromLine className="h-5 w-5 text-[var(--txt)]" />
+              ? <PanelLeftClose className="h-5 w-5 text-[var(--txt)]" />
+              : <PanelLeftOpen className="h-5 w-5 text-[var(--txt)]" />
             }
           </button>
 
