@@ -61,10 +61,41 @@ function AccordionSection({ title, open, onToggle, children }: {
   )
 }
 
+type CountyKpiDetail = {
+  untapped_annual_value_usd: number
+  untapped_lifetime_value_usd: number
+  count_qualified: number
+  existing_installs_count: number
+  adoption_rate_pct: number
+  sunlight_grade: string
+  carbon_offset_metric_tons: number
+  median_annual_savings_usd: number
+  homes_powered_equivalent: number
+  cars_off_road_equivalent: number
+  median_payback_years: number | null
+}
+
+type ZipEntry = { zip_code: string; untapped_annual_value_usd: number; count_qualified: number }
+
 // County-level view shown when user clicks a specific county
 function CountyView({ county, onBack, onClose }: { county: CountyDrawerData; onBack: () => void; onClose: () => void }) {
   const router = useRouter()
   const color = getGeaColor(county.gea)
+  const [data, setData] = useState<{ kpi: CountyKpiDetail | null; topZips: ZipEntry[] } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [sections, setSections] = useState({ solar: true, zips: true })
+  const toggle = (k: keyof typeof sections) => setSections(s => ({ ...s, [k]: !s[k] }))
+
+  useEffect(() => {
+    setLoading(true)
+    const params = new URLSearchParams({ region: county.name, state: county.state })
+    fetch(`/api/county-detail?${params}`)
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [county.name, county.state])
+
+  const kpi = data?.kpi
 
   return (
     <div className="h-full w-full sm:w-[360px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl sm:shadow-none">
@@ -85,12 +116,38 @@ function CountyView({ county, onBack, onClose }: { county: CountyDrawerData; onB
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-        <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-          <KpiRow label="Annual Potential" value={fmtUsd(county.value)} />
-          <KpiRow label="Qualified Buildings" value={fmtNum(county.buildings)} />
-          <KpiRow label="GEA Region" value={fmtGea(county.gea)} />
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="h-5 w-5 rounded-full border-2 border-[var(--border)] border-t-solar animate-spin" />
+          </div>
+        ) : (
+          <div className="px-4 py-4 flex flex-col gap-4">
+            <AccordionSection title="Solar Potential" open={sections.solar} onToggle={() => toggle('solar')}>
+              <KpiRow label="Annual Potential" value={kpi ? fmtUsd(kpi.untapped_annual_value_usd) : fmtUsd(county.value)} />
+              <KpiRow label="Lifetime Value (25yr)" value={kpi ? fmtUsd(kpi.untapped_lifetime_value_usd) : '—'} />
+              <KpiRow label="Qualified Buildings" value={kpi ? fmtNum(kpi.count_qualified) : fmtNum(county.buildings)} />
+              <KpiRow label="Existing Installs" value={kpi ? fmtNum(kpi.existing_installs_count) : '—'} />
+              <KpiRow label="Adoption Rate" value={kpi?.adoption_rate_pct != null ? `${kpi.adoption_rate_pct.toFixed(1)}%` : '—'} />
+              <KpiRow label="Sunlight Grade" value={kpi?.sunlight_grade ?? '—'} />
+              <KpiRow label="Carbon Offset" value={kpi ? `${fmtNum(Math.round(kpi.carbon_offset_metric_tons))} tons/yr` : '—'} />
+              <KpiRow label="Median Annual Savings" value={kpi ? fmtUsd(kpi.median_annual_savings_usd) : '—'} />
+              <KpiRow label="Homes Powered" value={kpi ? fmtNum(kpi.homes_powered_equivalent) : '—'} />
+              <KpiRow label="GEA Region" value={fmtGea(county.gea)} />
+            </AccordionSection>
+
+            {data && data.topZips.length > 0 && (
+              <AccordionSection title="Top ZIP Codes" open={sections.zips} onToggle={() => toggle('zips')}>
+                {data.topZips.map((z, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)]">
+                    <span className="text-sm font-medium text-[var(--txt)]">{z.zip_code}</span>
+                    <span className="text-sm font-semibold tabular-nums" style={{ color }}>{fmtUsd(z.untapped_annual_value_usd)}</span>
+                  </div>
+                ))}
+              </AccordionSection>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="shrink-0 px-4 pb-4 pt-3 border-t border-[var(--border)]">
