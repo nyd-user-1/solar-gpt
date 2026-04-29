@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getGeaKpi, getCountiesByGea, geaToSlug, getAllGeas } from '@/lib/queries'
+import { getGeaKpi, geaToSlug, getAllGeas } from '@/lib/queries'
 import { sql } from '@/lib/db'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -8,9 +8,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const gea = allGeas.find(g => geaToSlug(g) === slug)
   if (!gea) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const [kpi, counties, cambiumRows] = await Promise.all([
+  const [kpi, topCountiesRows, cambiumRows] = await Promise.all([
     getGeaKpi(gea),
-    getCountiesByGea(gea),
+    sql`
+      SELECT region_name, state_name, untapped_annual_value_usd, count_qualified
+      FROM solargpt.v_county_kpis
+      WHERE cambium_gea = ${gea}
+      ORDER BY untapped_annual_value_usd DESC
+      LIMIT 15
+    `,
     sql`
       SELECT cost_per_mwh, lrmer_co2_per_mwh
       FROM solargpt.raw_cambium_gea_metrics
@@ -22,14 +28,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const cambiumMetrics = (cambiumRows[0] as { cost_per_mwh: number; lrmer_co2_per_mwh: number } | undefined) ?? null
 
-  const topCounties = counties
-    .slice(0, 15)
-    .map(c => ({
-      region_name: c.region_name,
-      state_name: c.state_name,
-      untapped_annual_value_usd: c.untapped_annual_value_usd,
-      count_qualified: c.count_qualified,
-    }))
-
-  return NextResponse.json({ kpi, cambiumMetrics, topCounties })
+  return NextResponse.json({ kpi, cambiumMetrics, topCounties: topCountiesRows })
 }
