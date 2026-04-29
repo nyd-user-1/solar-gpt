@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
-import { getGeaKpi, geaToSlug, getAllGeas } from '@/lib/queries'
+import { getGeaKpi } from '@/lib/queries'
 import { sql } from '@/lib/db'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const allGeas = await getAllGeas()
-  const gea = allGeas.find(g => geaToSlug(g) === slug)
+
+  // Resolve GEA name from slug using Cambium table (covers all 18 GEAs, not just Sunroof ones)
+  const geaRows = await sql`
+    SELECT cambium_gea FROM solargpt.raw_cambium_gea_metrics
+    WHERE LOWER(REPLACE(cambium_gea, '_', '-')) = ${slug}
+    LIMIT 1
+  `
+  const gea = (geaRows[0] as { cambium_gea: string } | undefined)?.cambium_gea
   if (!gea) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const [kpi, topCountiesRows, cambiumRows] = await Promise.all([
@@ -24,7 +30,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       LIMIT 1
     `,
   ])
-  if (!kpi) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const cambiumMetrics = (cambiumRows[0] as { cost_per_mwh: number; lrmer_co2_per_mwh: number } | undefined) ?? null
 
