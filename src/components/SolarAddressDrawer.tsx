@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Sun, CheckCircle, Home, Zap, AlertCircle, Maximize2, BatteryCharging, PiggyBank, Calendar } from 'lucide-react'
+import { X, Sun, AlertCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
@@ -17,18 +17,53 @@ interface Props {
   open: boolean
   onClose: () => void
   address: string
+  lat?: number | null
+  lng?: number | null
   insight: SolarInsight | null
   loading: boolean
   error?: string | null
 }
 
-function DrawerContent({ open, onClose, address, insight, loading, error }: Props) {
-  const lat = insight?.center?.latitude
-  const lng = insight?.center?.longitude
+function KpiRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-x-3 px-4 py-2.5 border-t border-[var(--border)]">
+      <span className="text-sm text-[var(--muted)]">{label}</span>
+      <span className={`text-sm font-semibold tabular-nums ${highlight ? 'text-green-600 dark:text-green-400' : 'text-[var(--txt)]'}`}>{value}</span>
+    </div>
+  )
+}
+
+function AccordionSection({ title, open, onToggle, children }: {
+  title: string; open: boolean; onToggle: () => void; children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-4 py-3 bg-[var(--surface)] hover:bg-[var(--inp-bg)] transition-colors"
+      >
+        <span className="text-sm font-semibold text-[var(--txt)]">{title}</span>
+        <ChevronDown className={`h-4 w-4 text-[var(--muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div>{children}</div>}
+    </div>
+  )
+}
+
+function DrawerContent({ open, onClose, address, lat, lng, insight, loading, error }: Props) {
+  const mapLat = lat ?? insight?.center?.latitude
+  const mapLng = lng ?? insight?.center?.longitude
   const staticMapUrl =
-    lat != null && lng != null
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=700x380&maptype=satellite&markers=color:red%7C${lat},${lng}&key=${MAPS_KEY}`
+    mapLat != null && mapLng != null
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${mapLat},${mapLng}&zoom=19&size=700x380&maptype=satellite&markers=color:red%7C${mapLat},${mapLng}&key=${MAPS_KEY}`
       : null
+
+  const [roofOpen, setRoofOpen] = useState(true)
+  const [estimateOpen, setEstimateOpen] = useState(true)
+
+  const reportUrl = address
+    ? `/solar-report?address=${encodeURIComponent(address)}${mapLat != null ? `&lat=${mapLat}` : ''}${mapLng != null ? `&lng=${mapLng}` : ''}`
+    : '/solar-report'
 
   return (
     <div
@@ -43,10 +78,10 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
       <div className="relative h-full w-full sm:w-[380px] rounded-none sm:rounded-2xl bg-[var(--surface)] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4 shrink-0">
-          <span className="flex-1 text-base font-semibold text-[var(--txt)]">Solar Assistant</span>
+          <span className="flex-1 text-base font-semibold text-[var(--txt)] truncate">{address || 'Solar Analysis'}</span>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors"
+            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)] transition-colors shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
@@ -67,7 +102,6 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
                 <Sun className="h-12 w-12 text-solar/20" />
               </div>
             )}
-            {/* Slide: 1/1 indicator like QuoteTorch */}
             {staticMapUrl && (
               <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] text-white">
                 Satellite
@@ -75,16 +109,32 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
             )}
           </div>
 
-          <div className="px-4 py-4">
-            {/* Loading */}
+          <div className="px-4 py-4 space-y-3">
+            {/* Loading shimmer */}
             {loading && (
-              <div className="flex items-center gap-3 py-6 justify-center">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-solar animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-solar animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-solar animate-bounce [animation-delay:300ms]" />
+              <div className="space-y-3">
+                <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+                  <div className="px-4 py-3 bg-[var(--surface)]">
+                    <div className="h-4 w-32 rounded bg-[var(--inp-bg)] animate-pulse" />
+                  </div>
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="grid grid-cols-[1fr_auto] gap-x-3 px-4 py-2.5 border-t border-[var(--border)]">
+                      <div className="h-4 w-24 rounded bg-[var(--inp-bg)] animate-pulse" />
+                      <div className="h-4 w-16 rounded bg-[var(--inp-bg)] animate-pulse" />
+                    </div>
+                  ))}
                 </div>
-                <span className="text-sm text-[var(--muted)]">Analyzing your roof…</span>
+                <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+                  <div className="px-4 py-3 bg-[var(--surface)]">
+                    <div className="h-4 w-36 rounded bg-[var(--inp-bg)] animate-pulse" />
+                  </div>
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="grid grid-cols-[1fr_auto] gap-x-3 px-4 py-2.5 border-t border-[var(--border)]">
+                      <div className="h-4 w-28 rounded bg-[var(--inp-bg)] animate-pulse" />
+                      <div className="h-4 w-16 rounded bg-[var(--inp-bg)] animate-pulse" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -99,100 +149,50 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
               </div>
             )}
 
-            {/* Data — two-section layout */}
+            {/* Data */}
             {insight && !loading && (() => {
               const installedCost = insight.recommendedKw
                 ? Math.round((insight.recommendedKw * 3100) / 100) * 100 : null
               const afterITC = installedCost ? Math.round(installedCost * 0.70) : null
 
-              const roofRows = [
-                insight.maxSunshineHoursPerYear != null && {
-                  icon: Sun, label: 'Sunshine hours/year',
-                  value: `${insight.maxSunshineHoursPerYear.toLocaleString()} hrs`,
-                  note: '1 hr = 1 kWh/kW',
-                },
-                insight.maxAreaSqFt != null && {
-                  icon: Maximize2, label: 'Usable roof area',
-                  value: `${insight.maxAreaSqFt.toLocaleString()} sq ft`,
-                },
-                insight.maxPanelsCount != null && {
-                  icon: Home, label: 'Max solar panels',
-                  value: String(insight.maxPanelsCount),
-                },
-                (insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh != null && {
-                  icon: Zap, label: 'Annual output (est.)',
-                  value: `${((insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh! / 1000).toFixed(1)} MWh/yr`,
-                },
-              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; note?: string }[]
-
-              const estimateRows = [
-                insight.recommendedKw != null && {
-                  icon: BatteryCharging, label: 'System size',
-                  value: `${insight.recommendedKw} kW`, bold: true,
-                },
-                installedCost != null && {
-                  icon: Zap, label: 'Installed cost (est.)',
-                  value: `$${installedCost.toLocaleString()}`,
-                },
-                afterITC != null && {
-                  icon: CheckCircle, label: 'After 30% federal ITC',
-                  value: `$${afterITC.toLocaleString()}`, highlight: true,
-                },
-                insight.paybackYears != null && {
-                  icon: Calendar, label: 'Payback period',
-                  value: `~${insight.paybackYears} years`,
-                },
-                insight.savings20yr != null && {
-                  icon: PiggyBank, label: '20-year savings',
-                  value: `$${insight.savings20yr.toLocaleString()}`, highlight: true,
-                },
-              ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; bold?: boolean; highlight?: boolean }[]
-
               return (
-                <div className="space-y-5">
-                  {/* Status */}
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                    <span className="text-sm text-[var(--muted)]">Analysis complete</span>
-                  </div>
+                <>
+                  <AccordionSection title="Roof Analysis" open={roofOpen} onToggle={() => setRoofOpen(v => !v)}>
+                    {insight.maxSunshineHoursPerYear != null && (
+                      <KpiRow label="Sunshine hours/year" value={`${insight.maxSunshineHoursPerYear.toLocaleString()} hrs`} />
+                    )}
+                    {insight.maxAreaSqFt != null && (
+                      <KpiRow label="Usable roof area" value={`${insight.maxAreaSqFt.toLocaleString()} sq ft`} />
+                    )}
+                    {insight.maxPanelsCount != null && (
+                      <KpiRow label="Max solar panels" value={String(insight.maxPanelsCount)} />
+                    )}
+                    {(insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh != null && (
+                      <KpiRow
+                        label="Annual output (est.)"
+                        value={`${((insight as { yearlyEnergyKwh?: number | null }).yearlyEnergyKwh! / 1000).toFixed(1)} MWh/yr`}
+                      />
+                    )}
+                  </AccordionSection>
 
-                  {/* Section 1 — Roof */}
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2 px-1">
-                      Roof Analysis
-                    </p>
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden divide-y divide-[var(--border)]">
-                      {roofRows.map(({ icon: Icon, label, value, note }) => (
-                        <div key={label} className="flex items-center gap-3 px-4 py-3">
-                          <Icon className="h-4 w-4 text-solar shrink-0" />
-                          <span className="flex-1 text-sm text-[var(--muted)]">{label}</span>
-                          <div className="text-right">
-                            <span className="text-sm font-semibold text-[var(--txt)] tabular-nums">{value}</span>
-                            {note && <p className="text-[10px] text-[var(--muted2)] mt-0.5">{note}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Section 2 — System estimate */}
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2 px-1">
-                      System Estimate
-                    </p>
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden divide-y divide-[var(--border)]">
-                      {estimateRows.map(({ icon: Icon, label, value, highlight }) => (
-                        <div key={label} className="flex items-center gap-3 px-4 py-3">
-                          <Icon className={`h-4 w-4 shrink-0 ${highlight ? 'text-green-500' : 'text-solar'}`} />
-                          <span className="flex-1 text-sm text-[var(--muted)]">{label}</span>
-                          <span className={`text-sm font-semibold tabular-nums ${highlight ? 'text-green-600' : 'text-[var(--txt)]'}`}>
-                            {value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                  <AccordionSection title="System Estimate" open={estimateOpen} onToggle={() => setEstimateOpen(v => !v)}>
+                    {insight.recommendedKw != null && (
+                      <KpiRow label="System size" value={`${insight.recommendedKw} kW`} />
+                    )}
+                    {installedCost != null && (
+                      <KpiRow label="Installed cost (est.)" value={`$${installedCost.toLocaleString()}`} />
+                    )}
+                    {afterITC != null && (
+                      <KpiRow label="After 30% federal ITC" value={`$${afterITC.toLocaleString()}`} highlight />
+                    )}
+                    {insight.paybackYears != null && (
+                      <KpiRow label="Payback period" value={`~${insight.paybackYears} years`} />
+                    )}
+                    {insight.savings20yr != null && (
+                      <KpiRow label="20-year savings" value={`$${insight.savings20yr.toLocaleString()}`} highlight />
+                    )}
+                  </AccordionSection>
+                </>
               )
             })()}
           </div>
@@ -204,9 +204,11 @@ function DrawerContent({ open, onClose, address, insight, loading, error }: Prop
             <button className="flex-1 rounded-xl border border-[var(--border)] py-3 text-sm font-semibold text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
               Save Report
             </button>
-            <Link href="/free-quote"
-              className="flex-1 rounded-xl bg-[#1a1a1a] dark:bg-white py-3 text-sm font-semibold text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity text-center">
-              Get a Free Quote
+            <Link
+              href={reportUrl}
+              className="flex-1 rounded-xl bg-[#1a1a1a] dark:bg-white py-3 text-sm font-semibold text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity text-center"
+            >
+              Full Report
             </Link>
           </div>
         )}

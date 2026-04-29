@@ -146,6 +146,34 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     }, 300)
   }, [])
 
+  const submitWithAddress = useCallback(async (text: string, addr: SelectedAddress, insight: SolarInsight | null) => {
+    if (!text.trim() || loading || streaming) return
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: text }
+    setMessages(prev => [...prev, userMsg])
+    setLoading(true)
+    try {
+      const body: Record<string, unknown> = {
+        messages: [{ role: 'user', content: text }],
+        model: selectedModelId,
+        address: addr.description,
+      }
+      if (insight) body.solarInsight = insight
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!res.ok || !res.body) { setLoading(false); return }
+      const assistantId = crypto.randomUUID()
+      setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }])
+      setLoading(false); setStreaming(true)
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content + chunk } : m))
+      }
+    } catch { /* silent */ } finally { setLoading(false); setStreaming(false) }
+  }, [loading, streaming, selectedModelId])
+
   const selectAddress = useCallback(async (s: Suggestion) => {
     setAddressMode(false)
     setAddressInput('')
@@ -159,6 +187,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
       const addr: SelectedAddress = { description: s.description, lat: geo.lat, lng: geo.lng }
       setSelectedAddress(addr)
       setDrawerOpen(true)
+      // Auto-submit chat simultaneously with drawer opening
+      submitWithAddress(`Ask about this property: ${s.description}`, addr, null)
       setSolarLoading(true)
       const solarRes = await fetch(`/api/solar?lat=${geo.lat}&lng=${geo.lng}`)
       const solarData = await solarRes.json()
@@ -169,7 +199,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
       }
     } catch { setSolarError('Could not fetch solar data') }
     finally { setSolarLoading(false) }
-  }, [])
+  }, [submitWithAddress])
 
   const clearAddress = useCallback(() => {
     setSelectedAddress(null); setSolarInsight(null); setSolarError(null); setDrawerOpen(false)
@@ -494,6 +524,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         address={selectedAddress?.description ?? ''}
+        lat={selectedAddress?.lat}
+        lng={selectedAddress?.lng}
         insight={solarInsight}
         loading={solarLoading}
         error={solarError}
