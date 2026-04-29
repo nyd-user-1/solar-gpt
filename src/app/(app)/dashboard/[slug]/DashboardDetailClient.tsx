@@ -188,8 +188,14 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                       labelFormatter={(l) => String(l ?? '')} />
                   </AreaChart>
                 ) : isMwhDashboard ? (
-                  <BarChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 20, left: 8 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                  <AreaChart data={displayChartData} margin={{ top: 4, right: 8, bottom: 20, left: 8 }}>
+                    <defs>
+                      <linearGradient id={`mwh-fill`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={config.color} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={config.color} stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="var(--border)" />
                     <XAxis
                       dataKey="name"
                       tickLine={false}
@@ -199,13 +205,21 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
                       tick={{ fontSize: 10, fill: '#9ca3af' }}
                       tickFormatter={(v: string) => v.length > 12 ? v.slice(0, 11) + '…' : v}
                     />
-                    <Bar dataKey="value" fill={config.color} radius={[2, 2, 0, 0]} animationDuration={400} maxBarSize={20} />
+                    <Area
+                      dataKey="value"
+                      type="natural"
+                      stroke={config.color}
+                      strokeWidth={1.5}
+                      fill="url(#mwh-fill)"
+                      dot={false}
+                      animationDuration={400}
+                    />
                     <RechartsTooltip
-                      cursor={{ fill: 'var(--inp-bg)', opacity: 0.5 }}
+                      cursor={false}
                       contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
                       formatter={(v) => [fmtValue(Number(v ?? 0), activeTab.format), activeTab.label]}
                       labelFormatter={(l) => String(l ?? '')} />
-                  </BarChart>
+                  </AreaChart>
                 ) : config.chartType === 'pie' ? (
                   <PieChart>
                     <Pie data={displayChartData} dataKey="value" nameKey="name"
