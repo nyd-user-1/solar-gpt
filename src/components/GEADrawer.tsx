@@ -30,20 +30,9 @@ type GeaKpiData = {
 
 type CambiumMetrics = { cost_per_mwh: number; lrmer_co2_per_mwh: number } | null
 
-function TableHeader({ cols }: { cols: string[] }) {
-  return (
-    <div className="grid px-3 py-2.5 bg-[var(--inp-bg)] border-b border-[var(--border)]"
-      style={{ gridTemplateColumns: cols.length === 2 ? '1fr auto' : '1fr auto auto' }}>
-      {cols.map((c, i) => (
-        <span key={c} className={`text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide ${i > 0 ? 'text-right' : ''}`}>{c}</span>
-      ))}
-    </div>
-  )
-}
-
 function KpiRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-2.5 border-b border-[var(--border)] last:border-b-0">
+    <div className="grid grid-cols-[1fr_auto] gap-x-3 px-4 py-2.5 border-t border-[var(--border)]">
       <span className="text-sm text-[var(--muted)]">{label}</span>
       <span className="text-sm font-semibold text-[var(--txt)]">{value}</span>
     </div>
@@ -54,16 +43,15 @@ function AccordionSection({ title, open, onToggle, children }: {
   title: string; open: boolean; onToggle: () => void; children: React.ReactNode
 }) {
   return (
-    <div>
-      <button onClick={onToggle} className="flex items-center justify-between w-full pt-1 pb-2 group">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] group-hover:text-[var(--txt)] transition-colors">{title}</p>
-        <ChevronDown className={`h-3.5 w-3.5 text-[var(--muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+    <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-4 py-3 bg-[var(--surface)] hover:bg-[var(--inp-bg)] transition-colors"
+      >
+        <span className="text-sm font-semibold text-[var(--txt)]">{title}</span>
+        <ChevronDown className={`h-4 w-4 text-[var(--muted)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && (
-        <div className="rounded-xl border border-[var(--border)] overflow-hidden mb-1">
-          {children}
-        </div>
-      )}
+      {open && <div>{children}</div>}
     </div>
   )
 }
@@ -116,13 +104,11 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
           <div className="px-4 py-4 flex flex-col gap-4">
 
             <AccordionSection title="Grid Economics" open={sections.grid} onToggle={() => toggle('grid')}>
-              <TableHeader cols={['Metric', 'Value']} />
               <KpiRow label="Marginal Cost" value={data.cambiumMetrics ? `$${data.cambiumMetrics.cost_per_mwh.toFixed(2)}/MWh` : '—'} />
               <KpiRow label="Emissions Intensity" value={data.cambiumMetrics ? `${data.cambiumMetrics.lrmer_co2_per_mwh.toFixed(1)} kg CO₂/MWh` : '—'} />
             </AccordionSection>
 
             <AccordionSection title="Solar Potential" open={sections.solar} onToggle={() => toggle('solar')}>
-              <TableHeader cols={['Metric', 'Value']} />
               <KpiRow label="Annual Potential" value={data.kpi ? fmtUsd(data.kpi.untapped_annual_value_usd) : '—'} />
               <KpiRow label="Lifetime Value (25yr)" value={data.kpi ? fmtUsd(data.kpi.untapped_lifetime_value_usd) : '—'} />
               <KpiRow label="Qualified Buildings" value={data.kpi ? fmtNum(data.kpi.count_qualified) : '—'} />
@@ -133,30 +119,28 @@ function DrawerContent({ gea, onClose }: { gea: string; onClose: () => void }) {
             </AccordionSection>
 
             <AccordionSection title="Potential Impact" open={sections.impact} onToggle={() => toggle('impact')}>
-              <TableHeader cols={['If All Untapped Solar Installed', 'Est./yr']} />
-              <KpiRow label="CO₂ Offset" value={impact ? `${fmtNum(Math.round(impact.co2Tons))} tons` : '—'} />
+              <KpiRow label="CO₂ Offset" value={impact ? `${fmtNum(Math.round(impact.co2Tons))} tons/yr` : '—'} />
               <KpiRow label="Grid Cost Offset" value={impact ? fmtUsd(impact.costOffset) : '—'} />
               <KpiRow label="Homes Powered" value={data.kpi ? fmtNum(data.kpi.homes_powered_equivalent) : '—'} />
               <KpiRow label="Cars Off Road Equiv." value={data.kpi ? fmtNum(data.kpi.cars_off_road_equivalent) : '—'} />
             </AccordionSection>
 
             {data.topCounties.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] pt-1 pb-2">Top Counties</p>
-                <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-                  <TableHeader cols={['County', 'Buildings', 'Potential/yr']} />
-                  <div className="divide-y divide-[var(--border)]">
-                    {data.topCounties.map((c, i) => (
-                      <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2.5 items-center">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-[var(--txt)] truncate">{c.region_name}</p>
-                          <p className="text-[10px] text-[var(--muted)]">{c.state_name}</p>
-                        </div>
-                        <span className="text-xs text-[var(--muted)] tabular-nums">{fmtNum(c.count_qualified)}</span>
-                        <span className="text-xs font-semibold tabular-nums" style={{ color }}>{fmtUsd(c.untapped_annual_value_usd)}</span>
+              <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+                <div className="px-4 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
+                  <span className="text-sm font-semibold text-[var(--txt)]">Top Counties</span>
+                </div>
+                <div className="divide-y divide-[var(--border)]">
+                  {data.topCounties.map((c, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-4 py-2.5 items-center">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[var(--txt)] truncate">{c.region_name}</p>
+                        <p className="text-[10px] text-[var(--muted)]">{c.state_name}</p>
                       </div>
-                    ))}
-                  </div>
+                      <span className="text-xs text-[var(--muted)] tabular-nums">{fmtNum(c.count_qualified)}</span>
+                      <span className="text-xs font-semibold tabular-nums" style={{ color }}>{fmtUsd(c.untapped_annual_value_usd)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
