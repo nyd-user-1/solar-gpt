@@ -23,8 +23,6 @@ const MAP_STYLE = [
 
 type ChipData = { name: string; value: number; buildings: number }
 
-
-// State-level layer: each state colored by its dominant GEA
 function GEAStateChoroplethLayer({
   counties, geaKpisMap, onHoverChange, stateGeaMap,
 }: {
@@ -41,7 +39,6 @@ function GEAStateChoroplethLayer({
     if (!map || initialized.current) return
     initialized.current = true
 
-    // Use pre-computed map if provided, otherwise fall back to county data
     let stateDominantGea: Record<string, string>
     if (stateGeaMap && Object.keys(stateGeaMap).length > 0) {
       stateDominantGea = stateGeaMap
@@ -93,65 +90,6 @@ function GEAStateChoroplethLayer({
   return null
 }
 
-// Full-coverage county layer using Cambium data (all ~3100 counties)
-function GEACambiumCountyLayer({
-  cambiumCounties, geaKpisMap, onHoverChange,
-}: {
-  cambiumCounties: CambiumCountyMapEntry[]
-  geaKpisMap: Record<string, GeaKpi>
-  onHoverChange: (d: ChipData | null) => void
-}) {
-  const map = useMap()
-  const router = useRouter()
-  const initialized = useRef(false)
-
-  useEffect(() => {
-    if (!map || initialized.current) return
-    initialized.current = true
-
-    const fipsToGea: Record<string, string> = {}
-    for (const c of cambiumCounties) {
-      fipsToGea[c.fips] = c.cambium_gea
-    }
-
-    fetch(COUNTIES_URL)
-      .then(r => r.json())
-      .then((geojson: { type: string; features: { properties: Record<string, string>; geometry: object; type: string }[] }) => {
-        map.data.addGeoJson(geojson)
-        map.data.setStyle((feature: google.maps.Data.Feature) => {
-          const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
-          const gea = fipsToGea[fips]
-          const color = gea ? (GEA_COLORS[gea] ?? '#e5e7eb') : '#e5e7eb'
-          return {
-            fillColor: color,
-            fillOpacity: gea ? 0.72 : 0.15,
-            strokeColor: '#ffffff',
-            strokeWeight: 0.3,
-            strokeOpacity: 0.6,
-          }
-        })
-        map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
-          map.data.overrideStyle(e.feature, { strokeWeight: 1.5, strokeColor: '#1f2937', fillOpacity: 0.92 })
-          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
-          const gea = fipsToGea[fips]
-          const kpi = gea ? geaKpisMap[gea] : null
-          onHoverChange(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified } : null)
-        })
-        map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
-          map.data.revertStyle(e.feature)
-          onHoverChange(null)
-        })
-        map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
-          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
-          const gea = fipsToGea[fips]
-          if (gea) router.push(`/gea-regions/${geaToSlug(gea)}`)
-        })
-      })
-  }, [map, cambiumCounties, geaKpisMap, onHoverChange, router])
-
-  return null
-}
-
 function GEAChoroplethLayer({
   counties, geaKpisMap, onHoverChange,
 }: {
@@ -183,8 +121,8 @@ function GEAChoroplethLayer({
           return {
             fillColor: color,
             fillOpacity: gea ? 0.7 : 0.1,
-            strokeColor: '#ffffff',
-            strokeWeight: 0.3,
+            strokeColor: '#374151',
+            strokeWeight: 0.4,
             strokeOpacity: 0.6,
           }
         })
@@ -210,21 +148,95 @@ function GEAChoroplethLayer({
   return null
 }
 
+// Full-coverage Cambium county layer — separate load + style effects so hoveredGea can re-style
+function GEACambiumCountyLayer({
+  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea,
+}: {
+  cambiumCounties: CambiumCountyMapEntry[]
+  geaKpisMap: Record<string, GeaKpi>
+  onHoverChange: (d: ChipData | null) => void
+  hoveredGea: string | null
+}) {
+  const map = useMap()
+  const router = useRouter()
+  const loadedRef = useRef(false)
+  const fipsToGeaRef = useRef<Record<string, string>>({})
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const onHoverRef = useRef(onHoverChange)
+  onHoverRef.current = onHoverChange
+  const geaKpisMapRef = useRef(geaKpisMap)
+  geaKpisMapRef.current = geaKpisMap
+
+  // Load GeoJSON and wire listeners once
+  useEffect(() => {
+    if (!map || loadedRef.current) return
+    loadedRef.current = true
+
+    const fipsToGea: Record<string, string> = {}
+    for (const c of cambiumCounties) fipsToGea[c.fips] = c.cambium_gea
+    fipsToGeaRef.current = fipsToGea
+
+    fetch(COUNTIES_URL)
+      .then(r => r.json())
+      .then((geojson: object) => {
+        map.data.addGeoJson(geojson)
+        map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const gea = fipsToGeaRef.current[fips]
+          const kpi = gea ? geaKpisMapRef.current[gea] : null
+          onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified } : null)
+        })
+        map.data.addListener('mouseout', () => onHoverRef.current(null))
+        map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
+          const gea = fipsToGeaRef.current[fips]
+          if (gea) router.push(`/gea-regions/${geaToSlug(gea)}`)
+        })
+        setDataLoaded(true)
+      })
+  }, [map, cambiumCounties, router])
+
+  // Re-style whenever hoveredGea changes (or data first loads)
+  useEffect(() => {
+    if (!map || !dataLoaded) return
+    const fipsToGea = fipsToGeaRef.current
+    map.data.setStyle((feature: google.maps.Data.Feature) => {
+      const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
+      const gea = fipsToGea[fips]
+      const color = gea ? (GEA_COLORS[gea] ?? '#e5e7eb') : '#e5e7eb'
+      const dimmed = hoveredGea !== null && gea !== hoveredGea
+      return {
+        fillColor: color,
+        fillOpacity: gea ? (dimmed ? 0.12 : 0.72) : 0.08,
+        strokeColor: '#374151',
+        strokeWeight: dimmed ? 0.15 : 0.4,
+        strokeOpacity: dimmed ? 0.2 : 0.55,
+        clickable: true,
+      }
+    })
+  }, [map, dataLoaded, hoveredGea])
+
+  return null
+}
+
 export default function GEAChoropleth({
-  counties,
+  counties = [],
   cambiumCounties,
   geaKpis,
   mode = 'county',
   stateGeaMap,
+  className = 'w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
 }: {
-  counties: CountyMapEntry[]
+  counties?: CountyMapEntry[]
   cambiumCounties?: CambiumCountyMapEntry[]
   geaKpis: GeaKpi[]
   mode?: 'county' | 'state' | 'cambium'
   stateGeaMap?: Record<string, string>
+  className?: string
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
+  const [legendHoveredGea, setLegendHoveredGea] = useState<string | null>(null)
 
   const geaKpisMap = useMemo(() => {
     const m: Record<string, GeaKpi> = {}
@@ -238,10 +250,14 @@ export default function GEAChoropleth({
     buildings: geaKpis.reduce((s, g) => s + g.count_qualified, 0),
   }), [geaKpis])
 
-  const chip = hoveredInfo ?? usDefault
+  const legendChip = legendHoveredGea && geaKpisMap[legendHoveredGea]
+    ? { name: legendHoveredGea.replace(/_/g, ' '), value: geaKpisMap[legendHoveredGea].untapped_annual_value_usd, buildings: geaKpisMap[legendHoveredGea].count_qualified }
+    : null
+
+  const chip = legendChip ?? hoveredInfo ?? usDefault
 
   return (
-    <div className="relative w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <div className={`relative ${className}`}>
       <APIProvider apiKey={apiKey}>
         <Map
           defaultCenter={{ lat: 38, lng: -97 }}
@@ -253,7 +269,7 @@ export default function GEAChoropleth({
           style={{ width: '100%', height: '100%' }}
         >
           {mode === 'cambium' && cambiumCounties
-            ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
+            ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={legendHoveredGea} />
             : mode === 'state'
             ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
             : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
@@ -261,21 +277,39 @@ export default function GEAChoropleth({
         </Map>
       </APIProvider>
 
-      {/* Info chip */}
+      {/* Info chip — bottom left */}
       <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
         <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
         <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
         <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
       </div>
 
-      {/* GEA color legend */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-auto max-h-[80%] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-        {Object.entries(GEA_COLORS).map(([gea, color]) => (
-          <div key={gea} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
-            <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
-            <span className="text-[10px] text-[#333]">{gea.replace(/_/g, ' ')}</span>
-          </div>
-        ))}
+      {/* Floating GEA name chip — appears on legend hover */}
+      {legendHoveredGea && (
+        <div className="absolute bottom-8 right-14 bg-[#1f2937]/85 backdrop-blur-sm rounded-full px-3 py-1 shadow-md pointer-events-none">
+          <span className="text-xs font-bold text-white tracking-wide">{legendHoveredGea.replace(/_/g, ' ')}</span>
+        </div>
+      )}
+
+      {/* Legend — 2 columns */}
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-auto">
+        <div className="grid grid-cols-2 gap-x-4">
+          {Object.entries(GEA_COLORS).map(([gea, color]) => (
+            <div
+              key={gea}
+              className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
+                legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
+              }`}
+              onMouseEnter={() => setLegendHoveredGea(gea)}
+              onMouseLeave={() => setLegendHoveredGea(null)}
+            >
+              <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
+              <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                {gea.replace(/_/g, ' ')}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
