@@ -27,8 +27,9 @@ export type DashboardConfig = {
 export const DASHBOARD_CONFIGS: DashboardConfig[] = [
   {
     slug: 'untapped-value',
-    title: 'Untapped Value',
-    desc: 'Annual untapped solar value by state',
+    title: 'Potential',
+    desc: 'Annual solar market potential by state',
+    sortDefault: 'value',
     color: 'hsl(160 60% 45%)',
     chartType: 'area',
     previewData: [{x:0,y:8},{x:1,y:12},{x:2,y:22},{x:3,y:28},{x:4,y:18},{x:5,y:24},{x:6,y:30},{x:7,y:22},{x:8,y:26},{x:9,y:20}],

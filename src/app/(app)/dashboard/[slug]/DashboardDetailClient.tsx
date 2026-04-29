@@ -16,6 +16,18 @@ import {
 } from '@/lib/dashboard-config'
 import type { DashboardTableRow } from '@/lib/queries'
 
+function fmtColHeader(format: MetricFormat): string {
+  switch (format) {
+    case 'usd':         return 'Value'
+    case 'count':       return 'Count'
+    case 'percent':     return 'Rate'
+    case 'co2_tons':    return 'CO₂'
+    case 'usd_per_mwh': return '$/MWh'
+    case 'co2_per_mwh': return 'kg/MWh'
+    case 'kwh':         return 'kWh'
+  }
+}
+
 function fmtValue(value: number, format: MetricFormat): string {
   switch (format) {
     case 'usd':         return fmtUsd(value)
@@ -287,7 +299,7 @@ export function DashboardDetailClient({ slug, config, initialRows, initialTotal,
           <div className="divide-y divide-[var(--border)]">
             <div className="hidden md:grid grid-cols-[1fr_120px_80px] gap-4 px-6 py-3 text-xs text-[var(--muted)] font-medium uppercase tracking-wider bg-[var(--surface)] sticky top-0 z-10 border-b border-[var(--border)]">
               <span>Name</span>
-              <span className="text-right">{activeTab.label}</span>
+              <span className="text-right">{fmtColHeader(activeTab.format)}</span>
               <span className="text-right">Share</span>
             </div>
             {sortedRows.map(row => (
