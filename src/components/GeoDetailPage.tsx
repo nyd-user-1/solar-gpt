@@ -11,7 +11,8 @@ import StateCountyMap from '@/components/StateCountyMap'
 import CountyZipMap from '@/components/CountyZipMap'
 import CensusTractMap from '@/components/CensusTractMap'
 import GEAMiniMap from '@/components/GEAMiniMap'
-import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry } from '@/lib/queries'
+import GEAFocusMap from '@/components/GEAFocusMap'
+import type { HeatmapPoint, CountyMapEntry, ZipMapEntry, TractMapEntry, CambiumCountyMapEntry } from '@/lib/queries'
 
 export interface InfoRow {
   label: string
@@ -71,6 +72,8 @@ export interface DetailPageProps {
   tractData?: { tracts: TractMapEntry[]; stateFips: string; parentName: string }
   /** GEA region map — when provided, renders GEAMiniMap full-size */
   geaMapData?: { stateNames: string[]; bounds: { north: number; south: number; east: number; west: number }; color?: string }
+  /** GEA county choropleth — preferred over geaMapData when provided */
+  geaFocusMapData?: { cambiumCounties: CambiumCountyMapEntry[]; focusGea: string; bounds: { north: number; south: number; east: number; west: number } }
   /** Context label shown in chat drawer header */
   chatContext?: string
 }
@@ -102,7 +105,7 @@ export function GeoDetailPage({
   defaultInfoRows = 4,
   carouselScrollable = false,
   ctaHref, ctaLabel,
-  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, geaMapData, chatContext,
+  mapCenter, mapBounds, mapMarkers, heatmapPoints, stateCountyData, countyZipData, tractData, geaMapData, geaFocusMapData, chatContext,
 }: DetailPageProps) {
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [transitioning, setTransitioning] = useState(true)
@@ -226,6 +229,14 @@ export function GeoDetailPage({
               parentName={tractData.parentName}
               bounds={mapBounds}
               className="h-64 sm:h-96 w-full"
+            />
+          </div>
+        ) : geaFocusMapData ? (
+          <div className="mb-8">
+            <GEAFocusMap
+              cambiumCounties={geaFocusMapData.cambiumCounties}
+              focusGea={geaFocusMapData.focusGea}
+              bounds={geaFocusMapData.bounds}
             />
           </div>
         ) : geaMapData ? (
