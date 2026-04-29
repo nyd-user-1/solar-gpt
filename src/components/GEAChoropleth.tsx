@@ -181,12 +181,16 @@ function GEACambiumCountyLayer({
       .then((geojson: object) => {
         map.data.addGeoJson(geojson)
         map.data.addListener('mouseover', (e: google.maps.Data.MouseEvent) => {
+          map.data.overrideStyle(e.feature, { strokeWeight: 1.8, strokeColor: '#111827', fillOpacity: 0.92 })
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
           const kpi = gea ? geaKpisMapRef.current[gea] : null
           onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified } : null)
         })
-        map.data.addListener('mouseout', () => onHoverRef.current(null))
+        map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
+          map.data.revertStyle(e.feature)
+          onHoverRef.current(null)
+        })
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
@@ -277,38 +281,35 @@ export default function GEAChoropleth({
         </Map>
       </APIProvider>
 
-      {/* Info chip — bottom left */}
-      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
-        <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
-        <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
-        <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
-      </div>
-
-      {/* Floating GEA name chip — appears on legend hover */}
-      {legendHoveredGea && (
-        <div className="absolute bottom-8 right-14 bg-[#1f2937]/85 backdrop-blur-sm rounded-full px-3 py-1 shadow-md pointer-events-none">
-          <span className="text-xs font-bold text-white tracking-wide">{legendHoveredGea.replace(/_/g, ' ')}</span>
+      {/* Legend + info chip — stacked top-left panel */}
+      <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto">
+        {/* Legend */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
+          <div className="grid grid-cols-2 gap-x-4">
+            {Object.entries(GEA_COLORS).map(([gea, color]) => (
+              <div
+                key={gea}
+                className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
+                  legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
+                }`}
+                onMouseEnter={() => setLegendHoveredGea(gea)}
+                onMouseLeave={() => setLegendHoveredGea(null)}
+              >
+                <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
+                <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                  {gea.replace(/_/g, ' ')}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
 
-      {/* Legend — 2 columns */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-auto">
-        <div className="grid grid-cols-2 gap-x-4">
-          {Object.entries(GEA_COLORS).map(([gea, color]) => (
-            <div
-              key={gea}
-              className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
-                legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
-              }`}
-              onMouseEnter={() => setLegendHoveredGea(gea)}
-              onMouseLeave={() => setLegendHoveredGea(null)}
-            >
-              <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
-              <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
-                {gea.replace(/_/g, ' ')}
-              </span>
-            </div>
-          ))}
+        {/* Info chip — full width of legend, slightly larger text */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
+          <p className="text-[13px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
+          <p className="text-[13px] font-semibold text-[#f59e0b] mt-0.5">{fmtUsd(chip.value)} potential/yr</p>
+          <p className="text-[11px] text-[#666] mt-0.5">{fmtNum(chip.buildings)} qualified buildings</p>
         </div>
       </div>
     </div>
