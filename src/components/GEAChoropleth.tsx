@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
 import type { CountyMapEntry, GeaKpi, CambiumCountyMapEntry } from '@/lib/queries'
-import { fmtUsd, fmtNum } from '@/lib/utils'
+import { fmtUsd, fmtUsdFull, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { GEA_COLORS, getGeaColor } from '@/lib/gea-colors'
 import { GEADrawer } from '@/components/GEADrawer'
@@ -319,7 +319,7 @@ export default function GEAChoropleth({
           {/* Info chip — full width of legend */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
             <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
-            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{fmtUsd(chip.value)}</p>
+            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{fmtUsdFull(chip.value)}</p>
             <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
             <p className="text-[11px] text-[#666] mt-2">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>
