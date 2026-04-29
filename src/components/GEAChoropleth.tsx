@@ -149,17 +149,20 @@ function GEAChoroplethLayer({
   return null
 }
 
+type SunroofEntry = { name: string; value: number; buildings: number }
+
 // Full-coverage Cambium county layer — separate load + style effects so hoveredGea can re-style
 function GEACambiumCountyLayer({
-  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea,
+  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea, sunroofLookup, onCountyClick,
 }: {
   cambiumCounties: CambiumCountyMapEntry[]
   geaKpisMap: Record<string, GeaKpi>
   onHoverChange: (d: ChipData | null) => void
   hoveredGea: string | null
+  sunroofLookup: Record<string, SunroofEntry>
+  onCountyClick: (gea: string) => void
 }) {
   const map = useMap()
-  const router = useRouter()
   const loadedRef = useRef(false)
   const fipsToGeaRef = useRef<Record<string, string>>({})
   const [dataLoaded, setDataLoaded] = useState(false)
@@ -167,6 +170,10 @@ function GEACambiumCountyLayer({
   onHoverRef.current = onHoverChange
   const geaKpisMapRef = useRef(geaKpisMap)
   geaKpisMapRef.current = geaKpisMap
+  const sunroofLookupRef = useRef(sunroofLookup)
+  sunroofLookupRef.current = sunroofLookup
+  const onCountyClickRef = useRef(onCountyClick)
+  onCountyClickRef.current = onCountyClick
 
   // Load GeoJSON and wire listeners once
   useEffect(() => {
@@ -185,8 +192,15 @@ function GEACambiumCountyLayer({
           map.data.overrideStyle(e.feature, { strokeWeight: 1.8, strokeColor: '#111827', fillOpacity: 0.92 })
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
-          const kpi = gea ? geaKpisMapRef.current[gea] : null
-          onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified, color: GEA_COLORS[gea] } : null)
+          const color = gea ? GEA_COLORS[gea] : undefined
+          // Prefer county-level Sunroof data; fall back to GEA aggregate
+          const sunroof = sunroofLookupRef.current[fips]
+          if (sunroof) {
+            onHoverRef.current({ name: sunroof.name, value: sunroof.value, buildings: sunroof.buildings, color })
+          } else {
+            const kpi = gea ? geaKpisMapRef.current[gea] : null
+            onHoverRef.current(kpi ? { name: gea.replace(/_/g, ' '), value: kpi.untapped_annual_value_usd, buildings: kpi.count_qualified, color } : null)
+          }
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
@@ -195,11 +209,11 @@ function GEACambiumCountyLayer({
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
-          if (gea) router.push(`/gea-regions/${geaToSlug(gea)}`)
+          if (gea) onCountyClickRef.current(gea)
         })
         setDataLoaded(true)
       })
-  }, [map, cambiumCounties, router])
+  }, [map, cambiumCounties])
 
   // Re-style whenever hoveredGea changes (or data first loads)
   useEffect(() => {
@@ -227,6 +241,7 @@ function GEACambiumCountyLayer({
 export default function GEAChoropleth({
   counties = [],
   cambiumCounties,
+  sunroofCounties = [],
   geaKpis,
   mode = 'county',
   stateGeaMap,
@@ -234,6 +249,7 @@ export default function GEAChoropleth({
 }: {
   counties?: CountyMapEntry[]
   cambiumCounties?: CambiumCountyMapEntry[]
+  sunroofCounties?: CountyMapEntry[]
   geaKpis: GeaKpi[]
   mode?: 'county' | 'state' | 'cambium'
   stateGeaMap?: Record<string, string>
@@ -242,13 +258,26 @@ export default function GEAChoropleth({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
   const [legendHoveredGea, setLegendHoveredGea] = useState<string | null>(null)
-  const [selectedGea, setSelectedGea] = useState<string | null>(null)
+  const [pinnedGea, setPinnedGea] = useState<string | null>(null)   // click-locked GEA
+  const [selectedGea, setSelectedGea] = useState<string | null>(null) // drawer open
+
+  // FIPS → county Sunroof data for county-level chip on hover
+  const sunroofLookup = useMemo<Record<string, SunroofEntry>>(() => {
+    const m: Record<string, SunroofEntry> = {}
+    for (const c of sunroofCounties) {
+      if (c.fips) m[c.fips] = { name: c.region_name, value: c.untapped_annual_value_usd, buildings: c.count_qualified }
+    }
+    return m
+  }, [sunroofCounties])
 
   const geaKpisMap = useMemo(() => {
     const m: Record<string, GeaKpi> = {}
     for (const g of geaKpis) m[g.cambium_gea] = g
     return m
   }, [geaKpis])
+
+  // Effective dimming GEA: pinned takes precedence over legend hover
+  const activeHoveredGea = legendHoveredGea ?? pinnedGea
 
   const usDefault = useMemo<ChipData>(() => ({
     name: 'US Grid Regions',
@@ -257,20 +286,26 @@ export default function GEAChoropleth({
   }), [geaKpis])
 
   const legendChip = legendHoveredGea && geaKpisMap[legendHoveredGea]
-    ? {
-        name: legendHoveredGea.replace(/_/g, ' '),
-        value: geaKpisMap[legendHoveredGea].untapped_annual_value_usd,
-        buildings: geaKpisMap[legendHoveredGea].count_qualified,
-        color: getGeaColor(legendHoveredGea),
-      }
+    ? { name: legendHoveredGea.replace(/_/g, ' '), value: geaKpisMap[legendHoveredGea].untapped_annual_value_usd, buildings: geaKpisMap[legendHoveredGea].count_qualified, color: getGeaColor(legendHoveredGea) }
     : null
 
-  const chip = legendChip ?? hoveredInfo ?? usDefault
+  const pinnedChip = pinnedGea && geaKpisMap[pinnedGea]
+    ? { name: pinnedGea.replace(/_/g, ' '), value: geaKpisMap[pinnedGea].untapped_annual_value_usd, buildings: geaKpisMap[pinnedGea].count_qualified, color: getGeaColor(pinnedGea) }
+    : null
+
+  // Priority: legend hover > county map hover > pinned GEA > default
+  const chip = legendChip ?? hoveredInfo ?? pinnedChip ?? usDefault
   const chipColor = chip.color ?? '#f59e0b'
+
+  // When a county is clicked on the map: open the GEA drawer for that region
+  const handleCountyClick = (gea: string) => {
+    setPinnedGea(gea)
+    setSelectedGea(gea)
+  }
 
   return (
     <>
-      <GEADrawer gea={selectedGea} onClose={() => setSelectedGea(null)} />
+      <GEADrawer gea={selectedGea} onClose={() => { setSelectedGea(null); setPinnedGea(null) }} />
       <div className={`relative ${className}`}>
         <APIProvider apiKey={apiKey}>
           <Map
@@ -283,7 +318,7 @@ export default function GEAChoropleth({
             style={{ width: '100%', height: '100%' }}
           >
             {mode === 'cambium' && cambiumCounties
-              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={legendHoveredGea} />
+              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={activeHoveredGea} sunroofLookup={sunroofLookup} onCountyClick={handleCountyClick} />
               : mode === 'state'
               ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
               : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
@@ -297,22 +332,34 @@ export default function GEAChoropleth({
           <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm min-w-[290px]">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
             <div className="grid grid-cols-2 gap-x-4">
-              {Object.entries(GEA_COLORS).map(([gea, color]) => (
-                <div
-                  key={gea}
-                  className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
-                    legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
-                  }`}
-                  onMouseEnter={() => setLegendHoveredGea(gea)}
-                  onMouseLeave={() => setLegendHoveredGea(null)}
-                  onClick={() => setSelectedGea(gea)}
-                >
-                  <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
-                  <span className={`text-[10px] whitespace-nowrap transition-colors ${legendHoveredGea === gea ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
-                    {gea.replace(/_/g, ' ')}
-                  </span>
-                </div>
-              ))}
+              {Object.entries(GEA_COLORS).map(([gea, color]) => {
+                const isPinned = pinnedGea === gea
+                const isActive = legendHoveredGea === gea || isPinned
+                return (
+                  <div
+                    key={gea}
+                    className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
+                      isPinned ? 'bg-black/10' : legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
+                    }`}
+                    onMouseEnter={() => setLegendHoveredGea(gea)}
+                    onMouseLeave={() => setLegendHoveredGea(null)}
+                    onClick={() => {
+                      if (isPinned) {
+                        setPinnedGea(null)
+                        setSelectedGea(null)
+                      } else {
+                        setPinnedGea(gea)
+                        setSelectedGea(gea)
+                      }
+                    }}
+                  >
+                    <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
+                    <span className={`text-[10px] whitespace-nowrap transition-colors ${isActive ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                      {gea.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
