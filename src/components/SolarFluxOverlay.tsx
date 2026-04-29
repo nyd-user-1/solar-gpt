@@ -48,10 +48,8 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
   useEffect(() => {
     if (!map || !annualFluxUrl || !boundingBox) return
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-    const fetchUrl = annualFluxUrl.includes('key=')
-      ? annualFluxUrl
-      : `${annualFluxUrl}&key=${apiKey}`
+    // Proxy through our own API to avoid CORS on solar.googleapis.com GeoTIFF requests
+    const fetchUrl = `/api/solar-geotiff?url=${encodeURIComponent(annualFluxUrl)}`
 
     let cancelled = false
 
