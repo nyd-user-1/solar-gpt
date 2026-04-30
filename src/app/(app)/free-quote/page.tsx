@@ -646,7 +646,19 @@ export default function FreeQuotePage() {
       {/* Question area — scrollable + vertically centered */}
       <div className="flex-1 overflow-y-auto">
         <div className="min-h-full flex flex-col justify-center px-4 py-6">
-          <div className="mx-auto w-full max-w-3xl">
+          <div className="mx-auto w-full max-w-3xl min-h-[400px]">
+
+            {/* Previous Question — sits just above the question heading */}
+            {stepIdx > 0 && (
+              <button
+                type="button"
+                onClick={goBack}
+                className="mb-4 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous Question
+              </button>
+            )}
 
             {/* ADDRESS */}
             {currentStep === 'address' && (
@@ -955,20 +967,10 @@ export default function FreeQuotePage() {
         </div>
       </div>
 
-      {/* Bottom bar: progress then previous question */}
+      {/* Bottom bar: progress only */}
       <div className="shrink-0 px-4 pt-2 pb-4">
         <div className="mx-auto max-w-3xl">
           <ProgressBar stepIdx={stepIdx} total={TOTAL} />
-          {stepIdx > 0 && (
-            <button
-              type="button"
-              onClick={goBack}
-              className="mt-2 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors mx-auto"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous Question
-            </button>
-          )}
         </div>
       </div>
 
