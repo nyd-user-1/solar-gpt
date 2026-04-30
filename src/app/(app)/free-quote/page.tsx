@@ -90,18 +90,24 @@ function formatPhone(raw: string): string {
 
 // ─── Progress label ───────────────────────────────────────────────────────────
 
+function stepProgress(stepIdx: number): number {
+  if (stepIdx <= 2) return 25
+  if (stepIdx <= 5) return 50
+  if (stepIdx <= 8) return 75
+  return 90
+}
+
 function progressLabel(pct: number) {
-  if (pct < 20) return 'Getting started'
-  if (pct < 50) return 'Making progress'
-  if (pct < 80) return 'Halfway there'
-  if (pct < 100) return 'Almost done'
+  if (pct <= 25) return 'Getting started'
+  if (pct <= 50) return 'Halfway there'
+  if (pct <= 75) return 'Almost done'
   return 'Just a few more details'
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ProgressBar({ stepIdx, total }: { stepIdx: number; total: number }) {
-  const pct = Math.round(((stepIdx + 1) / total) * 100)
+function ProgressBar({ stepIdx }: { stepIdx: number }) {
+  const pct = stepProgress(stepIdx)
   return (
     <div className="w-full">
       <div className="h-4 w-full rounded-full bg-gray-200">
@@ -721,7 +727,7 @@ export default function FreeQuotePage() {
                   )}
                 </div>
                 <p className="mt-2 text-xs text-gray-400">
-                  *Used to analyze your roof's solar potential via Google Solar API
+                  *Supported by data from NREL and Google Solar.
                 </p>
                 <OrangeButton onClick={goNext} disabled={!formData.address || solarLoading}>
                   {solarLoading ? 'Fetching solar data…' : 'GET MY ESTIMATE →'}
@@ -975,7 +981,7 @@ export default function FreeQuotePage() {
       {/* Bottom bar: progress only */}
       <div className="shrink-0 px-4 pt-2 pb-4">
         <div className="mx-auto max-w-3xl">
-          <ProgressBar stepIdx={stepIdx} total={TOTAL} />
+          <ProgressBar stepIdx={stepIdx} />
         </div>
       </div>
 
