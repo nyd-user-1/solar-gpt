@@ -46,6 +46,7 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
   const overlayRef = useRef<google.maps.GroundOverlay | null>(null)
 
   useEffect(() => {
+    console.log('[SolarFlux] effect fired', { hasMap: !!map, hasUrl: !!annualFluxUrl, hasBbox: !!boundingBox })
     if (!map || !annualFluxUrl || !boundingBox) return
 
     // Proxy through our own API to avoid CORS on solar.googleapis.com GeoTIFF requests
@@ -55,7 +56,9 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
 
     async function load() {
       try {
+        console.log('[SolarFlux] load() started, fetching:', fetchUrl.slice(0, 80))
         const { fromArrayBuffer } = await import('geotiff')
+        console.log('[SolarFlux] geotiff imported, fromArrayBuffer type:', typeof fromArrayBuffer)
 
         const res = await fetch(fetchUrl)
         if (!res.ok || cancelled) {

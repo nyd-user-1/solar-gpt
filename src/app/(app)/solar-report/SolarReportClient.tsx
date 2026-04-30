@@ -236,7 +236,7 @@ export default function SolarReportClient() {
     ]).then(([solarData, layersData]) => {
       if (solarData.error) setError(solarData.error)
       else setInsight(solarData as SolarInsight)
-      console.log('[solar-layers] keys:', layersData?._keys, '| annualFlux:', !!layersData?.annualFluxUrl, '| monthly:', !!layersData?.monthlyFluxUrl, '| quality:', layersData?.imageryQuality)
+      console.log('[solar-layers] keys:', layersData?._keys, '| annualFlux:', !!layersData?.annualFluxUrl, '| monthly:', !!layersData?.monthlyFluxUrl, '| quality:', layersData?.imageryQuality, '| boundingBox:', !!layersData?.boundingBox, '| bbox:', layersData?.boundingBox)
       if (layersData && !layersData.error) setLayers(layersData as LayersData)
       else console.warn('[solar-layers] error:', layersData?.error)
     }).catch(() => setError('Could not fetch solar data'))
