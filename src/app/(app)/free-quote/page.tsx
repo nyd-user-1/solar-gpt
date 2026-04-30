@@ -684,7 +684,7 @@ export default function FreeQuotePage() {
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Generate your tailored solar energy report.</h2>
                 <div className="relative">
-                  <div className="flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 focus-within:border-[#e8751c] transition-colors">
+                  <div className="flex items-center gap-2 rounded-xl border-2 border-transparent bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.10)] focus-within:border-[#e8751c] focus-within:shadow-none transition-all">
                     <MapPin className="h-5 w-5 text-gray-400 shrink-0" />
                     <input
                       type="text"
@@ -702,7 +702,7 @@ export default function FreeQuotePage() {
                     )}
                   </div>
                   {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl border border-gray-100 bg-white shadow-xl z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-10 overflow-hidden">
                       {suggestions.map(s => (
                         <button
                           key={s.place_id}

@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url)
     const data = await res.json()
     return NextResponse.json(
-      (data.predictions ?? []).slice(0, 5).map((p: { place_id: string; description: string }) => ({
+      (data.predictions ?? []).slice(0, 8).map((p: { place_id: string; description: string }) => ({
         place_id: p.place_id,
         description: p.description,
       }))
