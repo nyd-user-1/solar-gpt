@@ -10,14 +10,13 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
-import { SidebarSearch } from '@/components/SidebarSearch'
 
 interface SidebarProps {
   onClose?: () => void
 }
 
 const NAV_ITEMS = [
-  { to: '/',             icon: MessageCircle,    label: 'New Chat' },
+  { to: '/new-chat',     icon: MessageCircle,    label: 'New Chat' },
   { to: '/free-quote',   icon: Sparkles,         label: 'Report' },
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
@@ -122,10 +121,6 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
-      {/* Search — always visible in sidebar */}
-      <div className="px-3 pt-4 pb-2">
-        <SidebarSearch />
-      </div>
 
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
