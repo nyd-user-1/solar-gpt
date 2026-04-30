@@ -6,10 +6,9 @@ export async function GET(req: NextRequest) {
   if (!lat || !lng) return NextResponse.json({ error: 'Missing lat/lng' }, { status: 400 })
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  // Request all flux layers; no pixelSize restriction, no quality restriction
-  // pixelSizeMeters=0.5 → ~400×400 px instead of ~2000×2000, ~25x smaller download
-  // radiusMeters=42 matches the reference app — covers just the target building, not the whole block
-  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=42&view=FULL_LAYERS&pixelSizeMeters=0.5&key=${key}`
+  // radiusMeters is computed from buildingInsights.boundingBox diagonal by the client
+  const radiusMeters = req.nextUrl.searchParams.get('radiusMeters') ?? '42'
+  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=${radiusMeters}&view=FULL_LAYERS&pixelSizeMeters=0.5&key=${key}`
 
   const res = await fetch(url)
   const raw = await res.json().catch(() => ({}))

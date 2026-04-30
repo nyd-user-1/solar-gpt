@@ -224,27 +224,65 @@ export default function SolarReportClient() {
   const [error, setError] = useState<string | null>(null)
   const [layers, setLayers] = useState<LayersData | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(
+    lat && lng ? { lat, lng } : { lat: 39.5, lng: -98.35 }
+  )
+  const [mapZoom, setMapZoom] = useState(19)
+  const [mapKey, setMapKey] = useState('initial')
 
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!lat || !lng) { setLoading(false); setError('No location provided'); return }
-    // Fetch building insights + data layers in parallel
-    Promise.all([
-      fetch(`/api/solar?lat=${lat}&lng=${lng}`).then(r => r.json()),
-      fetch(`/api/solar-layers?lat=${lat}&lng=${lng}`).then(r => r.json()).catch(e => { console.warn('[solar-layers] fetch error', e); return null }),
-    ]).then(([solarData, layersData]) => {
-      if (solarData.error) setError(solarData.error)
-      else setInsight(solarData as SolarInsight)
-      console.log('[solar-layers] keys:', layersData?._keys, '| annualFlux:', !!layersData?.annualFluxUrl, '| monthly:', !!layersData?.monthlyFluxUrl, '| quality:', layersData?.imageryQuality, '| boundingBox:', !!layersData?.boundingBox, '| bbox:', layersData?.boundingBox)
-      if (layersData && !layersData.error) setLayers(layersData as LayersData)
-      else console.warn('[solar-layers] error:', layersData?.error)
-    }).catch(() => setError('Could not fetch solar data'))
-      .finally(() => setLoading(false))
+
+    let cancelled = false
+
+    async function fetchData() {
+      try {
+        // Step 1: building insights
+        const solarData = await fetch(`/api/solar?lat=${lat}&lng=${lng}`).then(r => r.json())
+        if (cancelled) return
+        if (solarData.error) { setError(solarData.error); setLoading(false); return }
+        setInsight(solarData as SolarInsight)
+
+        // Step 2: compute center + radius from building bounding box
+        const bCenter = solarData.center as { latitude: number; longitude: number }
+        const bbox = solarData.boundingBox as { sw: { latitude: number; longitude: number }; ne: { latitude: number; longitude: number } } | null
+
+        let radius = 42
+        let zoom = 19
+        if (bbox) {
+          const latM = (bbox.ne.latitude - bbox.sw.latitude) * 111320
+          const midLat = (bbox.sw.latitude + bbox.ne.latitude) / 2
+          const lngM = (bbox.ne.longitude - bbox.sw.longitude) * 111320 * Math.cos(midLat * Math.PI / 180)
+          const diagonal = Math.sqrt(latM * latM + lngM * lngM)
+          radius = Math.min(300, Math.max(20, Math.ceil(diagonal / 2) + 15))
+          zoom = diagonal < 40 ? 20 : diagonal < 80 ? 19 : diagonal < 160 ? 18 : diagonal < 320 ? 17 : 16
+        }
+
+        // Re-center map on building center (handles campus addresses where geocode ≠ building center)
+        setMapCenter({ lat: bCenter.latitude, lng: bCenter.longitude })
+        setMapZoom(zoom)
+        setMapKey(`${bCenter.latitude},${bCenter.longitude}`)
+
+        // Step 3: layers centered on building center with dynamic radius
+        const layersData = await fetch(
+          `/api/solar-layers?lat=${bCenter.latitude}&lng=${bCenter.longitude}&radiusMeters=${radius}`
+        ).then(r => r.json()).catch(() => null)
+        if (cancelled) return
+        if (layersData && !layersData.error) setLayers(layersData as LayersData)
+      } catch {
+        if (!cancelled) setError('Could not fetch solar data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    fetchData()
+    return () => { cancelled = true }
   }, [lat, lng])
 
   const panelRoot = mounted ? document.getElementById('chat-panel-root') : null
-  const mapCenter = lat && lng ? { lat, lng } : { lat: 39.5, lng: -98.35 }
 
   return (
     <>
@@ -253,9 +291,10 @@ export default function SolarReportClient() {
         {lat && lng ? (
           <APIProvider apiKey={MAPS_KEY}>
             <Map
+              key={mapKey}
               mapTypeId="satellite"
               defaultCenter={mapCenter}
-              defaultZoom={19}
+              defaultZoom={mapZoom}
               tilt={0}
               disableDefaultUI
               gestureHandling="greedy"

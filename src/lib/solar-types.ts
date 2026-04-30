@@ -1,6 +1,7 @@
 export type SolarInsight = {
   center: { latitude: number; longitude: number }
-maxSunshineHoursPerYear: number | null
+  boundingBox: { sw: { latitude: number; longitude: number }; ne: { latitude: number; longitude: number } } | null
+  maxSunshineHoursPerYear: number | null
   maxAreaSqFt: number | null
   maxPanelsCount: number | null
   panelCapacityWatts: number | null
