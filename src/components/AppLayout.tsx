@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
+import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose, Plus } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -192,6 +192,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           )}
+
+          {/* New Chat — always visible */}
+          <Link
+            href="/new-chat"
+            className="ml-2 flex items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Chat
+          </Link>
         </div>
 
         <main className="flex flex-1 flex-col overflow-hidden outline-none" tabIndex={-1}>
