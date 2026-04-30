@@ -672,7 +672,7 @@ export default function FreeQuotePage() {
               <button
                 type="button"
                 onClick={goBack}
-                className="mb-4 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+                className="mb-4 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Previous Question
