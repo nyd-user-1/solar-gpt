@@ -781,15 +781,14 @@ export default function FreeQuotePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'Full Sun', sub: 'All day', tooltip: 'All day sun exposure' },
-                    { val: 'Mostly Sunny', sub: 'Minor obstructions', tooltip: 'Minor obstructions' },
-                    { val: 'Partial Sun', sub: 'Some shade', tooltip: 'Some shade from trees or buildings' },
-                    { val: 'Mostly Shaded', sub: 'Heavy shade', tooltip: 'Heavy shade most of the day' },
-                  ].map(({ val, sub, tooltip }) => (
+                    { val: 'Full Sun', tooltip: 'All day' },
+                    { val: 'Mostly Sunny', tooltip: 'Minor obstructions' },
+                    { val: 'Partial Sun', tooltip: 'Some shade' },
+                    { val: 'Mostly Shaded', tooltip: 'Heavy shade' },
+                  ].map(({ val, tooltip }) => (
                     <CardOption
                       key={val}
                       label={val}
-                      sub={sub}
                       tooltip={tooltip}
                       selected={formData.roofShade === val}
                       onClick={() => { update('roofShade', val); setTimeout(goNext, 120) }}
@@ -808,10 +807,10 @@ export default function FreeQuotePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'South', tooltip: 'Optimal · Max annual output' },
-                    { val: 'West', tooltip: 'Great · Best for afternoon peaks' },
-                    { val: 'East', tooltip: 'Great · Best for morning output' },
-                    { val: 'North', tooltip: 'Lower output · 30–50% below south' },
+                    { val: 'South', tooltip: 'Optimal' },
+                    { val: 'West', tooltip: 'Great' },
+                    { val: 'East', tooltip: 'Great' },
+                    { val: 'North', tooltip: 'Lower' },
                   ].map(({ val, tooltip }) => (
                     <CardOption
                       key={val}
