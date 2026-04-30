@@ -130,12 +130,10 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Account card — top of sidebar (desktop only) */}
       <div className="hidden sm:block px-3 pt-3 pb-2 relative">
         {meLoaded && !me ? (
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
-            <Sun className="h-8 w-8 text-solar fill-solar/20 flex-shrink-0" />
-            <Link href="/sign-in" className="text-sm font-medium text-[var(--txt)] hover:text-solar transition-colors">
-              Log In
-            </Link>
-          </div>
+          <Link href="/sign-in" className="flex w-full items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2.5 text-[15px] font-medium text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+            <User className="h-[18px] w-[18px] flex-shrink-0" />
+            Log In
+          </Link>
         ) : (
           <>
             <button
@@ -252,8 +250,8 @@ export function Sidebar({ onClose }: SidebarProps) {
           href="/glossary"
           onClick={handleNavClick}
           className={cn(
-            'hidden sm:flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
-            pathname.startsWith('/glossary') ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)]'
+            'hidden sm:flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors bg-[var(--inp-bg)]',
+            pathname.startsWith('/glossary') ? 'text-solar' : 'text-[var(--txt)] hover:text-solar'
           )}
         >
           Glossary
