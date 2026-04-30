@@ -108,9 +108,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             }
           </button>
 
-          {/* Page title — list pages only */}
+          {/* Page title — SolarGPT | PageName */}
           {pageTitle && (
-            <span className="ml-3 flex-1 text-xl font-bold text-[var(--txt)]">{pageTitle}</span>
+            <span className="ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
+              <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
+              <span className="font-bold">SolarGPT</span>
+              <span className="font-normal text-[var(--muted)]">|</span>
+              <span className="font-medium">{pageTitle}</span>
+            </span>
           )}
 
           {/* Nav chevrons — only for non-dashboard pages */}

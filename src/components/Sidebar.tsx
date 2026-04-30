@@ -122,27 +122,8 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center px-4 pt-4 pb-2">
-        <Sun className="h-5 w-5 text-solar fill-solar/20 mr-2 shrink-0" />
-        <Link
-          href="/"
-          onClick={handleNavClick}
-          className="flex-1 text-lg sm:text-base font-bold text-[var(--txt)] rounded-lg px-2 py-1 -ml-2 hover:bg-[var(--inp-bg)] transition-colors"
-        >
-          SolarGPT
-        </Link>
-        {/* Mobile: profile avatar */}
-        <button
-          onClick={() => setProfileOpen(true)}
-          className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold"
-        >
-          {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
-        </button>
-      </div>
-
       {/* Search — always visible in sidebar */}
-      <div className="px-3 pb-2">
+      <div className="px-3 pt-4 pb-2">
         <SidebarSearch />
       </div>
 
