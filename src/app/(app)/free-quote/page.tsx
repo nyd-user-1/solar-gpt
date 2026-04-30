@@ -708,11 +708,14 @@ export default function FreeQuotePage() {
                           key={s.place_id}
                           type="button"
                           onClick={() => selectAddress(s)}
-                          className="flex w-full items-start gap-3 px-4 py-[18px] text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                          className="flex w-full items-start gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
                         >
                           <MapPin className="h-4 w-4 text-solar shrink-0 mt-0.5" />
                           {s.description}
                         </button>
+                      ))}
+                      {[0, 1, 2].map(i => (
+                        <div key={`spacer-${i}`} className="hidden sm:block px-4 py-3 border-b border-gray-50 last:border-0" />
                       ))}
                     </div>
                   )}
