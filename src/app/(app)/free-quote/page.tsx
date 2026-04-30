@@ -743,12 +743,13 @@ export default function FreeQuotePage() {
                     </div>
                   )}
                 </div>
+                <div className="h-[68px]" />
+                <OrangeButton onClick={goNext} disabled={!formData.address || solarLoading}>
+                  {solarLoading ? 'Fetching solar data…' : 'GET MY SOLAR REPORT →'}
+                </OrangeButton>
                 <p className="mt-2 text-xs text-gray-400">
                   *Supported by data from NREL and Google Solar.
                 </p>
-                <OrangeButton onClick={goNext} disabled={!formData.address || solarLoading}>
-                  {solarLoading ? 'Fetching solar data…' : 'GET MY ESTIMATE →'}
-                </OrangeButton>
               </div>
             )}
 
