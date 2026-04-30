@@ -53,7 +53,15 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
     async function load() {
       try {
         console.log('[SolarFlux] downloading:', directUrl.slice(0, 100))
-        const { fromArrayBuffer } = await import('geotiff')
+        const [{ fromArrayBuffer }, geokeysToProj4Mod, proj4Mod] = await Promise.all([
+          import('geotiff'),
+          import('geotiff-geokeys-to-proj4'),
+          import('proj4'),
+        ])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const geokeysToProj4 = (geokeysToProj4Mod as any).default ?? geokeysToProj4Mod
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const proj4 = (proj4Mod as any).default ?? proj4Mod
 
         const res = await fetch(directUrl)
         console.log('[SolarFlux] fetch response:', res.status, res.headers.get('content-type'))
@@ -67,10 +75,22 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
 
         const tiff = await fromArrayBuffer(buf)
         const image = await tiff.getImage()
-        // Use the GeoTIFF's own geographic bounds — these match the full raster extent
-        // (100m radius around the address), not just the building footprint.
-        const [west, south, east, north] = image.getBoundingBox()
-        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight(), '| bbox:', west.toFixed(5), south.toFixed(5), east.toFixed(5), north.toFixed(5))
+
+        // Reproject bounding box from GeoTIFF's native CRS (may be UTM) to WGS84
+        const geoKeys = image.getGeoKeys()
+        const projObj = geokeysToProj4.toProj4(geoKeys)
+        const projection = proj4(projObj.proj4, 'WGS84')
+        const box = image.getBoundingBox()
+        const sw = projection.forward({
+          x: box[0] * projObj.coordinatesConversionParameters.x,
+          y: box[1] * projObj.coordinatesConversionParameters.y,
+        })
+        const ne = projection.forward({
+          x: box[2] * projObj.coordinatesConversionParameters.x,
+          y: box[3] * projObj.coordinatesConversionParameters.y,
+        })
+        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight(), '| bounds:', sw, ne)
+
         const rasters = await image.readRasters()
         if (cancelled) return
 
@@ -113,7 +133,7 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
 
         if (cancelled) return
 
-        const bounds = { north, south, east, west }
+        const bounds = { north: ne.y, south: sw.y, east: ne.x, west: sw.x }
 
         // Use blob URL — faster than toDataURL('image/png') for large canvases
         const blobUrl = await new Promise<string>((resolve, reject) => {
