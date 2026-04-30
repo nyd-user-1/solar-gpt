@@ -373,6 +373,7 @@ export default function FreeQuotePage() {
   const [smsConsent, setSmsConsent] = useState(true)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suggestionsCache = useRef<Map<string, PlaceSuggestion[]>>(new Map())
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -436,15 +437,23 @@ export default function FreeQuotePage() {
   const fetchSuggestions = useCallback((val: string, loc?: { lat: number; lng: number } | null) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (val.length < 3) { setSuggestions([]); return }
+
+    // Show cached result instantly if available (stale-while-revalidate)
+    const cached = suggestionsCache.current.get(val)
+    if (cached) setSuggestions(cached)
+
     debounceRef.current = setTimeout(async () => {
       try {
         let url = `/api/places?input=${encodeURIComponent(val)}`
         if (loc) url += `&lat=${loc.lat}&lng=${loc.lng}`
         const res = await fetch(url)
         const data = await res.json()
-        setSuggestions(Array.isArray(data) ? data : [])
-      } catch { setSuggestions([]) }
-    }, 300)
+        if (Array.isArray(data) && data.length > 0) {
+          suggestionsCache.current.set(val, data)
+          setSuggestions(data)
+        }
+      } catch { /* keep stale results showing */ }
+    }, 150)
   }, [])
 
   const selectAddress = useCallback((s: PlaceSuggestion) => {
