@@ -124,6 +124,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
         )}
 
         {viewMode === 'list' && (
+          <div className="mx-6 mb-8 rounded-lg border border-[var(--border)] overflow-hidden">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="sticky top-0 z-10">
               <tr>
@@ -179,6 +180,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
