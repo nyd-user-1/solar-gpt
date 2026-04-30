@@ -682,7 +682,10 @@ export default function FreeQuotePage() {
             {/* ADDRESS */}
             {currentStep === 'address' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-6">Generate your tailored solar energy report.</h2>
+                <p className="mb-4 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-gray-400">
+                  Use Google Solar to
+                </p>
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">Generate a tailored solar energy report.</h2>
                 <div className="relative">
                   <div className="flex items-center gap-2 rounded-xl border-2 border-transparent bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.10)] focus-within:border-[#e8751c] focus-within:shadow-none transition-all">
                     <MapPin className="h-5 w-5 text-gray-400 shrink-0" />
@@ -740,6 +743,7 @@ export default function FreeQuotePage() {
                     />
                   ))}
                 </div>
+                <div className="h-[68px]" />
                 <OrangeButton onClick={goNext} disabled={!formData.homeownership}>CONTINUE →</OrangeButton>
               </div>
             )}
