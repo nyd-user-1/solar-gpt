@@ -364,6 +364,71 @@ function QuoteAssistantDrawer(props: Parameters<typeof QuoteAssistantContent>[0]
   return createPortal(<QuoteAssistantContent {...props} />, root)
 }
 
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+
+function SkeletonBox({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse rounded-xl bg-gray-200 ${className}`} />
+}
+
+function StepSkeleton({ step }: { step: QuestionStep }) {
+  const isAddress      = step === 'address'
+  const isHomeownership = step === 'homeownership'
+  const isContact      = step === 'contact'
+  const isFourButton   = !isAddress && !isHomeownership && !isContact
+
+  return (
+    <div className="mx-auto w-full max-w-3xl min-h-[400px]">
+      {/* nav row */}
+      <SkeletonBox className="h-8 w-36 mb-4 rounded-lg" />
+      {/* heading */}
+      <SkeletonBox className="h-10 w-4/5 mb-6" />
+
+      {isAddress && <>
+        <SkeletonBox className="h-[58px]" />
+        <div className="h-[68px]" />
+        <SkeletonBox className="h-[62px] mt-4" />
+        <SkeletonBox className="h-3 w-52 mt-2" />
+      </>}
+
+      {isHomeownership && <>
+        <div className="grid grid-cols-2 gap-3">
+          <SkeletonBox className="h-[62px]" />
+          <SkeletonBox className="h-[62px]" />
+        </div>
+        <div className="h-[68px]" />
+        <SkeletonBox className="h-[62px] mt-4" />
+      </>}
+
+      {isFourButton && <>
+        <div className="grid grid-cols-2 gap-3">
+          <SkeletonBox className="h-[62px]" />
+          <SkeletonBox className="h-[62px]" />
+          <SkeletonBox className="h-[62px]" />
+          <SkeletonBox className="h-[62px]" />
+        </div>
+        <SkeletonBox className="h-[62px] mt-4" />
+      </>}
+
+      {isContact && <>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <SkeletonBox className="h-[58px]" />
+          <SkeletonBox className="h-[58px]" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <SkeletonBox className="h-[58px]" />
+          <SkeletonBox className="h-[58px]" />
+        </div>
+        <div className="flex items-start gap-3 mb-4">
+          <SkeletonBox className="h-4 w-4 mt-1 rounded-sm flex-shrink-0" />
+          <SkeletonBox className="h-4 flex-1" />
+        </div>
+        <SkeletonBox className="h-[62px] mt-4" />
+        <SkeletonBox className="h-3 w-2/3 mx-auto mt-3" />
+      </>}
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function FreeQuotePage() {
@@ -375,6 +440,8 @@ export default function FreeQuotePage() {
   const [solarInsight, setSolarInsight] = useState<SolarInsight | null>(null)
   const [solarLoading, setSolarLoading] = useState(false)
   const [animating, setAnimating] = useState(false)
+  const [pendingStep, setPendingStep] = useState<QuestionStep | null>(null)
+  const [pendingStepIdx, setPendingStepIdx] = useState<number | null>(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [smsConsent, setSmsConsent] = useState(true)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -398,6 +465,10 @@ export default function FreeQuotePage() {
 
   function goNext() {
     const nextIdx = stepIdx + 1
+    if (nextIdx < QUESTION_STEPS.length) {
+      setPendingStep(QUESTION_STEPS[nextIdx])
+      setPendingStepIdx(nextIdx)
+    }
     setAnimating(true)
     setTimeout(() => {
       if (nextIdx < QUESTION_STEPS.length) {
@@ -407,19 +478,25 @@ export default function FreeQuotePage() {
         setStep('loading')
         setTimeout(() => setStep('result'), 2200)
       }
+      setPendingStep(null)
+      setPendingStepIdx(null)
       setAnimating(false)
-    }, 150)
+    }, 250)
   }
 
   function goBack() {
     if (stepIdx === 0) return
     const prevIdx = stepIdx - 1
+    setPendingStep(QUESTION_STEPS[prevIdx])
+    setPendingStepIdx(prevIdx)
     setAnimating(true)
     setTimeout(() => {
       setStep(QUESTION_STEPS[prevIdx])
       setStepIdx(prevIdx)
+      setPendingStep(null)
+      setPendingStepIdx(null)
       setAnimating(false)
-    }, 150)
+    }, 250)
   }
 
   async function submitForm() {
@@ -667,11 +744,12 @@ export default function FreeQuotePage() {
   const currentStep = step as QuestionStep
 
   return (
-    <div className={`flex flex-1 flex-col bg-white animate-zoom-in transition-opacity duration-150 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+    <div className="flex flex-1 flex-col bg-white animate-zoom-in">
       {/* Question area — scrollable + vertically centered */}
       <div className="flex-1 overflow-y-auto">
         <div className="min-h-full flex flex-col justify-center px-4 py-6">
-          <div className="mx-auto w-full max-w-3xl min-h-[400px]">
+          {animating && pendingStep ? <StepSkeleton step={pendingStep} /> : (
+          <div className={`mx-auto w-full max-w-3xl min-h-[400px] transition-opacity duration-150 ${animating ? 'opacity-0' : 'opacity-100'}`}>
 
             {/* Previous Question — sits just above the question heading */}
             {stepIdx > 0 && (
@@ -977,13 +1055,14 @@ export default function FreeQuotePage() {
             )}
 
           </div>
+          )}
         </div>
       </div>
 
       {/* Bottom bar: progress only */}
       <div className="shrink-0 px-4 pt-2 pb-4">
         <div className="mx-auto max-w-3xl">
-          <ProgressBar stepIdx={stepIdx} />
+          <ProgressBar stepIdx={pendingStepIdx ?? stepIdx} />
         </div>
       </div>
 
