@@ -260,10 +260,9 @@ export default function SolarReportClient() {
               style={{ width: '100%', height: '100%' }}
             >
               <AddressMarker lat={lat} lng={lng} />
-              {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && insight?.boundingBox && (
+              {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && (
                 <SolarFluxOverlay
                   annualFluxUrl={layers.annualFluxUrl ?? layers.monthlyFluxUrl!}
-                  boundingBox={insight.boundingBox}
                 />
               )}
             </Map>

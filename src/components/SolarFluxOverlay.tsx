@@ -3,11 +3,6 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from '@vis.gl/react-google-maps'
 
-export type BoundingBox = {
-  sw: { latitude: number; longitude: number }
-  ne: { latitude: number; longitude: number }
-}
-
 // Color ramp: blue → purple → red → orange → yellow-white
 function fluxColor(t: number): [number, number, number] {
   const stops: [number, [number, number, number]][] = [
@@ -36,18 +31,17 @@ function fluxColor(t: number): [number, number, number] {
 
 interface Props {
   annualFluxUrl: string
-  boundingBox: BoundingBox
   opacity?: number
 }
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 
-export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }: Props) {
+export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
   const map = useMap()
   const overlayRef = useRef<google.maps.GroundOverlay | null>(null)
 
   useEffect(() => {
-    if (!map || !annualFluxUrl || !boundingBox) return
+    if (!map || !annualFluxUrl) return
 
     // Fetch directly from the browser — Solar API GeoTIFF endpoints support CORS
     const directUrl = annualFluxUrl.includes('key=')
@@ -73,7 +67,10 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
 
         const tiff = await fromArrayBuffer(buf)
         const image = await tiff.getImage()
-        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight())
+        // Use the GeoTIFF's own geographic bounds — these match the full raster extent
+        // (100m radius around the address), not just the building footprint.
+        const [west, south, east, north] = image.getBoundingBox()
+        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight(), '| bbox:', west.toFixed(5), south.toFixed(5), east.toFixed(5), north.toFixed(5))
         const rasters = await image.readRasters()
         if (cancelled) return
 
@@ -116,19 +113,24 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
 
         if (cancelled) return
 
-        const bounds = {
-          north: boundingBox.ne.latitude,
-          south: boundingBox.sw.latitude,
-          east: boundingBox.ne.longitude,
-          west: boundingBox.sw.longitude,
-        }
+        const bounds = { north, south, east, west }
+
+        // Use blob URL — faster than toDataURL('image/png') for large canvases
+        const blobUrl = await new Promise<string>((resolve, reject) => {
+          canvas.toBlob(blob => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error('toBlob failed')), 'image/png')
+        })
+
+        if (cancelled) { URL.revokeObjectURL(blobUrl); return }
 
         overlayRef.current?.setMap(null)
-        overlayRef.current = new google.maps.GroundOverlay(
-          canvas.toDataURL('image/png'),
-          bounds,
-          { opacity }
-        )
+        if (overlayRef.current) {
+          // revoke previous blob if any
+          const prev = (overlayRef.current as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl
+          if (prev) URL.revokeObjectURL(prev)
+        }
+        const overlay = new google.maps.GroundOverlay(blobUrl, bounds, { opacity })
+        ;(overlay as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl = blobUrl
+        overlayRef.current = overlay
         overlayRef.current.setMap(map)
         console.log('[SolarFlux] overlay rendered', w, 'x', h, 'px, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
       } catch (err) {
@@ -139,10 +141,14 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
     load()
     return () => {
       cancelled = true
-      overlayRef.current?.setMap(null)
-      overlayRef.current = null
+      if (overlayRef.current) {
+        overlayRef.current.setMap(null)
+        const prev = (overlayRef.current as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl
+        if (prev) URL.revokeObjectURL(prev)
+        overlayRef.current = null
+      }
     }
-  }, [map, annualFluxUrl, boundingBox, opacity])
+  }, [map, annualFluxUrl, opacity])
 
   return null
 }

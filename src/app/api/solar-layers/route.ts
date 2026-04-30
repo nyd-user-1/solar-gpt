@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   // Request all flux layers; no pixelSize restriction, no quality restriction
-  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&view=FULL_LAYERS&key=${key}`
+  // pixelSizeMeters=0.5 → ~400×400 px instead of ~2000×2000, ~25x smaller download
+  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&view=FULL_LAYERS&pixelSizeMeters=0.5&key=${key}`
 
   const res = await fetch(url)
   const raw = await res.json().catch(() => ({}))

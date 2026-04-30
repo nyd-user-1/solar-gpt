@@ -57,7 +57,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     center: data.center,
-    boundingBox: data.boundingBox ?? null,
     maxSunshineHoursPerYear: sp.maxSunshineHoursPerYear ?? null,
     maxAreaSqFt,
     maxPanelsCount: sp.maxArrayPanelsCount ?? null,
