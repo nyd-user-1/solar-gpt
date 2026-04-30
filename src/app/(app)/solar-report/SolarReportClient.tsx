@@ -13,6 +13,7 @@ import { SolarFluxOverlay } from '@/components/SolarFluxOverlay'
 type LayersData = {
   annualFluxUrl: string | null
   monthlyFluxUrl: string | null
+  maskUrl: string | null
   dsmUrl: string | null
   imageryQuality: string | null
   _keys?: string[]
@@ -254,7 +255,7 @@ export default function SolarReportClient() {
             <Map
               mapTypeId="satellite"
               defaultCenter={mapCenter}
-              defaultZoom={19}
+              defaultZoom={18}
               disableDefaultUI
               gestureHandling="greedy"
               style={{ width: '100%', height: '100%' }}
@@ -263,6 +264,7 @@ export default function SolarReportClient() {
               {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && (
                 <SolarFluxOverlay
                   annualFluxUrl={layers.annualFluxUrl ?? layers.monthlyFluxUrl!}
+                  maskUrl={layers.maskUrl ?? undefined}
                 />
               )}
             </Map>

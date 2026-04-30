@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     annualFluxUrl: raw.annualFluxUrl ?? null,
     monthlyFluxUrl: raw.monthlyFluxUrl ?? null,
+    maskUrl: raw.maskUrl ?? null,
     dsmUrl: raw.dsmUrl ?? null,
     imageryQuality: raw.imageryQuality ?? null,
     _keys: Object.keys(raw),

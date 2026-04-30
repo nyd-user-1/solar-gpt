@@ -31,28 +31,29 @@ function fluxColor(t: number): [number, number, number] {
 
 interface Props {
   annualFluxUrl: string
+  maskUrl?: string
   opacity?: number
 }
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 
-export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
+export function SolarFluxOverlay({ annualFluxUrl, maskUrl, opacity = 0.85 }: Props) {
   const map = useMap()
   const overlayRef = useRef<google.maps.GroundOverlay | null>(null)
 
   useEffect(() => {
     if (!map || !annualFluxUrl) return
 
-    // Fetch directly from the browser — Solar API GeoTIFF endpoints support CORS
-    const directUrl = annualFluxUrl.includes('key=')
-      ? annualFluxUrl
-      : `${annualFluxUrl}&key=${MAPS_KEY}`
+    const directUrl = annualFluxUrl.includes('key=') ? annualFluxUrl : `${annualFluxUrl}&key=${MAPS_KEY}`
+    const directMaskUrl = maskUrl
+      ? (maskUrl.includes('key=') ? maskUrl : `${maskUrl}&key=${MAPS_KEY}`)
+      : null
 
     let cancelled = false
 
     async function load() {
       try {
-        console.log('[SolarFlux] downloading:', directUrl.slice(0, 100))
+        console.log('[SolarFlux] downloading flux' + (directMaskUrl ? ' + mask' : ''))
         const [{ fromArrayBuffer }, geokeysToProj4Mod, proj4Mod] = await Promise.all([
           import('geotiff'),
           import('geotiff-geokeys-to-proj4'),
@@ -63,17 +64,20 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const proj4 = (proj4Mod as any).default ?? proj4Mod
 
-        const res = await fetch(directUrl)
-        console.log('[SolarFlux] fetch response:', res.status, res.headers.get('content-type'))
-        if (!res.ok || cancelled) {
-          console.warn('[SolarFlux] fetch failed:', res.status)
-          return
-        }
-        const buf = await res.arrayBuffer()
-        console.log('[SolarFlux] buffer bytes:', buf.byteLength)
+        // Fetch flux and mask in parallel
+        const [fluxRes, maskRes] = await Promise.all([
+          fetch(directUrl),
+          directMaskUrl ? fetch(directMaskUrl) : Promise.resolve(null),
+        ])
+        if (!fluxRes.ok || cancelled) { console.warn('[SolarFlux] flux fetch failed:', fluxRes.status); return }
+        const [fluxBuf, maskBuf] = await Promise.all([
+          fluxRes.arrayBuffer(),
+          maskRes?.ok ? maskRes.arrayBuffer() : Promise.resolve(null),
+        ])
         if (cancelled) return
 
-        const tiff = await fromArrayBuffer(buf)
+        // Decode flux
+        const tiff = await fromArrayBuffer(fluxBuf)
         const image = await tiff.getImage()
 
         // Reproject bounding box from GeoTIFF's native CRS (may be UTM) to WGS84
@@ -89,17 +93,23 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
           x: box[2] * projObj.coordinatesConversionParameters.x,
           y: box[3] * projObj.coordinatesConversionParameters.y,
         })
-        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight(), '| bounds:', sw, ne)
 
         const rasters = await image.readRasters()
-        if (cancelled) return
-
         const raster = rasters[0] as Float32Array
         const w = image.getWidth()
         const h = image.getHeight()
 
-        let min = Infinity
-        let max = -Infinity
+        // Decode mask (1-bit: 0=not roof, 1=roof)
+        let maskRaster: ArrayLike<number> | null = null
+        if (maskBuf) {
+          const maskTiff = await fromArrayBuffer(maskBuf)
+          const maskImage = await maskTiff.getImage()
+          const maskRasters = await maskImage.readRasters()
+          maskRaster = maskRasters[0] as Uint8Array
+        }
+        if (cancelled) return
+
+        let min = Infinity, max = -Infinity
         for (let i = 0; i < raster.length; i++) {
           const v = raster[i]
           if (v > -9000 && isFinite(v)) {
@@ -119,20 +129,22 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
         for (let i = 0; i < raster.length; i++) {
           const v = raster[i]
           const base = i * 4
-          if (v <= -9000 || !isFinite(v)) {
+          // Mask: 1=roof (opaque), 0=not roof (transparent) — matches reference app renderRGB
+          const alpha = maskRaster ? maskRaster[i] * 255 : 210
+          if (v <= -9000 || !isFinite(v) || alpha === 0) {
             imgData.data[base + 3] = 0
           } else {
             const [r, g, b] = fluxColor((v - min) / range)
             imgData.data[base]     = r
             imgData.data[base + 1] = g
             imgData.data[base + 2] = b
-            imgData.data[base + 3] = 210
+            imgData.data[base + 3] = alpha
           }
         }
         ctx.putImageData(imgData, 0, 0)
-
         if (cancelled) return
 
+        console.log('[SolarFlux] rendered', w, 'x', h, 'px | mask:', !!maskRaster, '| range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
         const bounds = { north: ne.y, south: sw.y, east: ne.x, west: sw.x }
 
         // Use blob URL — faster than toDataURL('image/png') for large canvases
@@ -168,7 +180,7 @@ export function SolarFluxOverlay({ annualFluxUrl, opacity = 0.85 }: Props) {
         overlayRef.current = null
       }
     }
-  }, [map, annualFluxUrl, opacity])
+  }, [map, annualFluxUrl, maskUrl, opacity])
 
   return null
 }
