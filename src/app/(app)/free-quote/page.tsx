@@ -688,9 +688,26 @@ export default function FreeQuotePage() {
             {/* ADDRESS */}
             {currentStep === 'address' && (
               <div>
-                <p className="mb-4 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-gray-400">
+                <Link
+                  href="https://mapsplatform.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mb-4 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                >
+                  <svg viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-3 shrink-0">
+                    <defs>
+                      <linearGradient id="gmp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4285F4" />
+                        <stop offset="35%" stopColor="#9B5DE5" />
+                        <stop offset="70%" stopColor="#34A853" />
+                        <stop offset="100%" stopColor="#FBBC05" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M7 0C3.13 0 0 3.13 0 7c0 4.875 7 13 7 13s7-8.125 7-13C14 3.13 10.87 0 7 0z" fill="url(#gmp-grad)" />
+                    <circle cx="7" cy="7" r="2.5" fill="white" fillOpacity="0.45" />
+                  </svg>
                   Use Google Solar to
-                </p>
+                </Link>
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Generate a tailored solar energy report.</h2>
                 <div className="relative">
                   <div className="flex items-center gap-2 rounded-xl border-2 border-transparent bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.10)] focus-within:border-[#e8751c] focus-within:shadow-none transition-all">
