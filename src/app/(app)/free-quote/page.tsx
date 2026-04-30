@@ -702,7 +702,7 @@ export default function FreeQuotePage() {
                     )}
                   </div>
                   {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-10 overflow-hidden sm:min-h-[370px]">
+                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-10 overflow-hidden">
                       {suggestions.map(s => (
                         <button
                           key={s.place_id}
@@ -713,9 +713,6 @@ export default function FreeQuotePage() {
                           <MapPin className="h-4 w-4 text-solar shrink-0 mt-0.5" />
                           {s.description}
                         </button>
-                      ))}
-                      {[0, 1, 2].map(i => (
-                        <div key={`spacer-${i}`} className="hidden sm:block px-4 py-3 border-b border-gray-50 last:border-0" />
                       ))}
                     </div>
                   )}
