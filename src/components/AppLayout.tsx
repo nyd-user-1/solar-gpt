@@ -53,7 +53,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/profile': 'Profile',
     '/settings': 'Settings',
     '/admin': 'Admin',
-    '/free-quote': 'Report',
+    '/report': 'Report',
   }
 
   // Cyclic nav order — /dashboard excluded so it gets its own cycle
@@ -149,9 +149,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Dashboard detail — chevrons + big number top-right */}
+          {/* Dashboard detail — chevrons above, big number below */}
           {isDashboardDetail && dashHeader && (
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex flex-col items-end gap-0.5 mr-1.5">
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => router.push(`/dashboard/${dashHeader.prevSlug}`)}
@@ -167,7 +167,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
               <div className="text-right">
-                <div className="tabular-nums font-bold text-2xl leading-tight" style={{ color: dashHeader.color }}>
+                <div className="tabular-nums font-bold text-4xl leading-tight" style={{ color: dashHeader.color }}>
                   {dashHeader.formatted}
                 </div>
                 <div className="text-xs text-[var(--muted)] mt-0.5">{dashHeader.context}</div>

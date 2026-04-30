@@ -129,7 +129,7 @@ export default function LeadDetailPage() {
                   className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                   <MessageCircle className="h-4 w-4" />
                 </button>
-                <Link href={dbLead.token ? `/quote/${dbLead.token}` : '/free-quote'}
+                <Link href={dbLead.token ? `/quote/${dbLead.token}` : '/report'}
                   className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                   <Sun className="h-4 w-4" />
                 </Link>
@@ -265,7 +265,7 @@ export default function LeadDetailPage() {
               <button className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <MessageCircle className="h-4 w-4" />
               </button>
-              <Link href="/free-quote"
+              <Link href="/report"
                 className="inline-flex items-center justify-center h-8 w-8 border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <Sun className="h-4 w-4" />
               </Link>

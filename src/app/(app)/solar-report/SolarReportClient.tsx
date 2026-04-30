@@ -199,7 +199,7 @@ function SolarSidePanel({
       {(insight || error) && !loading && (
         <div className="shrink-0 px-4 pb-4 pt-3 border-t border-[var(--border)] space-y-2">
           <Link
-            href="/free-quote"
+            href="/report"
             className="flex items-center justify-center w-full rounded-xl bg-[#1a1a1a] dark:bg-white py-3 text-sm font-semibold text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity text-center"
           >
             Get a Free Quote
