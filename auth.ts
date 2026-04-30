@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       apiKey: process.env.RESEND_API_KEY ?? undefined,
       sendVerificationRequest: process.env.RESEND_API_KEY
         ? undefined
-        : async ({ url }) => {
+        : async ({ url }: { url: string }) => {
             console.warn('[SolarGPT Auth] RESEND_API_KEY not set — magic link URL:', url)
           },
     }),

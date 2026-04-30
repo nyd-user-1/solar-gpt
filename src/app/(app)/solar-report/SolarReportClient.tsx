@@ -8,13 +8,12 @@ import { Sun, ChevronDown, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { SolarInsight } from '@/lib/solar-types'
-import { SolarFluxOverlay, type BoundingBox } from '@/components/SolarFluxOverlay'
+import { SolarFluxOverlay } from '@/components/SolarFluxOverlay'
 
 type LayersData = {
   annualFluxUrl: string | null
   monthlyFluxUrl: string | null
   dsmUrl: string | null
-  boundingBox: BoundingBox | null
   imageryQuality: string | null
   _keys?: string[]
 }
@@ -261,10 +260,10 @@ export default function SolarReportClient() {
               style={{ width: '100%', height: '100%' }}
             >
               <AddressMarker lat={lat} lng={lng} />
-              {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && layers.boundingBox && (
+              {(layers?.annualFluxUrl || layers?.monthlyFluxUrl) && insight?.boundingBox && (
                 <SolarFluxOverlay
                   annualFluxUrl={layers.annualFluxUrl ?? layers.monthlyFluxUrl!}
-                  boundingBox={layers.boundingBox}
+                  boundingBox={insight.boundingBox}
                 />
               )}
             </Map>

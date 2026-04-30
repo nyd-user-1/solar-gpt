@@ -25,18 +25,15 @@ export async function GET(req: NextRequest) {
     hasBbox: !!raw.boundingBox,
     hasDsm: !!raw.dsmUrl,
     hasRgb: !!raw.rgbUrl,
-    hasMonthly: !!raw.monthlyFluxUrls?.length,
+    hasMonthly: !!raw.monthlyFluxUrl,
   })
 
   // Return everything useful — client picks what to render
   return NextResponse.json({
     annualFluxUrl: raw.annualFluxUrl ?? null,
-    // Fallback: first monthly flux image (e.g. Aug = index 7, peak sun)
-    monthlyFluxUrl: raw.monthlyFluxUrls?.[7] ?? raw.monthlyFluxUrls?.[0] ?? null,
+    monthlyFluxUrl: raw.monthlyFluxUrl ?? null,
     dsmUrl: raw.dsmUrl ?? null,
-    boundingBox: raw.boundingBox ?? null,
     imageryQuality: raw.imageryQuality ?? null,
-    // Surface all top-level keys so client can debug
     _keys: Object.keys(raw),
   })
 }
