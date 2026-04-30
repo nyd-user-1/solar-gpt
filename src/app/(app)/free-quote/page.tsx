@@ -903,59 +903,41 @@ export default function FreeQuotePage() {
             {/* CONTACT */}
             {currentStep === 'contact' && (
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">
                   {formData.firstName ? `${formData.firstName}, great news!` : 'Great news!'} Your home is solar-ready.
                 </h2>
-                <p className="text-gray-500 mb-6">Enter your details to receive your free estimate.</p>
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: ACCENT }}>
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={e => update('firstName', e.target.value)}
-                      className="mt-1 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 outline-none focus:border-[#e8751c]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={e => update('lastName', e.target.value)}
-                      className="mt-1 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 outline-none focus:border-[#e8751c]"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={e => update('firstName', e.target.value)}
+                    placeholder="Peter"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 placeholder:text-gray-300 outline-none focus:border-[#e8751c]"
+                  />
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={e => update('lastName', e.target.value)}
+                    placeholder="Parker"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 placeholder:text-gray-300 outline-none focus:border-[#e8751c]"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={e => update('email', e.target.value)}
-                      className="mt-1 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 outline-none focus:border-[#e8751c]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={e => update('phone', formatPhone(e.target.value))}
-                      placeholder="(555) 555-5555"
-                      className="mt-1 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 outline-none focus:border-[#e8751c]"
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={e => update('email', e.target.value)}
+                    placeholder="peter@mail.com"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 placeholder:text-gray-300 outline-none focus:border-[#e8751c]"
+                  />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={e => update('phone', formatPhone(e.target.value))}
+                    placeholder="(555) 555-5555"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-lg text-gray-700 placeholder:text-gray-300 outline-none focus:border-[#e8751c]"
+                  />
                 </div>
 
                 <div className="flex items-start gap-3 mb-4">
