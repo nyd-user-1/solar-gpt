@@ -6,8 +6,9 @@ export async function GET(req: NextRequest) {
   if (!lat || !lng) return NextResponse.json({ error: 'Missing lat/lng' }, { status: 400 })
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  // Request all flux layers; no pixelSize restriction, no quality restriction
-  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=100&view=FULL_LAYERS&key=${key}`
+  // radiusMeters is computed from buildingInsights.boundingBox diagonal by the client
+  const radiusMeters = req.nextUrl.searchParams.get('radiusMeters') ?? '42'
+  const url = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=${radiusMeters}&view=FULL_LAYERS&pixelSizeMeters=0.5&key=${key}`
 
   const res = await fetch(url)
   const raw = await res.json().catch(() => ({}))
@@ -25,18 +26,16 @@ export async function GET(req: NextRequest) {
     hasBbox: !!raw.boundingBox,
     hasDsm: !!raw.dsmUrl,
     hasRgb: !!raw.rgbUrl,
-    hasMonthly: !!raw.monthlyFluxUrls?.length,
+    hasMonthly: !!raw.monthlyFluxUrl,
   })
 
   // Return everything useful — client picks what to render
   return NextResponse.json({
     annualFluxUrl: raw.annualFluxUrl ?? null,
-    // Fallback: first monthly flux image (e.g. Aug = index 7, peak sun)
-    monthlyFluxUrl: raw.monthlyFluxUrls?.[7] ?? raw.monthlyFluxUrls?.[0] ?? null,
+    monthlyFluxUrl: raw.monthlyFluxUrl ?? null,
+    maskUrl: raw.maskUrl ?? null,
     dsmUrl: raw.dsmUrl ?? null,
-    boundingBox: raw.boundingBox ?? null,
     imageryQuality: raw.imageryQuality ?? null,
-    // Surface all top-level keys so client can debug
     _keys: Object.keys(raw),
   })
 }

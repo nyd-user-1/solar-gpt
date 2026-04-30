@@ -3,13 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from '@vis.gl/react-google-maps'
 
-export type BoundingBox = {
-  sw: { latitude: number; longitude: number }
-  ne: { latitude: number; longitude: number }
-}
-
 // Color ramp: blue → purple → red → orange → yellow-white
-// Matches the Google Solar API demo aesthetic
 function fluxColor(t: number): [number, number, number] {
   const stops: [number, [number, number, number]][] = [
     [0.00, [10,  10,  200]],
@@ -37,46 +31,85 @@ function fluxColor(t: number): [number, number, number] {
 
 interface Props {
   annualFluxUrl: string
-  boundingBox: BoundingBox
+  maskUrl?: string
   opacity?: number
 }
 
-export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }: Props) {
+const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
+
+export function SolarFluxOverlay({ annualFluxUrl, maskUrl, opacity = 0.85 }: Props) {
   const map = useMap()
   const overlayRef = useRef<google.maps.GroundOverlay | null>(null)
 
   useEffect(() => {
-    if (!map || !annualFluxUrl || !boundingBox) return
+    if (!map || !annualFluxUrl) return
 
-    // Proxy through our own API to avoid CORS on solar.googleapis.com GeoTIFF requests
-    const fetchUrl = `/api/solar-geotiff?url=${encodeURIComponent(annualFluxUrl)}`
+    const directUrl = annualFluxUrl.includes('key=') ? annualFluxUrl : `${annualFluxUrl}&key=${MAPS_KEY}`
+    const directMaskUrl = maskUrl
+      ? (maskUrl.includes('key=') ? maskUrl : `${maskUrl}&key=${MAPS_KEY}`)
+      : null
 
     let cancelled = false
 
     async function load() {
       try {
-        const { fromArrayBuffer } = await import('geotiff')
+        console.log('[SolarFlux] downloading flux' + (directMaskUrl ? ' + mask' : ''))
+        const [{ fromArrayBuffer }, geokeysToProj4Mod, proj4Mod] = await Promise.all([
+          import('geotiff'),
+          import('geotiff-geokeys-to-proj4'),
+          import('proj4'),
+        ])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const geokeysToProj4 = (geokeysToProj4Mod as any).default ?? geokeysToProj4Mod
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const proj4 = (proj4Mod as any).default ?? proj4Mod
 
-        const res = await fetch(fetchUrl)
-        if (!res.ok || cancelled) {
-          console.warn('[SolarFlux] proxy fetch failed:', res.status)
-          return
-        }
-        const buf = await res.arrayBuffer()
+        // Fetch flux and mask in parallel
+        const [fluxRes, maskRes] = await Promise.all([
+          fetch(directUrl),
+          directMaskUrl ? fetch(directMaskUrl) : Promise.resolve(null),
+        ])
+        if (!fluxRes.ok || cancelled) { console.warn('[SolarFlux] flux fetch failed:', fluxRes.status); return }
+        const [fluxBuf, maskBuf] = await Promise.all([
+          fluxRes.arrayBuffer(),
+          maskRes?.ok ? maskRes.arrayBuffer() : Promise.resolve(null),
+        ])
         if (cancelled) return
 
-        const tiff = await fromArrayBuffer(buf)
+        // Decode flux
+        const tiff = await fromArrayBuffer(fluxBuf)
         const image = await tiff.getImage()
-        const rasters = await image.readRasters()
-        if (cancelled) return
 
+        // Reproject bounding box from GeoTIFF's native CRS (may be UTM) to WGS84
+        const geoKeys = image.getGeoKeys()
+        const projObj = geokeysToProj4.toProj4(geoKeys)
+        const projection = proj4(projObj.proj4, 'WGS84')
+        const box = image.getBoundingBox()
+        const sw = projection.forward({
+          x: box[0] * projObj.coordinatesConversionParameters.x,
+          y: box[1] * projObj.coordinatesConversionParameters.y,
+        })
+        const ne = projection.forward({
+          x: box[2] * projObj.coordinatesConversionParameters.x,
+          y: box[3] * projObj.coordinatesConversionParameters.y,
+        })
+
+        const rasters = await image.readRasters()
         const raster = rasters[0] as Float32Array
         const w = image.getWidth()
         const h = image.getHeight()
 
-        // Compute valid data range (nodata = -9999)
-        let min = Infinity
-        let max = -Infinity
+        // Decode mask (1-bit: 0=not roof, 1=roof)
+        let maskRaster: ArrayLike<number> | null = null
+        if (maskBuf) {
+          const maskTiff = await fromArrayBuffer(maskBuf)
+          const maskImage = await maskTiff.getImage()
+          const maskRasters = await maskImage.readRasters()
+          maskRaster = maskRasters[0] as Uint8Array
+        }
+        if (cancelled) return
+
+        let min = Infinity, max = -Infinity
         for (let i = 0; i < raster.length; i++) {
           const v = raster[i]
           if (v > -9000 && isFinite(v)) {
@@ -84,7 +117,7 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
             if (v > max) max = v
           }
         }
-        if (!isFinite(min)) return // no valid pixels
+        if (!isFinite(min)) { console.warn('[SolarFlux] no valid pixels'); return }
 
         const canvas = document.createElement('canvas')
         canvas.width = w
@@ -96,47 +129,58 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
         for (let i = 0; i < raster.length; i++) {
           const v = raster[i]
           const base = i * 4
-          if (v <= -9000 || !isFinite(v)) {
-            imgData.data[base + 3] = 0 // transparent nodata
+          // Mask: 1=roof (opaque), 0=not roof (transparent) — matches reference app renderRGB
+          const alpha = maskRaster ? maskRaster[i] * 255 : 210
+          if (v <= -9000 || !isFinite(v) || alpha === 0) {
+            imgData.data[base + 3] = 0
           } else {
             const [r, g, b] = fluxColor((v - min) / range)
             imgData.data[base]     = r
             imgData.data[base + 1] = g
             imgData.data[base + 2] = b
-            imgData.data[base + 3] = 210
+            imgData.data[base + 3] = alpha
           }
         }
         ctx.putImageData(imgData, 0, 0)
-
         if (cancelled) return
 
-        const bounds = {
-          north: boundingBox.ne.latitude,
-          south: boundingBox.sw.latitude,
-          east: boundingBox.ne.longitude,
-          west: boundingBox.sw.longitude,
-        }
+        console.log('[SolarFlux] rendered', w, 'x', h, 'px | mask:', !!maskRaster, '| range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
+        const bounds = { north: ne.y, south: sw.y, east: ne.x, west: sw.x }
+
+        // Use blob URL — faster than toDataURL('image/png') for large canvases
+        const blobUrl = await new Promise<string>((resolve, reject) => {
+          canvas.toBlob(blob => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error('toBlob failed')), 'image/png')
+        })
+
+        if (cancelled) { URL.revokeObjectURL(blobUrl); return }
 
         overlayRef.current?.setMap(null)
-        overlayRef.current = new google.maps.GroundOverlay(
-          canvas.toDataURL('image/png'),
-          bounds,
-          { opacity }
-        )
+        if (overlayRef.current) {
+          // revoke previous blob if any
+          const prev = (overlayRef.current as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl
+          if (prev) URL.revokeObjectURL(prev)
+        }
+        const overlay = new google.maps.GroundOverlay(blobUrl, bounds, { opacity })
+        ;(overlay as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl = blobUrl
+        overlayRef.current = overlay
         overlayRef.current.setMap(map)
-        console.log('[SolarFlux] overlay rendered', w, 'x', h, 'pixels, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
+        console.log('[SolarFlux] overlay rendered', w, 'x', h, 'px, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
       } catch (err) {
-        console.warn('[SolarFlux] overlay error:', err)
+        console.warn('[SolarFlux] error:', err)
       }
     }
 
     load()
     return () => {
       cancelled = true
-      overlayRef.current?.setMap(null)
-      overlayRef.current = null
+      if (overlayRef.current) {
+        overlayRef.current.setMap(null)
+        const prev = (overlayRef.current as google.maps.GroundOverlay & { _blobUrl?: string })._blobUrl
+        if (prev) URL.revokeObjectURL(prev)
+        overlayRef.current = null
+      }
     }
-  }, [map, annualFluxUrl, boundingBox, opacity])
+  }, [map, annualFluxUrl, maskUrl, opacity])
 
   return null
 }
