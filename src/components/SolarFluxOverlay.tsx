@@ -9,7 +9,6 @@ export type BoundingBox = {
 }
 
 // Color ramp: blue → purple → red → orange → yellow-white
-// Matches the Google Solar API demo aesthetic
 function fluxColor(t: number): [number, number, number] {
   const stops: [number, [number, number, number]][] = [
     [0.00, [10,  10,  200]],
@@ -41,29 +40,31 @@ interface Props {
   opacity?: number
 }
 
+const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
+
 export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }: Props) {
   const map = useMap()
   const overlayRef = useRef<google.maps.GroundOverlay | null>(null)
 
   useEffect(() => {
-    console.log('[SolarFlux] effect fired', { hasMap: !!map, hasUrl: !!annualFluxUrl, hasBbox: !!boundingBox })
     if (!map || !annualFluxUrl || !boundingBox) return
 
-    // Proxy through our own API to avoid CORS on solar.googleapis.com GeoTIFF requests
-    const fetchUrl = `/api/solar-geotiff?url=${encodeURIComponent(annualFluxUrl)}`
+    // Fetch directly from the browser — Solar API GeoTIFF endpoints support CORS
+    const directUrl = annualFluxUrl.includes('key=')
+      ? annualFluxUrl
+      : `${annualFluxUrl}&key=${MAPS_KEY}`
 
     let cancelled = false
 
     async function load() {
       try {
-        console.log('[SolarFlux] load() started, fetching:', fetchUrl.slice(0, 80))
+        console.log('[SolarFlux] downloading:', directUrl.slice(0, 100))
         const { fromArrayBuffer } = await import('geotiff')
-        console.log('[SolarFlux] geotiff imported, fromArrayBuffer type:', typeof fromArrayBuffer)
 
-        const res = await fetch(fetchUrl)
+        const res = await fetch(directUrl)
         console.log('[SolarFlux] fetch response:', res.status, res.headers.get('content-type'))
         if (!res.ok || cancelled) {
-          console.warn('[SolarFlux] proxy fetch failed:', res.status)
+          console.warn('[SolarFlux] fetch failed:', res.status)
           return
         }
         const buf = await res.arrayBuffer()
@@ -80,7 +81,6 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
         const w = image.getWidth()
         const h = image.getHeight()
 
-        // Compute valid data range (nodata = -9999)
         let min = Infinity
         let max = -Infinity
         for (let i = 0; i < raster.length; i++) {
@@ -90,7 +90,7 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
             if (v > max) max = v
           }
         }
-        if (!isFinite(min)) return // no valid pixels
+        if (!isFinite(min)) { console.warn('[SolarFlux] no valid pixels'); return }
 
         const canvas = document.createElement('canvas')
         canvas.width = w
@@ -103,7 +103,7 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
           const v = raster[i]
           const base = i * 4
           if (v <= -9000 || !isFinite(v)) {
-            imgData.data[base + 3] = 0 // transparent nodata
+            imgData.data[base + 3] = 0
           } else {
             const [r, g, b] = fluxColor((v - min) / range)
             imgData.data[base]     = r
@@ -130,9 +130,9 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
           { opacity }
         )
         overlayRef.current.setMap(map)
-        console.log('[SolarFlux] overlay rendered', w, 'x', h, 'pixels, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
+        console.log('[SolarFlux] overlay rendered', w, 'x', h, 'px, range:', min.toFixed(0), '-', max.toFixed(0), 'kWh/kW/yr')
       } catch (err) {
-        console.warn('[SolarFlux] overlay error:', err)
+        console.warn('[SolarFlux] error:', err)
       }
     }
 
