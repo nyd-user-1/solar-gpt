@@ -241,21 +241,25 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
         </Map>
       </APIProvider>
 
-      {/* Info chip — always visible, shows US aggregate by default */}
-      <div className="absolute bottom-8 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md pointer-events-none">
-        <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
-        <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
-        <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
-      </div>
-
-      {/* Legend — top left, no header */}
-      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm pointer-events-none">
-        {COUNTY_LEGEND.map(({ color, label }) => (
-          <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
-            <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
-            <span className="text-[10px] text-[var(--txt)]">{label}</span>
-          </div>
-        ))}
+      {/* Combined legend + info — single module, top left */}
+      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-md pointer-events-none overflow-hidden">
+        {/* Legend */}
+        <div className="px-3 pt-2.5 pb-2">
+          {COUNTY_LEGEND.map(({ color, label }) => (
+            <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
+              <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
+              <span className="text-[10px] text-[var(--txt)]">{label}</span>
+            </div>
+          ))}
+        </div>
+        {/* Divider */}
+        <div className="border-t border-black/8 mx-3" />
+        {/* Info */}
+        <div className="px-3 pt-2 pb-2.5">
+          <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
+          <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
+          <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
+        </div>
       </div>
     </div>
   )
