@@ -61,15 +61,18 @@ export function SolarFluxOverlay({ annualFluxUrl, boundingBox, opacity = 0.85 }:
         console.log('[SolarFlux] geotiff imported, fromArrayBuffer type:', typeof fromArrayBuffer)
 
         const res = await fetch(fetchUrl)
+        console.log('[SolarFlux] fetch response:', res.status, res.headers.get('content-type'))
         if (!res.ok || cancelled) {
           console.warn('[SolarFlux] proxy fetch failed:', res.status)
           return
         }
         const buf = await res.arrayBuffer()
+        console.log('[SolarFlux] buffer bytes:', buf.byteLength)
         if (cancelled) return
 
         const tiff = await fromArrayBuffer(buf)
         const image = await tiff.getImage()
+        console.log('[SolarFlux] tiff size:', image.getWidth(), 'x', image.getHeight())
         const rasters = await image.readRasters()
         if (cancelled) return
 
