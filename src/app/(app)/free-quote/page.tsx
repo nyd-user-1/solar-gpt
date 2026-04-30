@@ -694,7 +694,7 @@ export default function FreeQuotePage() {
                         update('placeId', '')
                         fetchSuggestions(e.target.value, userLocation)
                       }}
-                      placeholder="Enter your home address"
+                      placeholder="Enter an address"
                       className="flex-1 text-lg text-gray-700 outline-none bg-transparent"
                     />
                     {solarLoading && (
