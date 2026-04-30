@@ -255,7 +255,7 @@ export default function SolarReportClient() {
             <Map
               mapTypeId="satellite"
               defaultCenter={mapCenter}
-              defaultZoom={18}
+              defaultZoom={19}
               disableDefaultUI
               gestureHandling="greedy"
               style={{ width: '100%', height: '100%' }}
