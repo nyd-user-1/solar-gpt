@@ -117,27 +117,37 @@ function ProgressBar({ stepIdx, total }: { stepIdx: number; total: number }) {
   )
 }
 
-function CardOption({ label, sub, selected, onClick }: {
-  label: string; sub?: string; selected: boolean; onClick: () => void
+function CardOption({ label, sub, tooltip, selected, onClick }: {
+  label: string; sub?: string; tooltip?: string; selected: boolean; onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        'w-full cursor-pointer rounded-xl border-2 px-6 py-4 text-center text-lg font-medium transition-all ' +
-        (selected
-          ? 'border-[#e8751c] bg-[#e8751c] text-white'
-          : 'border-gray-200 bg-white text-gray-700 hover:border-[#e8751c]')
-      }
-    >
-      {label}
-      {sub && (
-        <span className={`block text-sm font-normal ${selected ? 'text-orange-100' : 'text-[#e8751c]'}`}>
-          {sub}
-        </span>
+    <div className="relative group">
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <div className="bg-black text-white text-xs rounded-lg px-3 py-1.5 text-center leading-snug whitespace-nowrap max-w-[180px] break-words">
+            {tooltip}
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black" />
+        </div>
       )}
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        className={
+          'w-full cursor-pointer rounded-xl border-2 px-6 py-4 text-center text-lg font-medium transition-all ' +
+          (selected
+            ? 'border-[#e8751c] bg-[#e8751c] text-white'
+            : 'border-gray-200 bg-white text-gray-700 hover:border-[#e8751c]')
+        }
+      >
+        {label}
+        {sub && (
+          <span className={`block text-sm font-normal ${selected ? 'text-orange-100' : 'text-[#e8751c]'}`}>
+            {sub}
+          </span>
+        )}
+      </button>
+    </div>
   )
 }
 
@@ -771,15 +781,16 @@ export default function FreeQuotePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'Full Sun', sub: 'All day sun exposure' },
-                    { val: 'Mostly Sunny', sub: 'Minor obstructions' },
-                    { val: 'Partial Sun', sub: 'Some shade from trees or buildings' },
-                    { val: 'Mostly Shaded', sub: 'Heavy shade most of the day' },
-                  ].map(({ val, sub }) => (
+                    { val: 'Full Sun', sub: 'All day', tooltip: 'All day sun exposure' },
+                    { val: 'Mostly Sunny', sub: 'Minor obstructions', tooltip: 'Minor obstructions' },
+                    { val: 'Partial Sun', sub: 'Some shade', tooltip: 'Some shade from trees or buildings' },
+                    { val: 'Mostly Shaded', sub: 'Heavy shade', tooltip: 'Heavy shade most of the day' },
+                  ].map(({ val, sub, tooltip }) => (
                     <CardOption
                       key={val}
                       label={val}
                       sub={sub}
+                      tooltip={tooltip}
                       selected={formData.roofShade === val}
                       onClick={() => { update('roofShade', val); setTimeout(goNext, 120) }}
                     />
@@ -797,15 +808,15 @@ export default function FreeQuotePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'South', sub: 'Optimal · Max annual output' },
-                    { val: 'West', sub: 'Great · Best for afternoon peaks' },
-                    { val: 'East', sub: 'Great · Best for morning output' },
-                    { val: 'North', sub: 'Lower output · 30–50% below south' },
-                  ].map(({ val, sub }) => (
+                    { val: 'South', tooltip: 'Optimal · Max annual output' },
+                    { val: 'West', tooltip: 'Great · Best for afternoon peaks' },
+                    { val: 'East', tooltip: 'Great · Best for morning output' },
+                    { val: 'North', tooltip: 'Lower output · 30–50% below south' },
+                  ].map(({ val, tooltip }) => (
                     <CardOption
                       key={val}
                       label={val}
-                      sub={sub}
+                      tooltip={tooltip}
                       selected={formData.roofDirection === val}
                       onClick={() => { update('roofDirection', val); setTimeout(goNext, 120) }}
                     />
@@ -863,15 +874,15 @@ export default function FreeQuotePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { val: 'Excellent (750+)', sub: 'Best financing rates' },
-                    { val: 'Good (700-749)', sub: 'Great options available' },
-                    { val: 'Fair (650-699)', sub: 'Some options available' },
-                    { val: 'Below 650', sub: 'Lease options may apply' },
-                  ].map(({ val, sub }) => (
+                    { val: 'Excellent (750+)', tooltip: 'Best financing rates' },
+                    { val: 'Good (700-749)', tooltip: 'Great options available' },
+                    { val: 'Fair (650-699)', tooltip: 'Some options available' },
+                    { val: 'Below 650', tooltip: 'Lease options may apply' },
+                  ].map(({ val, tooltip }) => (
                     <CardOption
                       key={val}
                       label={val}
-                      sub={sub}
+                      tooltip={tooltip}
                       selected={formData.creditScore === val}
                       onClick={() => { update('creditScore', val); setTimeout(goNext, 120) }}
                     />
