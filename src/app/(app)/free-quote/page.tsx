@@ -972,7 +972,6 @@ export default function FreeQuotePage() {
         </div>
       </div>
 
-      <FormFooter />
     </div>
   )
 }
