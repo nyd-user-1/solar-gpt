@@ -702,13 +702,13 @@ export default function FreeQuotePage() {
                     )}
                   </div>
                   {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 w-full rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-10 overflow-hidden sm:min-h-[370px]">
                       {suggestions.map(s => (
                         <button
                           key={s.place_id}
                           type="button"
                           onClick={() => selectAddress(s)}
-                          className="flex w-full items-start gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                          className="flex w-full items-start gap-3 px-4 py-[18px] text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
                         >
                           <MapPin className="h-4 w-4 text-solar shrink-0 mt-0.5" />
                           {s.description}
