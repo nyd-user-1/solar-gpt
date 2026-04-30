@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
@@ -111,8 +112,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Page title — SolarGPT | PageName */}
           {pageTitle && (
             <span className="ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
-              <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
-              <span className="font-bold">SolarGPT</span>
+              <Link href="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--inp-bg)] transition-colors">
+                <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
+                <span className="font-bold">SolarGPT</span>
+              </Link>
               <span className="font-normal text-[var(--muted)]">|</span>
               <span className="font-medium">{pageTitle}</span>
             </span>

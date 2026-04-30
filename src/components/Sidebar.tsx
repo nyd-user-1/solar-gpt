@@ -122,6 +122,11 @@ export function Sidebar({ onClose }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
 
+      {/* Wordmark */}
+      <div className="hidden sm:flex items-center px-6 pt-5 pb-4">
+        <span className="text-lg font-bold text-[var(--txt)]">NYSgpt</span>
+      </div>
+
       {/* Mobile category icons */}
       <div className="flex items-center justify-start gap-3 px-5 pb-5 sm:hidden">
         {[
