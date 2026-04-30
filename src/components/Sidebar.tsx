@@ -108,11 +108,16 @@ export function Sidebar({ onClose }: SidebarProps) {
   const [accountOpen, setAccountOpen] = useState(false)
   const [me, setMe] = useState<{ name?: string; email?: string; isAdmin?: boolean } | null>(null)
 
+  const [meLoaded, setMeLoaded] = useState(false)
+
   useEffect(() => {
     fetch('/api/me')
       .then(r => r.json())
-      .then((d: { user?: { name?: string; email?: string; isAdmin?: boolean } }) => { if (d?.user) setMe(d.user) })
-      .catch(() => {})
+      .then((d: { user?: { name?: string; email?: string; isAdmin?: boolean } }) => {
+        if (d?.user) setMe(d.user)
+        setMeLoaded(true)
+      })
+      .catch(() => { setMeLoaded(true) })
   }, [])
 
   const handleNavClick = () => {
@@ -122,9 +127,73 @@ export function Sidebar({ onClose }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col bg-[var(--surface)] overflow-hidden">
 
-      {/* Wordmark */}
-      <div className="hidden sm:flex items-center px-6 pt-5 pb-4">
-        <span className="text-lg font-bold text-[var(--txt)]">NYSgpt</span>
+      {/* Account card — top of sidebar (desktop only) */}
+      <div className="hidden sm:block px-3 pt-3 pb-2 relative">
+        {meLoaded && !me ? (
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+            <Sun className="h-8 w-8 text-solar fill-solar/20 flex-shrink-0" />
+            <Link href="/sign-in" className="text-sm font-medium text-[var(--txt)] hover:text-solar transition-colors">
+              Log In
+            </Link>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => setAccountOpen(v => !v)}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
+                accountOpen ? 'bg-[var(--inp-bg)]' : 'hover:bg-[var(--inp-bg)]'
+              )}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">
+                {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-[var(--txt)] truncate">{me?.name ?? 'SolarGPT User'}</div>
+                <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
+              </div>
+            </button>
+            {accountOpen && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 mx-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl py-1">
+                <div className="flex items-center gap-3 px-4 py-3 bg-[var(--inp-bg)] rounded-t-xl mx-0.5 mt-0.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">SG</div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-[var(--txt)]">{me?.name ?? 'SolarGPT User'}</div>
+                    <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
+                  </div>
+                </div>
+                <div className="my-1 border-t border-[var(--border)]" />
+                <Link href="/profile" onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                  <User className="h-4 w-4 flex-shrink-0" />Profile
+                </Link>
+                <Link href="/settings" onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                  <Settings className="h-4 w-4 flex-shrink-0" />Settings
+                </Link>
+                <Link href="/funds" onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                  <Wallet className="h-4 w-4 flex-shrink-0" />Funds
+                </Link>
+                {me?.isAdmin && (
+                  <Link href="/admin" onClick={() => setAccountOpen(false)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-solar font-medium hover:bg-[var(--inp-bg)] transition-colors">
+                    <Shield className="h-4 w-4 flex-shrink-0" />Admin
+                  </Link>
+                )}
+                <div className="my-1 border-t border-[var(--border)]" />
+                <button onClick={toggle} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                  {theme === 'dark' ? <Sun className="h-4 w-4 flex-shrink-0" /> : <Moon className="h-4 w-4 flex-shrink-0" />}
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </button>
+                <div className="my-1 border-t border-[var(--border)]" />
+                <button className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
+                  <LogOut className="h-4 w-4 flex-shrink-0" />Log out
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Mobile category icons */}
@@ -179,69 +248,16 @@ export function Sidebar({ onClose }: SidebarProps) {
 
       {/* Bottom section */}
       <div className="p-3">
-        {/* Desktop: account button */}
-        <div className="hidden sm:block relative">
-          <button
-            onClick={() => setAccountOpen(v => !v)}
-            className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
-              accountOpen ? 'bg-[var(--inp-bg)]' : 'hover:bg-[var(--inp-bg)]'
-            )}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">
-              {me?.name ? me.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'SG'}
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-[var(--txt)] truncate">{me?.name ?? 'SolarGPT User'}</div>
-              <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
-            </div>
-          </button>
-
-          {accountOpen && (
-            <div className="absolute bottom-full left-0 right-0 z-50 mb-2 mx-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl py-1">
-              <div className="flex items-center gap-3 px-4 py-3 bg-[var(--inp-bg)] rounded-t-xl mx-0.5 mt-0.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-solar text-white text-xs font-bold flex-shrink-0">SG</div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-[var(--txt)]">{me?.name ?? 'SolarGPT User'}</div>
-                  <div className="text-xs text-[var(--muted)] truncate">{me?.email ?? 'Consumer'}</div>
-                </div>
-              </div>
-              <div className="my-1 border-t border-[var(--border)]" />
-              <Link href="/profile" onClick={() => setAccountOpen(false)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-                <User className="h-4 w-4 flex-shrink-0" />
-                Profile
-              </Link>
-              <Link href="/settings" onClick={() => setAccountOpen(false)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-                <Settings className="h-4 w-4 flex-shrink-0" />
-                Settings
-              </Link>
-              <Link href="/funds" onClick={() => setAccountOpen(false)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-                <Wallet className="h-4 w-4 flex-shrink-0" />
-                Funds
-              </Link>
-              {me?.isAdmin && (
-                <Link href="/admin" onClick={() => setAccountOpen(false)}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-solar font-medium hover:bg-[var(--inp-bg)] transition-colors">
-                  <Shield className="h-4 w-4 flex-shrink-0" />
-                  Admin
-                </Link>
-              )}
-              <div className="my-1 border-t border-[var(--border)]" />
-              <button onClick={toggle} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-                {theme === 'dark' ? <Sun className="h-4 w-4 flex-shrink-0" /> : <Moon className="h-4 w-4 flex-shrink-0" />}
-                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-              </button>
-              <div className="my-1 border-t border-[var(--border)]" />
-              <button className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors">
-                <LogOut className="h-4 w-4 flex-shrink-0" />
-                Log out
-              </button>
-            </div>
+        <Link
+          href="/glossary"
+          onClick={handleNavClick}
+          className={cn(
+            'hidden sm:flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors',
+            pathname.startsWith('/glossary') ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)]'
           )}
-        </div>
+        >
+          Glossary
+        </Link>
 
         {/* Mobile: get quote button */}
         <div className="flex justify-end sm:hidden">
