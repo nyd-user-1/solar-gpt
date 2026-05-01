@@ -10,7 +10,6 @@ import {
   type RooftopRow, type RooftopSegments,
 } from '@/lib/rooftops'
 import { cn } from '@/lib/utils'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { STATE_ABBRS } from '@/lib/us-states'
 
@@ -205,113 +204,112 @@ function NationalSummary({ national }: { national: RooftopSegments }) {
   )
 }
 
-// ── Sticky scope/search/view row ─────────────────────────────────────────────
+// ── Controls (search + view toggle + scope + segment selector) ───────────────
 
-function StickyControls({
-  scope, query, onQueryChange,
+const SEGMENT_TOOLTIPS: Record<SortKey, string> = {
+  total: 'Total Qualified',
+  residential: 'Residential',
+  lightCommercial: 'Light Commercial',
+  industrial: 'Industrial',
+}
+
+function Controls({
+  scope, onScopeChange,
+  query, onQueryChange,
+  view, onViewChange,
+  sortKey, onSortKey,
+  sortDir, onSortDir,
+  resultCount,
+  showViewToggle,
 }: {
-  scope: Scope
-  query: string
-  onQueryChange: (q: string) => void
+  scope: Scope; onScopeChange: (s: Scope) => void
+  query: string; onQueryChange: (q: string) => void
+  view: View; onViewChange: (v: View) => void
+  sortKey: SortKey; onSortKey: (k: SortKey) => void
+  sortDir: 'asc' | 'desc'; onSortDir: (d: 'asc' | 'desc') => void
+  resultCount: number; showViewToggle: boolean
 }) {
   return (
-    <div className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 sm:px-6 py-2.5">
-      {/* Search bar — full width, only thing in the sticky bar now */}
-      <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-3 h-11">
-        <Search className="h-4 w-4 text-[var(--muted)] shrink-0" />
+    <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
+      {/* Search bar */}
+      <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
+        <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
         <input
           type="text"
           placeholder={`Search ${scope}…`}
           value={query}
           onChange={e => onQueryChange(e.target.value)}
-          className="w-full bg-transparent text-sm text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
+          className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
         />
       </div>
-    </div>
-  )
-}
 
-// ── Sort dropdown ────────────────────────────────────────────────────────────
+      {/* Toolbar row */}
+      <div className="flex items-center gap-2">
+        {/* List / grid */}
+        {showViewToggle && <>
+          <button onClick={() => onViewChange('list')} className={cn('rounded-lg p-1.5 transition-colors', view === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+            <List className="h-5 w-5" />
+          </button>
+          <button onClick={() => onViewChange('cards')} className={cn('rounded-lg p-1.5 transition-colors', view === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+            <LayoutGrid className="h-5 w-5" />
+          </button>
+        </>}
 
-function SortControl({
-  sortKey, onSortKey,
-  scope, onScopeChange,
-  view, onViewChange, showViewToggle,
-}: {
-  sortKey: SortKey
-  onSortKey: (k: SortKey) => void
-  scope: Scope
-  onScopeChange: (s: Scope) => void
-  view: View
-  onViewChange: (v: View) => void
-  showViewToggle: boolean
-}) {
-  // Square scope buttons matching the dropdown's height + corner radius.
-  const scopeBtn = 'h-11 w-20 sm:w-24 grid place-items-center rounded-xl border text-xs font-semibold transition-colors'
-  return (
-    <div className="px-4 sm:px-6 pt-3 pb-1 flex items-center gap-2">
-      <div className="flex-1 min-w-0">
-        <Select value={sortKey} onValueChange={v => onSortKey(v as SortKey)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map(o => (
-              <SelectItem key={o.key} value={o.key}>
-                <span className="flex items-center gap-2">
-                  {o.dot ? (
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: o.dot }} />
-                  ) : (
-                    <span className="h-2.5 w-2.5" />
-                  )}
-                  <span>{o.label}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {(['states', 'counties'] as Scope[]).map(s => (
-        <button
-          key={s}
-          type="button"
-          onClick={() => onScopeChange(s)}
-          className={cn(
-            scopeBtn,
-            scope === s
-              ? 'bg-[var(--inp-bg)] text-[var(--txt)] border-[var(--txt)]'
-              : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)]',
-          )}
-        >
-          {s === 'states' ? 'States' : 'Counties'}
-        </button>
-      ))}
-      {showViewToggle && (
-        <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] p-1 h-11">
+        {/* Scope: States | Counties */}
+        {(['states', 'counties'] as Scope[]).map(s => (
           <button
+            key={s}
             type="button"
-            onClick={() => onViewChange('list')}
-            aria-label="List view"
+            onClick={() => onScopeChange(s)}
             className={cn(
-              'h-7 w-7 grid place-items-center rounded-lg transition-colors',
-              view === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)]',
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              scope === s ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]',
             )}
           >
-            <List className="h-4 w-4" />
+            {s === 'states' ? 'States' : 'Counties'}
           </button>
-          <button
-            type="button"
-            onClick={() => onViewChange('cards')}
-            aria-label="Card view"
-            className={cn(
-              'h-7 w-7 grid place-items-center rounded-lg transition-colors',
-              view === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)]',
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
+        ))}
+
+        {/* Segment radio group — styled like Archive | Report pill */}
+        <div className="inline-flex items-center divide-x divide-[var(--border)] border border-[var(--border)] rounded-xl overflow-hidden text-sm font-medium">
+          {SORT_OPTIONS.map(opt => (
+            <div key={opt.key} className="relative group">
+              <button
+                type="button"
+                onClick={() => onSortKey(opt.key)}
+                className={cn(
+                  'px-3 py-1.5 transition-colors',
+                  sortKey === opt.key ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:bg-[var(--inp-bg)] hover:text-[var(--txt)]',
+                )}
+              >
+                {opt.key === 'total' ? 'All' : (
+                  <span className="block h-3 w-3 rounded-full" style={{ background: opt.dot }} />
+                )}
+              </button>
+              {/* Black tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <div className="bg-black text-white text-xs rounded-lg px-2.5 py-1 whitespace-nowrap">
+                  {SEGMENT_TOOLTIPS[opt.key]}
+                </div>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black" />
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+
+        {/* Sort direction */}
+        <button
+          type="button"
+          onClick={() => onSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+          className="rounded-lg p-1.5 text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
+        >
+          <ArrowDownUp className={cn('h-4 w-4 transition-transform', sortDir === 'asc' && 'rotate-180')} />
+        </button>
+
+        <div className="ml-auto">
+          <span className="text-xs text-[var(--muted)]">{resultCount} results</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -323,6 +321,19 @@ function listHrefFor(scope: Scope, row: RooftopRow): string {
   return `/counties/${nameToSlug(row.state_name)}/${nameToSlug(row.region_name)}`
 }
 
+const LIST_GRID = 'grid grid-cols-[minmax(0,1fr)_40px_72px_minmax(120px,1fr)] gap-x-4 items-center'
+
+function ListHeader({ scope }: { scope: Scope }) {
+  return (
+    <div className={cn(LIST_GRID, 'px-4 sm:px-6 py-2 border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-10')}>
+      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{scope === 'states' ? 'State' : 'County'}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">ST</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)] text-right">Total</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Share</span>
+    </div>
+  )
+}
+
 function ListRow({
   row, scope, focus, max,
 }: {
@@ -331,30 +342,22 @@ function ListRow({
   focus: SegKey | null
   max: number
 }) {
-  const headline = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
-  const title = scope === 'states' ? abbr(row.state_name) : row.region_name
+  const value = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
+  const name = scope === 'states' ? row.state_name : row.region_name
   return (
     <Link
       href={listHrefFor(scope, row)}
-      className="block px-4 sm:px-6 py-3 border-b border-[var(--border)] active:bg-[var(--inp-bg)] hover:bg-[var(--inp-bg)] transition-colors"
+      className={cn(LIST_GRID, 'px-4 sm:px-6 py-3 border-b border-[var(--border)] hover:bg-[var(--inp-bg)] transition-colors group/row')}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-semibold text-[var(--txt)] truncate">
-          {title}
-          {scope === 'counties' && (
-            <span className="ml-1 font-normal text-[var(--muted)]">· {abbr(row.state_name)}</span>
-          )}
-        </p>
-        <p
-          className="text-sm font-bold tabular-nums shrink-0"
-          style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}
-        >
-          {headline}
-        </p>
-      </div>
-      <div className="mt-2">
-        <RowBar row={row} height={16} focus={focus} max={max} minLabelPct={15} />
-      </div>
+      <span className="text-sm font-medium text-[var(--txt)] truncate group-hover/row:text-solar transition-colors">{name}</span>
+      <span className="text-xs tabular-nums text-[var(--muted)]">{abbr(row.state_name)}</span>
+      <span
+        className="text-sm font-bold tabular-nums text-right"
+        style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}
+      >
+        {value}
+      </span>
+      <RowBar row={row} height={12} focus={focus} max={max} minLabelPct={20} />
     </Link>
   )
 }
@@ -606,39 +609,21 @@ export default function RooftopsClient({
         {/* National summary */}
         <NationalSummary national={national} />
 
-        {/* Sticky controls — search only */}
-        <StickyControls
-          scope={scope}
-          query={query}
-          onQueryChange={q => { setQuery(q); setVisibleCount(PAGE_SIZE) }}
-        />
-
-        {/* Sort + scope buttons + (desktop) view toggle */}
-        <SortControl
-          sortKey={sortKey}
-          onSortKey={k => { setSortKey(k); setVisibleCount(PAGE_SIZE) }}
-          scope={scope}
-          onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
-          view={view}
-          onViewChange={setView}
+        {/* Controls — search + toolbar */}
+        <Controls
+          scope={scope} onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
+          query={query} onQueryChange={q => { setQuery(q); setVisibleCount(PAGE_SIZE) }}
+          view={view} onViewChange={setView}
+          sortKey={sortKey} onSortKey={k => { setSortKey(k); setVisibleCount(PAGE_SIZE) }}
+          sortDir={sortDir} onSortDir={setSortDir}
+          resultCount={totalCount}
           showViewToggle={!isMobile}
         />
 
-        {/* Borderless asc/desc toggle, top-right just above the cards */}
-        <div className="px-4 sm:px-6 flex justify-end pb-1">
-          <button
-            type="button"
-            onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-            aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
-            className="h-8 w-8 grid place-items-center rounded-lg text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] active:bg-[var(--inp-bg)] transition-colors"
-          >
-            <ArrowDownUp className={cn('h-4 w-4 transition-transform', sortDir === 'asc' && 'rotate-180')} />
-          </button>
-        </div>
-
         {/* List or Card view */}
         {effectiveView === 'list' ? (
-          <div className="border-t border-[var(--border)]">
+          <div>
+            <ListHeader scope={scope} />
             {visibleRows.map(row => (
               <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
             ))}
