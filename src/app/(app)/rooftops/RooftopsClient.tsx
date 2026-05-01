@@ -327,11 +327,11 @@ function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: Scop
       <table className="w-full text-left text-sm">
         <thead className="sticky top-0 z-10">
           <tr>
-            <th className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            <th className="w-[200px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               {scope === 'states' ? 'State' : 'County'}
             </th>
             <th className="w-[56px] px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">ST</th>
-            <th className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Share</th>
+            <th className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)] w-full">Share</th>
             <th className="w-[72px] px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)] text-right">Total</th>
           </tr>
         </thead>
@@ -543,8 +543,8 @@ export default function RooftopsClient({
   national: RooftopSegments
 }) {
   const isMobile = useIsMobile()
-  const [scope, setScope] = useState<Scope>('states')
-  const [view, setView] = useState<View>('cards')
+  const [scope, setScope] = useState<Scope>('counties')
+  const [view, setView] = useState<View>('list')
   const [query, setQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -597,9 +597,6 @@ export default function RooftopsClient({
         <header className="px-4 sm:px-6 pt-4 pb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--txt)]">Rooftop Opportunity Explorer</h1>
         </header>
-
-        {/* National summary */}
-        <NationalSummary national={national} />
 
         {/* Controls — search + toolbar */}
         <Controls
