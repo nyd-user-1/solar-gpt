@@ -370,28 +370,39 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <span className="text-[var(--txt)]">?</span>
           </div>
         ) : (
-          <textarea ref={textareaRef} rows={1}
-            value={addressMode ? addressInput : input}
-            onChange={e => {
-              if (addressMode) {
-                setAddressInput(e.target.value)
-                fetchSuggestions(e.target.value, userLocation)
-              } else {
-                handleInputChange(e.target.value)
-              }
-            }}
-            onKeyDown={e => {
-              if (addressMode) {
-                if (e.key === 'Escape') { e.preventDefault(); exitAddressMode() }
-                if (e.key === 'Enter' && suggestions.length > 0) { e.preventDefault(); selectAddress(suggestions[0]); exitAddressMode() }
-              } else {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
-                if (e.key === 'Escape') { setModelMenuOpen(false); dismissSuggestions() }
-              }
-            }}
-            placeholder={addressMode ? 'Enter an address…' : selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
-            className="w-full resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
-            style={{ minHeight: '40px' }} />
+          <div className="flex items-start">
+            <textarea ref={textareaRef} rows={1}
+              value={addressMode ? addressInput : input}
+              onChange={e => {
+                if (addressMode) {
+                  setAddressInput(e.target.value)
+                  fetchSuggestions(e.target.value, userLocation)
+                } else {
+                  handleInputChange(e.target.value)
+                }
+              }}
+              onKeyDown={e => {
+                if (addressMode) {
+                  if (e.key === 'Escape') { e.preventDefault(); exitAddressMode() }
+                  if (e.key === 'Enter' && suggestions.length > 0) { e.preventDefault(); selectAddress(suggestions[0]); exitAddressMode() }
+                } else {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input) }
+                  if (e.key === 'Escape') { setModelMenuOpen(false); dismissSuggestions() }
+                }
+              }}
+              placeholder={addressMode ? 'Enter an address…' : selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
+              className="flex-1 resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
+              style={{ minHeight: '40px' }} />
+            {addressMode && (
+              <button
+                onClick={exitAddressMode}
+                className="shrink-0 ml-2 mt-2 flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
+                title="Exit address mode"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         )}
 
         <div className="flex items-center pt-1">
@@ -414,17 +425,6 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           </button>
 
           <div className="flex-1" />
-
-          {/* X to exit address mode — far right, before send */}
-          {addressMode && (
-            <button
-              onClick={exitAddressMode}
-              className="mr-1 shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
-              title="Exit address mode"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
 
           {/* Send / stop */}
           <div className="relative shrink-0">
