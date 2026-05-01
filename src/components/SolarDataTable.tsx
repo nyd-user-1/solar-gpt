@@ -120,10 +120,7 @@ function ColHeader({ col, active, dir, onSort }: {
   onSort: () => void
 }) {
   return (
-    <th className={cn(
-      'px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap',
-      !col.mobile && 'hidden md:table-cell',
-    )}>
+    <th className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap">
       <div className="relative group/col inline-block">
         <button
           onClick={onSort}
@@ -158,12 +155,12 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
   const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
-    <div className="mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)]">
-      <table className="w-full table-fixed text-left text-sm">
+    <div className="mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] overflow-x-auto scroll-smooth">
+      <table className="w-full min-w-[840px] md:min-w-0 table-fixed text-left text-sm">
         <thead className="sticky top-0 z-10">
           <tr>
-            {/* Region — always visible, no tooltip */}
-            <th className="w-[55%] md:w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-20">
+            {/* Region — always visible, no tooltip; sticky during horizontal scroll */}
+            <th className="w-[180px] md:w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-20">
               <button
                 onClick={() => onSort('region')}
                 className={cn(
@@ -180,10 +177,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
             {extraCols?.map(col => (
               <th
                 key={col.key}
-                className={cn(
-                  'px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap',
-                  !col.mobile && 'hidden md:table-cell',
-                )}
+                className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap"
               >
                 <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{col.header}</span>
               </th>
@@ -217,10 +211,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               {extraCols?.map(col => (
                 <td
                   key={col.key}
-                  className={cn(
-                    'px-3 py-3 text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar',
-                    !col.mobile && 'hidden md:table-cell',
-                  )}
+                  className="px-3 py-3 text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar"
                 >
                   {col.render(row)}
                 </td>
@@ -228,10 +219,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               {visibleCols.map(col => (
                 <td
                   key={col.key}
-                  className={cn(
-                    'px-3 py-3 tabular-nums text-left text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar',
-                    !col.mobile && 'hidden md:table-cell',
-                  )}
+                  className="px-3 py-3 tabular-nums text-left text-[var(--muted)] text-xs transition-colors group-hover/row:text-solar"
                 >
                   {col.fmt(row)}
                 </td>

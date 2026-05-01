@@ -64,6 +64,8 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
   const lastHoveredNameRef = useRef<string | null>(null)
   const currentHoveredRef = useRef<string | null>(null)
   const refreshStyleRef = useRef<(() => void) | null>(null)
+  const onHoverRef = useRef(onHoverChange)
+  onHoverRef.current = onHoverChange
 
   useEffect(() => {
     if (!map || initialized.current) return
@@ -202,11 +204,19 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
       refreshStyleRef.current?.()
     }
     const handleZoom = (e: Event) => {
-      const { name, bounds } = (e as CustomEvent<{ name: string; bounds: { north: number; south: number; east: number; west: number } }>).detail
+      const { name, bounds, value, buildings } = (e as CustomEvent<{
+        name: string
+        bounds: { north: number; south: number; east: number; west: number }
+        value?: number
+        buildings?: number
+      }>).detail
       lastHoveredNameRef.current = name
       currentHoveredRef.current = name
       refreshStyleRef.current?.()
       if (map) map.fitBounds(bounds, 80)
+      if (typeof value === 'number' && typeof buildings === 'number') {
+        onHoverRef.current({ name, value, buildings })
+      }
     }
     window.addEventListener('solargpt:state-highlight', handleHighlight)
     window.addEventListener('solargpt:state-zoom', handleZoom)

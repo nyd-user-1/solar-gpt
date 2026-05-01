@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { nameToSlug } from '@/lib/queries'
 import { fmtUsd } from '@/lib/utils'
@@ -19,12 +20,24 @@ const CARD_GRADIENTS = [
 export function StateCardClient({ state, index }: { state: StateKpi; index: number }) {
   const gradient = CARD_GRADIENTS[(index + 5) % CARD_GRADIENTS.length]
   const href = `/states/${nameToSlug(state.state_name)}`
+  const [pressed, setPressed] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ name: string | null }>).detail
+      setPressed(detail?.name === state.state_name)
+    }
+    window.addEventListener('solargpt:state-zoom', handler)
+    return () => window.removeEventListener('solargpt:state-zoom', handler)
+  }, [state.state_name])
 
   const zoomToState = () => {
     window.dispatchEvent(new CustomEvent('solargpt:state-zoom', {
       detail: {
         name: state.state_name,
         bounds: { north: state.lat_max, south: state.lat_min, east: state.lng_max, west: state.lng_min },
+        value: state.untapped_annual_value_usd,
+        buildings: state.count_qualified,
       },
     }))
   }
@@ -36,7 +49,7 @@ export function StateCardClient({ state, index }: { state: StateKpi; index: numb
 
   return (
     <div
-      className="group relative shrink-0 w-[calc(58vw-18px)] sm:w-[300px] aspect-[16/9] sm:aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer"
+      className={`group relative shrink-0 w-[calc(58vw-18px)] sm:w-[300px] aspect-[16/9] sm:aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer transition-shadow ${pressed ? 'ring-2 ring-solar ring-offset-2 ring-offset-[var(--surface)]' : ''}`}
       onMouseEnter={highlight}
       onMouseLeave={unhighlight}
       onClick={zoomToState}

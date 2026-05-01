@@ -97,11 +97,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col min-w-0 rounded-none sm:rounded-2xl bg-[var(--surface)] overflow-hidden outline-none">
         {/* Top bar */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          {/* Sun icon — only visible when sidebar is closed; opens sidebar */}
+          {/* Sidebar toggle — leftmost on desktop, rightmost on mobile */}
           <button
             onClick={() => setSidebarOpen(v => !v)}
             aria-label="Toggle sidebar"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
+            className="order-last sm:order-first flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
           >
             {sidebarOpen
               ? <PanelLeftClose className="h-5 w-5 text-[var(--txt)]" />
@@ -109,9 +109,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             }
           </button>
 
-          {/* Page title — SolarGPT | PageName (page name hidden on mobile) */}
+          {/* Page title — SolarGPT | PageName (page name hidden on mobile, leftmost on mobile) */}
           {pageTitle && (
-            <span className="ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
+            <span className="order-first sm:order-2 ml-0 sm:ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
               <Link href="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--inp-bg)] transition-colors">
                 <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
                 <span className="font-bold">SolarGPT</span>
@@ -193,10 +193,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* New Chat — always visible */}
+          {/* New Chat — desktop only on mobile the sidebar handles navigation */}
           <Link
             href="/new-chat"
-            className="ml-2 flex items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
+            className="hidden sm:flex ml-2 items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
             New Chat
