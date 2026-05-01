@@ -422,9 +422,9 @@ export function GEADrawer({ gea, county, onClose, onCountyBack }: {
             transition: dragging ? 'none' : 'height 200ms ease, transform 250ms ease',
           }}
         >
-          {/* Drag handle */}
+          {/* Drag handle — visual pill stays small but the touch area is larger */}
           <div
-            className="shrink-0 flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+            className="shrink-0 flex justify-center items-center py-3.5 cursor-grab active:cursor-grabbing touch-none select-none"
             onPointerDown={(e) => {
               dragRef.current = { startY: e.clientY, startFrac: sheetFrac }
               setDragging(true)
