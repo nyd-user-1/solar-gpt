@@ -36,7 +36,7 @@ export function StateCardClient({ state, index }: { state: StateKpi; index: numb
 
   return (
     <div
-      className="group relative shrink-0 w-[calc(72vw-22px)] sm:w-[300px] aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer"
+      className="group relative shrink-0 w-[calc(58vw-18px)] sm:w-[300px] aspect-[16/9] sm:aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer"
       onMouseEnter={highlight}
       onMouseLeave={unhighlight}
       onClick={zoomToState}

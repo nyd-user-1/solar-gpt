@@ -235,7 +235,7 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
   const chip = hoveredInfo ?? usDefault
 
   return (
-    <div className="relative w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <div className="relative w-full h-[300px] sm:h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       <APIProvider apiKey={apiKey}>
         <Map
           defaultCenter={{ lat: 38, lng: -97 }}
