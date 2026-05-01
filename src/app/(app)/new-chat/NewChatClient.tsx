@@ -65,7 +65,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const [modelMenuAbove, setModelMenuAbove] = useState(true)
 
   // Address + Solar
-  const [addressMode, setAddressMode] = useState(true)
+  const [addressMode, setAddressMode] = useState(false)
   const [addressInput, setAddressInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null)
@@ -436,7 +436,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           })}
         </div>
       )}
-      <div className={`flex flex-col rounded-[28px] border-2 ${addressMode ? 'border-solar' : 'border-[var(--border)]'} bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-all gap-1`}>
+      <div className={`flex flex-col rounded-[28px] border-2 ${addressMode ? 'border-solar' : isListening ? 'border-blue-500' : 'border-[var(--border)]'} bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-all gap-1`}>
 
         {selectedAddress && (
           <div className="flex items-center gap-2 pb-2.5 mb-1 border-b border-[var(--border)]">
@@ -494,15 +494,6 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
               placeholder={addressMode ? 'Enter an address…' : selectedAddress ? 'Ask about this property…' : 'Ask about solar potential…'}
               className="flex-1 resize-none bg-transparent py-1 text-[17px] text-[var(--txt)] placeholder:text-[var(--muted2)] outline-none leading-relaxed"
               style={{ minHeight: '40px' }} />
-            {addressMode && (
-              <button
-                onClick={exitAddressMode}
-                className="shrink-0 ml-2 mt-2 flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
-                title="Exit address mode"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
         )}
 
