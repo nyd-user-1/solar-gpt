@@ -462,13 +462,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <span className="text-[var(--txt)]">?</span>
           </div>
         ) : isListening ? (
-          <div className="flex flex-col gap-1 py-1 min-h-[40px]">
-            <canvas ref={canvasRef} className="w-full" style={{ height: '32px' }} />
-            {pendingTranscript ? (
-              <p className="text-sm text-[var(--muted)] leading-snug line-clamp-2">{pendingTranscript}</p>
-            ) : (
-              <p className="text-sm text-[var(--muted2)] leading-snug">Listening…</p>
-            )}
+          <div className="flex items-center min-h-[40px] py-1">
+            <canvas ref={canvasRef} className="flex-1" style={{ height: '32px' }} />
           </div>
         ) : (
           <div className="flex items-start">
@@ -524,6 +519,15 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           >
             <Mic className="h-4 w-4" />
           </button>
+          {isListening && (
+            <button
+              onClick={acceptDictation}
+              className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors"
+              title="Done with dictation"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          )}
           <div className="flex-1" />
           {streaming ? (
             <button type="button"
@@ -531,13 +535,6 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
               className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
               title="Stop (Space)">
               <Square className="h-4 w-4 fill-white" />
-            </button>
-          ) : isListening ? (
-            <button type="button"
-              onClick={acceptDictation}
-              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity"
-              title="Done">
-              <Check className="h-4 w-4" />
             </button>
           ) : (
             <button type="button"
