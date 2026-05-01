@@ -65,7 +65,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const [modelMenuAbove, setModelMenuAbove] = useState(true)
 
   // Address + Solar
-  const [addressMode, setAddressMode] = useState(false)
+  const [addressMode, setAddressMode] = useState(true)
   const [addressInput, setAddressInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null)
@@ -386,6 +386,16 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             title={addressMode ? 'Exit address mode' : 'Look up an address'}>
             <MapPin className="h-4 w-4" />
           </button>
+
+          {addressMode && (
+            <button
+              onClick={exitAddressMode}
+              className="ml-1.5 shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
+              title="Exit address mode"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
 
           <div className="flex-1" />
 
