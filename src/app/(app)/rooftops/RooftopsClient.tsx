@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Search, List, LayoutGrid, ArrowDownUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts'
@@ -15,38 +15,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type Scope = 'states' | 'counties'
 type View = 'list' | 'cards'
 type SegKey = 'residential' | 'lightCommercial' | 'industrial'
-type SortKey = 'total' | 'residential' | 'lightCommercial' | 'industrial' | 'pctRes' | 'pctLC' | 'pctInd'
+type SortKey = 'total' | 'residential' | 'lightCommercial' | 'industrial'
 
 // Map a sort key to the segment it isolates (or null for the default mix view)
 function focusedSegment(key: SortKey): SegKey | null {
   switch (key) {
-    case 'residential':
-    case 'pctRes':
-      return 'residential'
-    case 'lightCommercial':
-    case 'pctLC':
-      return 'lightCommercial'
-    case 'industrial':
-    case 'pctInd':
-      return 'industrial'
-    default:
-      return null
+    case 'residential': return 'residential'
+    case 'lightCommercial': return 'lightCommercial'
+    case 'industrial': return 'industrial'
+    default: return null
   }
 }
 
-function focusValue(row: RooftopRow, seg: SegKey, asPct: boolean): number {
-  if (asPct) return pct(row[seg], row.total)
+function focusValue(row: RooftopRow, seg: SegKey): number {
   return row[seg]
 }
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'total', label: 'Total Qualified' },
-  { key: 'residential', label: 'Residential count' },
-  { key: 'lightCommercial', label: 'Light Commercial count' },
-  { key: 'industrial', label: 'Industrial count' },
-  { key: 'pctRes', label: 'Residential %' },
-  { key: 'pctLC', label: 'Light Commercial %' },
-  { key: 'pctInd', label: 'Industrial %' },
+  { key: 'residential', label: 'Residential' },
+  { key: 'lightCommercial', label: 'Light Commercial' },
+  { key: 'industrial', label: 'Industrial' },
 ]
 
 const PAGE_SIZE = 50
@@ -66,9 +55,6 @@ function getSortValue(row: RooftopRow, key: SortKey): number {
     case 'residential': return row.residential
     case 'lightCommercial': return row.lightCommercial
     case 'industrial': return row.industrial
-    case 'pctRes': return pct(row.residential, row.total)
-    case 'pctLC': return pct(row.lightCommercial, row.total)
-    case 'pctInd': return pct(row.industrial, row.total)
   }
 }
 
@@ -117,60 +103,70 @@ function MixBar({
   )
 }
 
-// Single-segment, right-anchored bar used when sorting by a specific segment.
+// Single-segment, left-anchored bar used when sorting by a specific segment.
 // Width is normalized to `max` across the visible rows so the #1 row fills
-// the bar and lower-ranked rows scale down. Growth direction: right → left.
+// the bar and lower-ranked rows scale down. The fill animates from 0 →
+// target width left-to-right whenever the focused segment changes (Recharts-
+// style growth), and smoothly transitions otherwise.
 function FocusBar({
-  value, max, segment, height = 12, showLabel = true, isPct = false,
+  value, max, segment, height = 12,
 }: {
   value: number
   max: number
   segment: SegKey
   height?: number
-  showLabel?: boolean
-  isPct?: boolean
 }) {
-  const ratio = max > 0 ? Math.min(1, value / max) : 0
-  const widthPct = ratio * 100
+  const targetPct = max > 0 ? Math.min(100, (value / max) * 100) : 0
+  const [w, setW] = useState(0)
+  const prevSegRef = useRef<SegKey | null>(null)
+
+  useEffect(() => {
+    const segChanged = prevSegRef.current !== segment
+    prevSegRef.current = segment
+    if (segChanged) {
+      // Reset to 0 then animate to target so the bar visibly grows on each
+      // sort-segment change (and on initial mount).
+      setW(0)
+      const id = requestAnimationFrame(() => setW(targetPct))
+      return () => cancelAnimationFrame(id)
+    }
+    setW(targetPct)
+  }, [targetPct, segment])
+
   return (
     <div
-      className="w-full overflow-hidden rounded-full bg-[var(--inp-bg)] flex justify-end"
+      className="w-full overflow-hidden rounded-full bg-[var(--inp-bg)]"
       style={{ height }}
     >
       <div
-        className="h-full flex items-center justify-end pr-2 text-white transition-[width] duration-300 ease-out"
-        style={{ width: `${widthPct}%`, background: SEGMENT_COLORS[segment] }}
-        title={`${SEGMENT_LABELS[segment]}: ${isPct ? value.toFixed(1) + '%' : fmtCompact(value)}`}
-      >
-        {showLabel && widthPct >= 25 && (
-          <span className="text-[10px] font-semibold tabular-nums leading-none truncate">
-            {isPct ? `${value.toFixed(1)}%` : fmtCompact(value)}
-          </span>
-        )}
-      </div>
+        className="h-full rounded-full"
+        style={{
+          width: `${w}%`,
+          background: SEGMENT_COLORS[segment],
+          transition: 'width 600ms cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+      />
     </div>
   )
 }
 
 // Picks the right bar based on whether we're focusing on a single segment.
 function RowBar({
-  row, height, focus, max, isPct, minLabelPct = 15,
+  row, height, focus, max, minLabelPct = 15,
 }: {
   row: RooftopRow
   height: number
   focus: SegKey | null
   max: number
-  isPct: boolean
   minLabelPct?: number
 }) {
   if (focus) {
     return (
       <FocusBar
-        value={focusValue(row, focus, isPct)}
+        value={focusValue(row, focus)}
         max={max}
         segment={focus}
         height={height}
-        isPct={isPct}
       />
     )
   }
@@ -217,37 +213,38 @@ function StickyControls({
 }) {
   return (
     <div className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 sm:px-6 py-2.5 space-y-2">
-      {/* Scope toggle — full width, two equal halves */}
-      <div className="grid grid-cols-2 rounded-full bg-[var(--inp-bg)] p-1">
-        {(['states', 'counties'] as Scope[]).map(s => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onScopeChange(s)}
-            className={cn(
-              'h-11 rounded-full text-sm font-semibold capitalize transition-colors',
-              scope === s
-                ? 'bg-[var(--surface)] text-[var(--txt)] shadow-sm'
-                : 'text-[var(--muted)]',
-            )}
-          >
-            {s}
-          </button>
-        ))}
+      {/* Search bar — full width, top of the sticky stack */}
+      <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-3 h-11">
+        <Search className="h-4 w-4 text-[var(--muted)] shrink-0" />
+        <input
+          type="text"
+          placeholder={`Search ${scope}…`}
+          value={query}
+          onChange={e => onQueryChange(e.target.value)}
+          className="w-full bg-transparent text-sm text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
+        />
       </div>
 
-      {/* Search + view toggles */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-3 h-11">
-          <Search className="h-4 w-4 text-[var(--muted)] shrink-0" />
-          <input
-            type="text"
-            placeholder={`Search ${scope}…`}
-            value={query}
-            onChange={e => onQueryChange(e.target.value)}
-            className="w-full bg-transparent text-sm text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
-          />
+      {/* Compact scope toggle (left) + view toggle (right) on the same row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 rounded-full bg-[var(--inp-bg)] p-1 h-11">
+          {(['states', 'counties'] as Scope[]).map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onScopeChange(s)}
+              className={cn(
+                'h-9 px-3 rounded-full text-xs font-semibold capitalize transition-colors',
+                scope === s
+                  ? 'bg-[var(--surface)] text-[var(--txt)] shadow-sm'
+                  : 'text-[var(--muted)]',
+              )}
+            >
+              {s}
+            </button>
+          ))}
         </div>
+
         <div className="flex items-center gap-1 rounded-full bg-[var(--inp-bg)] p-1 h-11">
           <button
             type="button"
@@ -289,7 +286,6 @@ function SortControl({
 }) {
   return (
     <div className="px-4 sm:px-6 pt-3 pb-2 flex items-center gap-2">
-      <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">Sort</label>
       <div className="flex-1">
         <Select value={sortKey} onValueChange={v => onSortKey(v as SortKey)}>
           <SelectTrigger>
@@ -322,21 +318,17 @@ function listHrefFor(scope: Scope, row: RooftopRow): string {
 }
 
 function ListRow({
-  row, scope, focus, max, isPct,
+  row, scope, focus, max,
 }: {
   row: RooftopRow
   scope: Scope
   focus: SegKey | null
   max: number
-  isPct: boolean
 }) {
-  // When a single segment is focused, show the focused number on the right
-  // instead of the row's total — keeps the bar and the headline metric aligned.
-  const headline = focus
-    ? (isPct
-      ? `${pct(row[focus], row.total).toFixed(1)}%`
-      : fmtCompact(row[focus]))
-    : fmtCompact(row.total)
+  // When focused, show only the focused segment chip below the bar.
+  // The headline number on the right also swaps to the focused segment count.
+  const headline = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
+  const visibleSegs: SegKey[] = focus ? [focus] : ['residential', 'lightCommercial', 'industrial']
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -357,17 +349,11 @@ function ListRow({
         </p>
       </div>
       <div className="mt-2">
-        <RowBar row={row} height={12} focus={focus} max={max} isPct={isPct} minLabelPct={15} />
+        <RowBar row={row} height={16} focus={focus} max={max} minLabelPct={15} />
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
-        {(['residential', 'lightCommercial', 'industrial'] as SegKey[]).map(k => (
-          <span
-            key={k}
-            className={cn(
-              'inline-flex items-center gap-1 transition-opacity',
-              focus && focus !== k && 'opacity-40',
-            )}
-          >
+        {visibleSegs.map(k => (
+          <span key={k} className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
             <span className="font-semibold text-[var(--txt)]">{fmtCompact(row[k])}</span>
             <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
@@ -379,22 +365,16 @@ function ListRow({
 }
 
 function CardRow({
-  row, scope, focus, max, isPct,
+  row, scope, focus, max,
 }: {
   row: RooftopRow
   scope: Scope
   focus: SegKey | null
   max: number
-  isPct: boolean
 }) {
-  const headline = focus
-    ? (isPct
-      ? `${pct(row[focus], row.total).toFixed(1)}%`
-      : fmtCompact(row[focus]))
-    : fmtCompact(row.total)
-  const headlineCaption = focus
-    ? `${SEGMENT_LABELS[focus]}${isPct ? ' share' : ''}`
-    : 'qualified'
+  const headline = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
+  const headlineCaption = focus ? SEGMENT_LABELS[focus] : 'qualified'
+  const visibleSegs: SegKey[] = focus ? [focus] : ['residential', 'lightCommercial', 'industrial']
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -418,20 +398,17 @@ function CardRow({
         </div>
       </div>
       <div className="mt-3">
-        <RowBar row={row} height={24} focus={focus} max={max} isPct={isPct} minLabelPct={12} />
+        <RowBar row={row} height={28} focus={focus} max={max} minLabelPct={12} />
       </div>
-      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] tabular-nums">
-        {(['residential', 'lightCommercial', 'industrial'] as SegKey[]).map(k => (
-          <div
-            key={k}
-            className={cn(
-              'flex items-center gap-1 transition-opacity',
-              focus && focus !== k && 'opacity-40',
-            )}
-          >
+      <div className={cn(
+        'mt-2 grid gap-2 text-[11px] tabular-nums',
+        focus ? 'grid-cols-1' : 'grid-cols-3',
+      )}>
+        {visibleSegs.map(k => (
+          <div key={k} className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
             <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
-            <span className="font-semibold text-[var(--txt)]">{pct(row[k], row.total).toFixed(0)}%</span>
+            <span className="font-semibold text-[var(--txt)]">{focus ? fmtCompact(row[k]) : `${pct(row[k], row.total).toFixed(0)}%`}</span>
           </div>
         ))}
       </div>
@@ -614,20 +591,19 @@ export default function RooftopsClient({
   const visibleRows = filtered.slice(0, visibleCount)
 
   // When sorting by a single segment, the row bars switch to a single-color,
-  // right-anchored bar normalized to the max value across the FILTERED list
+  // left-anchored bar normalized to the max value across the FILTERED list
   // (not just the visible page) so the rankings cascade consistently as the
   // user scrolls / loads more.
   const focus = focusedSegment(sortKey)
-  const isPct = sortKey === 'pctRes' || sortKey === 'pctLC' || sortKey === 'pctInd'
   const focusMax = useMemo(() => {
     if (!focus) return 0
     let m = 0
     for (const r of filtered) {
-      const v = focusValue(r, focus, isPct)
+      const v = focusValue(r, focus)
       if (v > m) m = v
     }
     return m
-  }, [filtered, focus, isPct])
+  }, [filtered, focus])
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
@@ -672,13 +648,13 @@ export default function RooftopsClient({
         {view === 'list' ? (
           <div className="border-t border-[var(--border)]">
             {visibleRows.map(row => (
-              <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} isPct={isPct} />
+              <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
             ))}
           </div>
         ) : (
           <div className="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {visibleRows.map(row => (
-              <CardRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} isPct={isPct} />
+              <CardRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
             ))}
           </div>
         )}
