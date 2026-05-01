@@ -507,58 +507,45 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             onModelChange={setSelectedModelId}
           />
 
-          {isListening ? (
-            <>
-              <div className="flex-1" />
-              <button
-                onClick={cancelDictation}
-                className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
-                title="Cancel dictation"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <button
-                onClick={acceptDictation}
-                className="ml-2 shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity"
-                title="Accept dictation"
-              >
-                <Check className="h-4 w-4" />
-              </button>
-            </>
+          <button
+            onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+              addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
+            }`}
+            title={addressMode ? 'Exit address mode' : 'Look up an address'}>
+            <MapPin className="h-4 w-4" />
+          </button>
+          <button
+            onClick={toggleDictation}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+              isListening ? 'text-blue-500 bg-blue-50' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
+            }`}
+            title={isListening ? 'Stop dictation' : 'Dictate'}
+          >
+            <Mic className="h-4 w-4" />
+          </button>
+          <div className="flex-1" />
+          {streaming ? (
+            <button type="button"
+              onClick={stopStream}
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+              title="Stop (Space)">
+              <Square className="h-4 w-4 fill-white" />
+            </button>
+          ) : isListening ? (
+            <button type="button"
+              onClick={acceptDictation}
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity"
+              title="Done">
+              <Check className="h-4 w-4" />
+            </button>
           ) : (
-            <>
-              <button
-                onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
-                className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                  addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
-                }`}
-                title={addressMode ? 'Exit address mode' : 'Look up an address'}>
-                <MapPin className="h-4 w-4" />
-              </button>
-              <button
-                onClick={toggleDictation}
-                className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
-                title="Dictate"
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-              <div className="flex-1" />
-              {streaming ? (
-                <button type="button"
-                  onClick={stopStream}
-                  className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
-                  title="Stop (Space)">
-                  <Square className="h-4 w-4 fill-white" />
-                </button>
-              ) : (
-                <button type="button"
-                  onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
-                  disabled={(!input.trim() && !selectedStateName) || loading}
-                  className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
-                  <ArrowUp className="h-4 w-4" />
-                </button>
-              )}
-            </>
+            <button type="button"
+              onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
+              disabled={(!input.trim() && !selectedStateName) || loading}
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
+              <ArrowUp className="h-4 w-4" />
+            </button>
           )}
         </div>
       </div>
