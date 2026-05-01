@@ -321,44 +321,40 @@ function listHrefFor(scope: Scope, row: RooftopRow): string {
   return `/counties/${nameToSlug(row.state_name)}/${nameToSlug(row.region_name)}`
 }
 
-const LIST_GRID = 'grid grid-cols-[minmax(0,1fr)_40px_72px_minmax(120px,1fr)] gap-x-4 items-center'
-
-function ListHeader({ scope }: { scope: Scope }) {
+function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: Scope; focus: SegKey | null; max: number }) {
   return (
-    <div className={cn(LIST_GRID, 'px-4 sm:px-6 py-2 border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-10')}>
-      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{scope === 'states' ? 'State' : 'County'}</span>
-      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">ST</span>
-      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)] text-right">Total</span>
-      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Share</span>
+    <div className="mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] overflow-hidden">
+      <table className="w-full text-left text-sm">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th className="px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {scope === 'states' ? 'State' : 'County'}
+            </th>
+            <th className="w-[56px] px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">ST</th>
+            <th className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Share</th>
+            <th className="w-[72px] px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)] text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[var(--border)]">
+          {rows.map(row => {
+            const value = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
+            const name = scope === 'states' ? row.state_name : row.region_name
+            return (
+              <tr
+                key={row.id}
+                onClick={() => { if (typeof window !== 'undefined') window.location.href = listHrefFor(scope, row) }}
+                className="cursor-pointer hover:bg-[var(--inp-bg)] transition-colors group/row"
+              >
+                <td className="px-4 py-3 font-medium text-[var(--txt)] group-hover/row:text-solar transition-colors">{name}</td>
+                <td className="px-3 py-3 text-xs tabular-nums text-[var(--muted)]">{abbr(row.state_name)}</td>
+                <td className="px-3 py-3"><RowBar row={row} height={12} focus={focus} max={max} minLabelPct={20} /></td>
+                <td className="px-3 py-3 tabular-nums font-bold text-right" style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}>{value}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
-  )
-}
-
-function ListRow({
-  row, scope, focus, max,
-}: {
-  row: RooftopRow
-  scope: Scope
-  focus: SegKey | null
-  max: number
-}) {
-  const value = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
-  const name = scope === 'states' ? row.state_name : row.region_name
-  return (
-    <Link
-      href={listHrefFor(scope, row)}
-      className={cn(LIST_GRID, 'px-4 sm:px-6 py-3 border-b border-[var(--border)] hover:bg-[var(--inp-bg)] transition-colors group/row')}
-    >
-      <span className="text-sm font-medium text-[var(--txt)] truncate group-hover/row:text-solar transition-colors">{name}</span>
-      <span className="text-xs tabular-nums text-[var(--muted)]">{abbr(row.state_name)}</span>
-      <span
-        className="text-sm font-bold tabular-nums text-right"
-        style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}
-      >
-        {value}
-      </span>
-      <RowBar row={row} height={12} focus={focus} max={max} minLabelPct={20} />
-    </Link>
   )
 }
 
@@ -600,10 +596,6 @@ export default function RooftopsClient({
         {/* Header + preamble */}
         <header className="px-4 sm:px-6 pt-4 pb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--txt)]">Rooftop Opportunity Explorer</h1>
-          <p className="mt-1 text-[12px] sm:text-sm text-[var(--muted)]">
-            Every region&rsquo;s rooftops break down into three buyer types. This page shows which
-            regions are dominated by homes, small businesses, or warehouse-scale opportunities.
-          </p>
         </header>
 
         {/* National summary */}
@@ -622,12 +614,7 @@ export default function RooftopsClient({
 
         {/* List or Card view */}
         {effectiveView === 'list' ? (
-          <div>
-            <ListHeader scope={scope} />
-            {visibleRows.map(row => (
-              <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
-            ))}
-          </div>
+          <ListView rows={visibleRows} scope={scope} focus={focus} max={focusMax} />
         ) : (
           <div className="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {visibleRows.map(row => (
