@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Sun, ArrowUp, Map, X, MapPin, Square, Mic } from 'lucide-react'
+import { Sun, ArrowUp, Map, X, MapPin, Square, Mic, Check } from 'lucide-react'
 import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
 import { SolarPlusMenu } from '@/components/SolarPlusMenu'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -86,6 +86,13 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
   const [isListening, setIsListening] = useState(false)
+  const [pendingTranscript, setPendingTranscript] = useState('')
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const animFrameRef = useRef<number | null>(null)
+  const waveDataRef = useRef<number[]>([])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const selectedModel = MODEL_OPTIONS.find(m => m.id === selectedModelId) ?? MODEL_OPTIONS[0]
 
@@ -284,22 +291,86 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streaming])
 
+  const stopWaveform = () => {
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null; analyserRef.current = null; streamRef.current = null
+    waveDataRef.current = []
+  }
+
+  const startWaveform = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ctx = new (window.AudioContext ?? (window as any).webkitAudioContext)()
+      audioCtxRef.current = ctx
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 256
+      analyserRef.current = analyser
+      ctx.createMediaStreamSource(stream).connect(analyser)
+      const draw = () => {
+        animFrameRef.current = requestAnimationFrame(draw)
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const c = canvas.getContext('2d')
+        if (!c) return
+        const a = analyserRef.current
+        if (!a) return
+        const buf = new Uint8Array(a.frequencyBinCount)
+        a.getByteTimeDomainData(buf)
+        let sum = 0
+        for (const v of buf) sum += (v - 128) ** 2
+        const rms = Math.min(1, Math.sqrt(sum / buf.length) / 48)
+        waveDataRef.current = [...waveDataRef.current.slice(-150), rms]
+        const W = canvas.clientWidth, H = canvas.clientHeight
+        if (canvas.width !== W * 2 || canvas.height !== H * 2) { canvas.width = W * 2; canvas.height = H * 2; c.scale(2, 2) }
+        c.clearRect(0, 0, W, H)
+        const barW = 2, gap = 2, total = barW + gap
+        const bars = waveDataRef.current.slice(-Math.floor(W / total))
+        bars.forEach((v, i) => {
+          const h = Math.max(2, v * H * 0.85)
+          c.fillStyle = 'rgba(120,120,120,0.85)'
+          c.fillRect(i * total, H / 2 - h / 2, barW, h)
+        })
+      }
+      draw()
+    } catch { /* mic denied */ }
+  }
+
+  const cancelDictation = () => {
+    recognitionRef.current?.abort()
+    setIsListening(false); setPendingTranscript(''); stopWaveform()
+  }
+
+  const acceptDictation = () => {
+    recognitionRef.current?.stop()
+    const t = pendingTranscript.trim()
+    if (t) {
+      if (addressMode) { setAddressInput(prev => (prev + ' ' + t).trim()); fetchSuggestions(t, userLocation) }
+      else setInput(prev => (prev + ' ' + t).trim())
+    }
+    setIsListening(false); setPendingTranscript(''); stopWaveform()
+  }
+
   const toggleDictation = () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return }
+    if (isListening) { cancelDictation(); return }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SR) return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec: any = new SR()
-    rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US'
+    rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
-      const t = e.results[0][0].transcript
-      if (addressMode) { setAddressInput(prev => prev + t); fetchSuggestions(t, userLocation) }
-      else setInput(prev => prev + t)
+      let t = ''
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript
+      setPendingTranscript(t)
     }
-    rec.onend = () => setIsListening(false)
-    rec.onerror = () => setIsListening(false)
-    rec.start(); recognitionRef.current = rec; setIsListening(true)
+    rec.onerror = () => { setIsListening(false); setPendingTranscript(''); stopWaveform() }
+    rec.start(); recognitionRef.current = rec; setIsListening(true); setPendingTranscript('')
+    startWaveform()
   }
 
   const isEmpty = messages.length === 0
@@ -390,6 +461,15 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <span className="text-solar font-semibold">{selectedStateName}</span>
             <span className="text-[var(--txt)]">?</span>
           </div>
+        ) : isListening ? (
+          <div className="flex flex-col gap-1 py-1 min-h-[40px]">
+            <canvas ref={canvasRef} className="w-full" style={{ height: '32px' }} />
+            {pendingTranscript ? (
+              <p className="text-sm text-[var(--muted)] leading-snug line-clamp-2">{pendingTranscript}</p>
+            ) : (
+              <p className="text-sm text-[var(--muted2)] leading-snug">Listening…</p>
+            )}
+          </div>
         ) : (
           <div className="flex items-start">
             <textarea ref={textareaRef} rows={1}
@@ -427,7 +507,6 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         )}
 
         <div className="flex items-center pt-1">
-          {/* Left: + then MapPin */}
           <SolarPlusMenu
             stateChips={stateChips}
             countyChips={countyChips}
@@ -436,45 +515,59 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             selectedModelId={selectedModelId}
             onModelChange={setSelectedModelId}
           />
-          <button
-            onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
-            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-              addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
-            }`}
-            title={addressMode ? 'Exit address mode' : 'Look up an address'}>
-            <MapPin className="h-4 w-4" />
-          </button>
 
-          <button
-            onClick={toggleDictation}
-            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-              isListening ? 'text-red-500 bg-red-50 animate-pulse' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
-            }`}
-            title={isListening ? 'Stop dictation' : 'Dictate'}
-          >
-            <Mic className="h-4 w-4" />
-          </button>
-
-          <div className="flex-1" />
-
-          {/* Send / stop */}
-          <div className="relative shrink-0">
-          </div>
-
-          {streaming ? (
-            <button type="button"
-              onClick={stopStream}
-              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
-              title="Stop (Space)">
-              <Square className="h-4 w-4 fill-white" />
-            </button>
+          {isListening ? (
+            <>
+              <div className="flex-1" />
+              <button
+                onClick={cancelDictation}
+                className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                title="Cancel dictation"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <button
+                onClick={acceptDictation}
+                className="ml-2 shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] hover:opacity-80 transition-opacity"
+                title="Accept dictation"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </>
           ) : (
-            <button type="button"
-              onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
-              disabled={(!input.trim() && !selectedStateName) || loading}
-              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
-              <ArrowUp className="h-4 w-4" />
-            </button>
+            <>
+              <button
+                onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
+                className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  addressMode || selectedAddress ? 'text-solar bg-solar/10' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
+                }`}
+                title={addressMode ? 'Exit address mode' : 'Look up an address'}>
+                <MapPin className="h-4 w-4" />
+              </button>
+              <button
+                onClick={toggleDictation}
+                className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
+                title="Dictate"
+              >
+                <Mic className="h-4 w-4" />
+              </button>
+              <div className="flex-1" />
+              {streaming ? (
+                <button type="button"
+                  onClick={stopStream}
+                  className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+                  title="Stop (Space)">
+                  <Square className="h-4 w-4 fill-white" />
+                </button>
+              ) : (
+                <button type="button"
+                  onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
+                  disabled={(!input.trim() && !selectedStateName) || loading}
+                  className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
