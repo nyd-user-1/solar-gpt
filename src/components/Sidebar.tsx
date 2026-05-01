@@ -7,6 +7,7 @@ import {
   Sun, Moon, MapPin, Map, Zap, Hash,
   Users, X, ChevronRight, LogOut, Bell, Shield, Settings,
   Mail, Phone, Wallet, Building2, Compass, MessageCircle, LayoutDashboard, Sparkles, User,
+  BarChart3,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
   { to: '/zips',         icon: Hash,             label: 'ZIP Codes' },
+  { to: '/rooftops',     icon: BarChart3,        label: 'Rooftops' },
   { to: '/leads',        icon: Users,            label: 'Leads' },
 ]
 
