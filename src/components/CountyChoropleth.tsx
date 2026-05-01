@@ -109,13 +109,14 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
       if (!countiesReadyRef.current) return
       const high = isHigh()
       map.data.setStyle((feature: google.maps.Data.Feature) => {
-        if (!high) return { visible: false }
+        if (!high) return { visible: false, clickable: false }
         const fips = (feature.getProperty('STATEFP') as string) + (feature.getProperty('COUNTYFP') as string)
         const c = countyLookup[fips]
         return {
           fillColor: c ? countyColor(c.untapped_annual_value_usd) : '#e5e7eb',
           fillOpacity: c ? 0.75 : 0.15,
           strokeColor: '#ffffff', strokeWeight: 0.4, strokeOpacity: 0.8,
+          clickable: true,
         }
       })
     }
@@ -164,6 +165,9 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
       .then((geojson: object) => {
         map.data.addGeoJson(geojson)
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
+          // Only navigate to county detail at high zoom; at low zoom the
+          // user is targeting states (mobile taps were leaking through).
+          if (!isHigh()) return
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const c = countyLookup[fips]
           if (c) router.push(`/counties/${nameToSlug(c.state_name)}/${nameToSlug(c.region_name)}`)
@@ -219,7 +223,8 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
   const isMobile = useIsMobile()
-  const [legendOpen, setLegendOpen] = useState(true)
+  // Collapsed by default on mobile (chip only); always open on desktop
+  const [legendOpen, setLegendOpen] = useState(false)
 
   const usDefault = useMemo<ChipData>(() => ({
     name: 'United States',
