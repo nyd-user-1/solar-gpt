@@ -315,6 +315,16 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streaming])
 
+  // Enter accepts dictation (same as tapping ✓) when recording is active
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (recordingState !== 'recording') return
+      if (e.key === 'Enter') { e.preventDefault(); stopAndTranscribeRef.current() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [recordingState])
+
   const stopWaveform = () => {
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
     audioCtxRef.current?.close().catch(() => {})
