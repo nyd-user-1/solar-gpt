@@ -234,25 +234,23 @@ function StickyControls({
 // ── Sort dropdown ────────────────────────────────────────────────────────────
 
 function SortControl({
-  sortKey, sortDir, onSortKey, onToggleDir,
+  sortKey, onSortKey,
   scope, onScopeChange,
   view, onViewChange, showViewToggle,
 }: {
   sortKey: SortKey
-  sortDir: 'asc' | 'desc'
   onSortKey: (k: SortKey) => void
-  onToggleDir: () => void
   scope: Scope
   onScopeChange: (s: Scope) => void
   view: View
   onViewChange: (v: View) => void
   showViewToggle: boolean
 }) {
-  // Square button variant matching the asc/desc icon button.
-  const btn = 'h-11 px-3 grid place-items-center rounded-xl border border-[var(--border)] text-xs font-semibold transition-colors'
+  // Square scope buttons matching the dropdown's height + corner radius.
+  const scopeBtn = 'h-11 w-20 sm:w-24 grid place-items-center rounded-xl border text-xs font-semibold transition-colors'
   return (
-    <div className="px-4 sm:px-6 pt-3 pb-2 flex items-center gap-2 flex-wrap">
-      <div className="flex-1 min-w-[160px]">
+    <div className="px-4 sm:px-6 pt-3 pb-1 flex items-center gap-2">
+      <div className="flex-1 min-w-0">
         <Select value={sortKey} onValueChange={v => onSortKey(v as SortKey)}>
           <SelectTrigger>
             <SelectValue />
@@ -273,24 +271,16 @@ function SortControl({
           </SelectContent>
         </Select>
       </div>
-      <button
-        type="button"
-        onClick={onToggleDir}
-        aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
-        className="h-11 w-11 grid place-items-center rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] transition-colors"
-      >
-        <ArrowDownUp className={cn('h-4 w-4 transition-transform', sortDir === 'asc' && 'rotate-180')} />
-      </button>
       {(['states', 'counties'] as Scope[]).map(s => (
         <button
           key={s}
           type="button"
           onClick={() => onScopeChange(s)}
           className={cn(
-            btn,
+            scopeBtn,
             scope === s
               ? 'bg-[var(--inp-bg)] text-[var(--txt)] border-[var(--txt)]'
-              : 'text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)]',
+              : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)]',
           )}
         >
           {s === 'states' ? 'States' : 'Counties'}
@@ -626,15 +616,25 @@ export default function RooftopsClient({
         {/* Sort + scope buttons + (desktop) view toggle */}
         <SortControl
           sortKey={sortKey}
-          sortDir={sortDir}
           onSortKey={k => { setSortKey(k); setVisibleCount(PAGE_SIZE) }}
-          onToggleDir={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
           scope={scope}
           onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
           view={view}
           onViewChange={setView}
           showViewToggle={!isMobile}
         />
+
+        {/* Borderless asc/desc toggle, top-right just above the cards */}
+        <div className="px-4 sm:px-6 flex justify-end pb-1">
+          <button
+            type="button"
+            onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+            aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
+            className="h-8 w-8 grid place-items-center rounded-lg text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)] active:bg-[var(--inp-bg)] transition-colors"
+          >
+            <ArrowDownUp className={cn('h-4 w-4 transition-transform', sortDir === 'asc' && 'rotate-180')} />
+          </button>
+        </div>
 
         {/* List or Card view */}
         {effectiveView === 'list' ? (
