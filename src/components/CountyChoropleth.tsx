@@ -262,23 +262,23 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
 
       {/* Combined legend + info — single module, top left. Collapsible accordion on mobile. */}
       <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-md overflow-hidden max-w-[calc(100%-24px)]">
-        {/* Info chip — always visible; click to toggle legend on mobile */}
+        {/* Info chip — always visible; click to toggle legend */}
         <button
           type="button"
           onClick={() => setLegendOpen(o => !o)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-left sm:cursor-default"
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-left cursor-pointer"
         >
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-[#1a1a1a] truncate">{chip.name}</p>
-            <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
-            <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
+            <p className="text-xl font-bold text-[#f59e0b] leading-tight">{fmtUsd(chip.value)} potential/yr</p>
+            <p className="text-[10px] text-[#666] mt-0.5">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>
           <ChevronDown
-            className={`h-4 w-4 shrink-0 text-[#999] transition-transform sm:hidden ${legendOpen ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 shrink-0 text-[#999] transition-transform ${legendOpen ? 'rotate-180' : ''}`}
           />
         </button>
-        {/* Legend rows — always visible on desktop; collapsible on mobile */}
-        {(legendOpen || !isMobile) && (
+        {/* Legend rows — collapsible accordion on all screen sizes */}
+        {legendOpen && (
           <>
             <div className="border-t border-black/10 mx-3" />
             <div className="px-3 pt-2 pb-2.5">

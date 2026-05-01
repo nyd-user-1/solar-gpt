@@ -122,15 +122,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </span>
           )}
 
-          {/* New Chat — right of title, desktop only */}
-          <Link
-            href="/new-chat"
-            className="hidden sm:flex ml-2 items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Chat
-          </Link>
-
           {/* Spacer — pushes all right-side elements to the far right */}
           <div className="hidden sm:block flex-1" />
 
