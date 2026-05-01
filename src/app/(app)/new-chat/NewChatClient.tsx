@@ -83,10 +83,16 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null)
-  const [isListening, setIsListening] = useState(false)
-  const [pendingTranscript, setPendingTranscript] = useState('')
+
+  // ── Voice recording ──
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'transcribing'>('idle')
+  const [toast, setToast] = useState<string | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stopAndTranscribeRef = useRef<() => void>(() => {})
+
+  // ── Waveform visualization ──
   const audioCtxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -113,6 +119,24 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         p => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
         () => {}
       )
+    }
+  }, [])
+
+  // Auto-dismiss voice toasts
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 4500)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  // Stop mic/recorder on unmount (discard partial recordings)
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current)
+      mediaRecorderRef.current?.stop()
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+      audioCtxRef.current?.close().catch(() => {})
     }
   }, [])
 
@@ -293,16 +317,13 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
 
   const stopWaveform = () => {
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
-    streamRef.current?.getTracks().forEach(t => t.stop())
     audioCtxRef.current?.close().catch(() => {})
-    audioCtxRef.current = null; analyserRef.current = null; streamRef.current = null
+    audioCtxRef.current = null; analyserRef.current = null
     waveDataRef.current = []
   }
 
-  const startWaveform = async () => {
+  const startWaveformFromStream = (stream: MediaStream) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ctx = new (window.AudioContext ?? (window as any).webkitAudioContext)()
       audioCtxRef.current = ctx
@@ -336,41 +357,109 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         })
       }
       draw()
-    } catch { /* mic denied */ }
+    } catch { /* ignore */ }
   }
 
-  const cancelDictation = () => {
-    recognitionRef.current?.abort()
-    setIsListening(false); setPendingTranscript(''); stopWaveform()
+  const cancelRecording = () => {
+    if (recordingTimerRef.current) { clearTimeout(recordingTimerRef.current); recordingTimerRef.current = null }
+    mediaRecorderRef.current?.stop()
+    mediaRecorderRef.current = null
+    audioChunksRef.current = []
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    stopWaveform()
+    setRecordingState('idle')
   }
 
-  const acceptDictation = () => {
-    recognitionRef.current?.stop()
-    const t = pendingTranscript.trim()
-    if (t) {
-      if (addressMode) { setAddressInput(prev => (prev + ' ' + t).trim()); fetchSuggestions(t, userLocation) }
-      else setInput(prev => (prev + ' ' + t).trim())
+  const stopAndTranscribe = async () => {
+    if (recordingTimerRef.current) { clearTimeout(recordingTimerRef.current); recordingTimerRef.current = null }
+    const recorder = mediaRecorderRef.current
+    if (!recorder || recorder.state === 'inactive') return
+
+    // Collect final chunk then build blob
+    const chunks = await new Promise<Blob[]>(resolve => {
+      const acc: Blob[] = [...audioChunksRef.current]
+      recorder.addEventListener('dataavailable', (e) => { if (e.data.size > 0) acc.push(e.data) }, { once: true })
+      recorder.addEventListener('stop', () => resolve(acc), { once: true })
+      recorder.stop()
+    })
+
+    mediaRecorderRef.current = null
+    audioChunksRef.current = []
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    stopWaveform()
+
+    if (chunks.length === 0) {
+      setToast("Couldn't hear anything — try again?")
+      setRecordingState('idle')
+      return
     }
-    setIsListening(false); setPendingTranscript(''); stopWaveform()
+
+    const mimeType = chunks[0].type || 'audio/webm'
+    const blob = new Blob(chunks, { type: mimeType })
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
+
+    setRecordingState('transcribing')
+    try {
+      const form = new FormData()
+      form.append('file', blob, `recording.${ext}`)
+      const res = await fetch('/api/transcribe', { method: 'POST', body: form })
+      if (!res.ok) { setToast('Transcription failed — please try again.'); setRecordingState('idle'); return }
+      const data = await res.json()
+      const text: string = (data.text ?? '').trim()
+      if (!text) { setToast("Couldn't hear anything — try again?"); setRecordingState('idle'); return }
+      setRecordingState('idle')
+      submit(text)
+    } catch {
+      setToast('Transcription failed — please try again.')
+      setRecordingState('idle')
+    }
   }
 
-  const toggleDictation = () => {
-    if (isListening) { cancelDictation(); return }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
-    if (!SR) return
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rec: any = new SR()
-    rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rec.onresult = (e: any) => {
-      let t = ''
-      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript
-      setPendingTranscript(t)
+  // Keep a stable ref so the 60s auto-stop timer always calls the latest version
+  stopAndTranscribeRef.current = stopAndTranscribe
+
+  const toggleMic = async () => {
+    if (recordingState === 'recording') { cancelRecording(); return }
+    if (recordingState === 'transcribing') return
+
+    if (typeof MediaRecorder === 'undefined') {
+      setToast('Voice input is not supported in this browser.')
+      return
     }
-    rec.onerror = () => { setIsListening(false); setPendingTranscript(''); stopWaveform() }
-    rec.start(); recognitionRef.current = rec; setIsListening(true); setPendingTranscript('')
-    startWaveform()
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+      : ''
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      startWaveformFromStream(stream)
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      mediaRecorderRef.current = recorder
+      audioChunksRef.current = []
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+      recorder.start(250)
+      setRecordingState('recording')
+
+      // Auto-stop at 60 seconds
+      recordingTimerRef.current = setTimeout(() => {
+        setToast('Recording limit reached (60s) — transcribing now…')
+        stopAndTranscribeRef.current()
+      }, 60_000)
+    } catch (err: unknown) {
+      const name = (err as { name?: string })?.name
+      if (name === 'NotAllowedError') {
+        setToast('Mic permission denied. Enable it in your browser settings to use voice input.')
+      } else if (name === 'NotFoundError') {
+        setToast('No microphone detected.')
+      } else {
+        setToast('Could not access microphone.')
+      }
+    }
   }
 
   const isEmpty = messages.length === 0
@@ -436,7 +525,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
           })}
         </div>
       )}
-      <div className={`flex flex-col rounded-[28px] border-2 ${addressMode ? 'border-solar' : isListening ? 'border-blue-500' : 'border-[var(--border)]'} bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-all gap-1`}>
+      <div className={`flex flex-col rounded-[28px] border-2 ${addressMode ? 'border-solar' : recordingState !== 'idle' ? 'border-blue-500' : 'border-[var(--border)]'} bg-[var(--surface)] px-4 pt-3 pb-3 shadow-sm transition-all gap-1`}>
 
         {selectedAddress && (
           <div className="flex items-center gap-2 pb-2.5 mb-1 border-b border-[var(--border)]">
@@ -461,7 +550,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <span className="text-solar font-semibold">{selectedStateName}</span>
             <span className="text-[var(--txt)]">?</span>
           </div>
-        ) : isListening ? (
+        ) : recordingState === 'recording' ? (
           <div className="flex items-center min-h-[40px] py-1">
             <canvas ref={canvasRef} className="flex-1" style={{ height: '32px' }} />
           </div>
@@ -511,19 +600,29 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <MapPin className="h-4 w-4" />
           </button>
           <button
-            onClick={toggleDictation}
-            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-              isListening ? 'text-blue-500 bg-blue-50' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
+            onClick={toggleMic}
+            disabled={recordingState === 'transcribing'}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
+              recordingState === 'recording' ? 'text-red-500 bg-red-50 animate-pulse'
+              : recordingState === 'transcribing' ? 'text-blue-500 bg-blue-50'
+              : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
             }`}
-            title={isListening ? 'Stop dictation' : 'Dictate'}
+            title={recordingState === 'recording' ? 'Cancel recording' : recordingState === 'transcribing' ? 'Transcribing…' : 'Voice input'}
           >
-            <Mic className="h-4 w-4" />
+            {recordingState === 'transcribing' ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
           </button>
-          {isListening && (
+          {recordingState === 'recording' && (
             <button
-              onClick={acceptDictation}
+              onClick={stopAndTranscribe}
               className="ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors"
-              title="Done with dictation"
+              title="Done — transcribe"
             >
               <Check className="h-4 w-4" />
             </button>
@@ -547,6 +646,9 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         </div>
       </div>
 
+      {toast && (
+        <p className="text-center text-[11px] text-[var(--muted)] mt-2 animate-in fade-in">{toast}</p>
+      )}
       <p className="text-center text-[10px] text-[var(--muted2)] mt-2">
         AI-powered solar intelligence · Data from Google Sunroof &amp; NREL Cambium · Design &amp; Development by NYSgpt
       </p>
