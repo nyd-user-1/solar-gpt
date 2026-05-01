@@ -110,9 +110,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             }
           </button>
 
-          {/* Page title — SolarGPT | PageName (page name hidden on mobile, leftmost on mobile) */}
+          {/* Page title — leftmost on mobile, after sidebar on desktop */}
           {pageTitle && (
-            <span className="order-first sm:order-2 ml-0 sm:ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
+            <span className="order-first sm:order-none ml-0 sm:ml-3 flex items-center gap-2 text-xl text-[var(--txt)]">
               <Link href="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--inp-bg)] transition-colors">
                 <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
                 <span className="font-bold">SolarGPT</span>
@@ -121,6 +121,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline font-medium">{pageTitle}</span>
             </span>
           )}
+
+          {/* New Chat — right of title, desktop only */}
+          <Link
+            href="/new-chat"
+            className="hidden sm:flex ml-2 items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Chat
+          </Link>
+
+          {/* Spacer — pushes all right-side elements to the far right */}
+          <div className="hidden sm:block flex-1" />
 
           {/* Nav chevrons — only for non-dashboard pages (hidden on mobile) */}
           {navIdx >= 0 && !isAnyDashboard && (
@@ -194,14 +206,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* New Chat — desktop only on mobile the sidebar handles navigation */}
-          <Link
-            href="/new-chat"
-            className="hidden sm:flex ml-2 items-center gap-1.5 rounded-full bg-[var(--txt)] px-3.5 py-1.5 text-sm font-medium text-[var(--bg)] hover:opacity-80 transition-opacity shrink-0"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Chat
-          </Link>
         </div>
 
         <main className="flex flex-1 flex-col overflow-hidden outline-none" tabIndex={-1}>
