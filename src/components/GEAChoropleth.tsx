@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import type { CountyMapEntry, GeaKpi, CambiumCountyMapEntry } from '@/lib/queries'
-import { fmtUsd, fmtUsdFull, fmtNum } from '@/lib/utils'
+import { fmtUsdFull, fmtNum } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { GEA_COLORS, getGeaColor } from '@/lib/gea-colors'
 import { GEADrawer, type CountyDrawerData } from '@/components/GEADrawer'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
@@ -265,6 +267,8 @@ export default function GEAChoropleth({
   const [pinnedGea, setPinnedGea] = useState<string | null>(null)
   const [selectedGea, setSelectedGea] = useState<string | null>(null)
   const [selectedCounty, setSelectedCounty] = useState<CountyDrawerData | null>(null)
+  const isMobile = useIsMobile()
+  const [legendOpen, setLegendOpen] = useState(true)
 
   // FIPS → county Sunroof data for county-level chip on hover
   const sunroofLookup = useMemo<Record<string, SunroofEntry>>(() => {
@@ -327,14 +331,16 @@ export default function GEAChoropleth({
       <GEADrawer
         gea={selectedGea}
         county={selectedCounty}
-        onClose={() => { setSelectedGea(null); setPinnedGea(null); setSelectedCounty(null) }}
+        // Close the drawer but preserve the pinned legend selection so the
+        // user can still see the chip value for the region they selected.
+        onClose={() => { setSelectedGea(null); setSelectedCounty(null) }}
         onCountyBack={() => setSelectedCounty(null)}
       />
       <div className={`relative ${className}`}>
         <APIProvider apiKey={apiKey}>
           <Map
             defaultCenter={{ lat: 38, lng: -97 }}
-            defaultZoom={4}
+            defaultZoom={isMobile ? 3 : 4}
             gestureHandling="cooperative"
             disableDefaultUI
             zoomControl
@@ -350,10 +356,62 @@ export default function GEAChoropleth({
           </Map>
         </APIProvider>
 
-        {/* Legend + info chip — stacked top-left panel */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto">
-          {/* Legend */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm min-w-[290px]">
+        {/* Legend + info chip — combined collapsible accordion on mobile, stacked panels on desktop */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto max-w-[calc(100%-24px)] sm:max-w-none">
+          {/* Mobile: combined accordion (chip = header, legend = body) */}
+          <div className="sm:hidden bg-white/95 backdrop-blur-sm rounded-xl shadow-md overflow-hidden w-[240px] max-w-full">
+            <button
+              type="button"
+              onClick={() => setLegendOpen(o => !o)}
+              className="w-full flex items-start gap-2 px-3 py-2.5 text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight truncate">{chip.name}</p>
+                <p className="text-[22px] font-bold tabular-nums leading-none mt-1 truncate" style={{ color: chipColor }}>{chip.value === -1 ? '—' : fmtUsdFull(chip.value)}</p>
+                <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
+                <p className="text-[11px] text-[#666] mt-1.5">{fmtNum(chip.buildings)} qualified buildings</p>
+              </div>
+              <ChevronDown className={`h-4 w-4 shrink-0 mt-0.5 text-[#999] transition-transform ${legendOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {legendOpen && (
+              <>
+                <div className="border-t border-black/10 mx-3" />
+                <div className="px-3 pt-2 pb-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-1.5">Grid Regions</p>
+                  <div className="grid grid-cols-1">
+                    {Object.entries(GEA_COLORS).map(([gea, color]) => {
+                      const isPinned = pinnedGea === gea
+                      const isActive = legendHoveredGea === gea || isPinned
+                      return (
+                        <button
+                          key={gea}
+                          type="button"
+                          className={`flex items-center gap-1.5 py-[5px] px-1 rounded-md text-left transition-colors select-none ${
+                            isPinned ? 'bg-black/10' : 'hover:bg-black/5'
+                          }`}
+                          onClick={() => {
+                            if (isPinned) {
+                              setPinnedGea(null); setSelectedGea(null); setSelectedCounty(null)
+                            } else {
+                              setPinnedGea(gea); setSelectedGea(gea); setSelectedCounty(null)
+                            }
+                          }}
+                        >
+                          <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
+                          <span className={`text-[11px] whitespace-nowrap transition-colors ${isActive ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                            {gea.replace(/_/g, ' ')}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Desktop: separate legend panel */}
+          <div className="hidden sm:block bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm min-w-[290px]">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
             <div className="grid grid-cols-2 gap-x-4">
               {Object.entries(GEA_COLORS).map(([gea, color]) => {
@@ -385,8 +443,8 @@ export default function GEAChoropleth({
             </div>
           </div>
 
-          {/* Info chip — full width of legend */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
+          {/* Desktop: separate info chip — full width of legend */}
+          <div className="hidden sm:block bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
             <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
             <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{chip.value === -1 ? '—' : fmtUsdFull(chip.value)}</p>
             <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>

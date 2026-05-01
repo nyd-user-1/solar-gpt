@@ -109,21 +109,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             }
           </button>
 
-          {/* Page title — SolarGPT | PageName */}
+          {/* Page title — SolarGPT | PageName (page name hidden on mobile) */}
           {pageTitle && (
             <span className="ml-3 flex-1 flex items-center gap-2 text-xl text-[var(--txt)]">
               <Link href="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--inp-bg)] transition-colors">
                 <Sun className="h-5 w-5 text-solar fill-solar/20 shrink-0" />
                 <span className="font-bold">SolarGPT</span>
               </Link>
-              <span className="font-normal text-[var(--muted)]">|</span>
-              <span className="font-medium">{pageTitle}</span>
+              <span className="hidden sm:inline font-normal text-[var(--muted)]">|</span>
+              <span className="hidden sm:inline font-medium">{pageTitle}</span>
             </span>
           )}
 
-          {/* Nav chevrons — only for non-dashboard pages */}
+          {/* Nav chevrons — only for non-dashboard pages (hidden on mobile) */}
           {navIdx >= 0 && !isAnyDashboard && (
-            <div className="flex items-center gap-2 ml-auto mr-1.5">
+            <div className="hidden sm:flex items-center gap-2 ml-auto mr-1.5">
               <button onClick={() => prevNav && router.push(prevNav)}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <ChevronLeft className="h-4 w-4" />
@@ -135,9 +135,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Dashboard list page — its own chevrons (loop through dashboards) */}
+          {/* Dashboard list page — its own chevrons (loop through dashboards, hidden on mobile) */}
           {isDashboardList && (
-            <div className="flex items-center gap-2 ml-auto mr-1.5">
+            <div className="hidden sm:flex items-center gap-2 ml-auto mr-1.5">
               <button onClick={() => prevDashboard && router.push(`/dashboard/${prevDashboard.slug}`)}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors">
                 <ChevronLeft className="h-4 w-4" />
@@ -149,10 +149,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Dashboard detail — chevrons above, big number below */}
+          {/* Dashboard detail — chevrons above, big number below (chevrons hidden on mobile) */}
           {isDashboardDetail && dashHeader && (
             <div className="ml-auto flex flex-col items-end gap-0.5 mr-1.5">
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 <button
                   onClick={() => router.push(`/dashboard/${dashHeader.prevSlug}`)}
                   className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-solar hover:bg-[var(--inp-bg)] transition-colors"

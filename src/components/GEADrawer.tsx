@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ExternalLink, ChevronDown, ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmtUsd, fmtNum, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import { getGeaColor } from '@/lib/gea-colors'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 type TopCounty = { region_name: string; state_name: string; untapped_annual_value_usd: number }
 type AnnualRow = { year: number; energy_usd_per_mwh?: number; co2_kg_per_mwh?: number }
@@ -372,6 +373,11 @@ function CountyView({ county, onBack, onClose }: { county: CountyDrawerData; onB
 
 // ── Exports ───────────────────────────────────────────────────────────────────
 
+// Mobile bottom-sheet bounds — fraction of dvh
+const SHEET_MIN = 0.25
+const SHEET_INITIAL = 0.4
+const SHEET_MAX = 0.8
+
 export function GEADrawer({ gea, county, onClose, onCountyBack }: {
   gea: string | null
   county?: CountyDrawerData | null
@@ -379,25 +385,84 @@ export function GEADrawer({ gea, county, onClose, onCountyBack }: {
   onCountyBack?: () => void
 }) {
   const [mounted, setMounted] = useState(false)
+  const isMobile = useIsMobile()
+  const [sheetFrac, setSheetFrac] = useState(SHEET_INITIAL)
+  const dragRef = useRef<{ startY: number; startFrac: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
   useEffect(() => { setMounted(true) }, [])
+
+  const open = !!(gea || county)
+
+  // Reset sheet height each time the drawer (re-)opens
+  useEffect(() => {
+    if (open) setSheetFrac(SHEET_INITIAL)
+  }, [open, gea, county?.name])
+
   if (!mounted) return null
   const root = document.getElementById('chat-panel-root')
   if (!root) return null
 
-  const open = !!(gea || county)
+  const inner = county
+    ? <CountyView county={county} onBack={onCountyBack ?? onClose} onClose={onClose} />
+    : gea ? <GEAView gea={gea} onClose={onClose} /> : null
 
-  return createPortal(
-    <div className={`fixed inset-0 z-50 sm:static sm:inset-auto sm:z-auto shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${open ? 'w-full sm:w-[360px] sm:ml-[18px]' : 'w-0'}`}>
-      {open && (
-        <>
-          <div className="absolute inset-0 bg-black/40 sm:hidden" onClick={onClose} />
-          <div className="relative h-full">
-            {county
-              ? <CountyView county={county} onBack={onCountyBack ?? onClose} onClose={onClose} />
-              : gea ? <GEAView gea={gea} onClose={onClose} /> : null
-            }
+  if (isMobile) {
+    return createPortal(
+      <>
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          onClick={onClose}
+        />
+        {/* Bottom sheet */}
+        <div
+          className={`fixed inset-x-0 bottom-0 z-50 bg-[var(--surface)] rounded-t-2xl shadow-2xl flex flex-col overflow-hidden ${open ? 'translate-y-0' : 'translate-y-full pointer-events-none'}`}
+          style={{
+            height: `${sheetFrac * 100}dvh`,
+            transition: dragging ? 'none' : 'height 200ms ease, transform 250ms ease',
+          }}
+        >
+          {/* Drag handle */}
+          <div
+            className="shrink-0 flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+            onPointerDown={(e) => {
+              dragRef.current = { startY: e.clientY, startFrac: sheetFrac }
+              setDragging(true)
+              e.currentTarget.setPointerCapture(e.pointerId)
+            }}
+            onPointerMove={(e) => {
+              if (!dragRef.current) return
+              const dy = dragRef.current.startY - e.clientY
+              const dvh = window.innerHeight
+              const next = Math.max(SHEET_MIN, Math.min(SHEET_MAX, dragRef.current.startFrac + dy / dvh))
+              setSheetFrac(next)
+            }}
+            onPointerUp={(e) => {
+              dragRef.current = null
+              setDragging(false)
+              e.currentTarget.releasePointerCapture(e.pointerId)
+            }}
+            onPointerCancel={() => { dragRef.current = null; setDragging(false) }}
+          >
+            <div className="h-1.5 w-10 rounded-full bg-[var(--border)]" />
           </div>
-        </>
+          {/* Inner view fills remaining space */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {inner}
+          </div>
+        </div>
+      </>,
+      root
+    )
+  }
+
+  // Desktop: side drawer that pushes layout
+  return createPortal(
+    <div className={`shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${open ? 'w-[360px] ml-[18px]' : 'w-0'}`}>
+      {open && (
+        <div className="relative h-full">
+          {inner}
+        </div>
       )}
     </div>,
     root

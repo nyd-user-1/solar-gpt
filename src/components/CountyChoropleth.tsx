@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import type { CountyMapEntry, StateMapEntry } from '@/lib/queries'
 import { fmtNum, fmtUsd } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 type ChipData = { name: string; value: number; buildings: number }
 
@@ -216,6 +218,8 @@ function DualChoroplethLayer({ counties, states, onHoverChange }: { counties: Co
 export default function CountyChoropleth({ counties, states }: { counties: CountyMapEntry[]; states: StateMapEntry[] }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
+  const isMobile = useIsMobile()
+  const [legendOpen, setLegendOpen] = useState(true)
 
   const usDefault = useMemo<ChipData>(() => ({
     name: 'United States',
@@ -230,7 +234,7 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
       <APIProvider apiKey={apiKey}>
         <Map
           defaultCenter={{ lat: 38, lng: -97 }}
-          defaultZoom={4}
+          defaultZoom={isMobile ? 3 : 4}
           gestureHandling="cooperative"
           disableDefaultUI
           zoomControl
@@ -241,25 +245,37 @@ export default function CountyChoropleth({ counties, states }: { counties: Count
         </Map>
       </APIProvider>
 
-      {/* Combined legend + info — single module, top left */}
-      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-md pointer-events-none overflow-hidden">
-        {/* Legend */}
-        <div className="px-3 pt-2.5 pb-2">
-          {COUNTY_LEGEND.map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
-              <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
-              <span className="text-[10px] text-[var(--txt)]">{label}</span>
+      {/* Combined legend + info — single module, top left. Collapsible accordion on mobile. */}
+      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-md overflow-hidden max-w-[calc(100%-24px)]">
+        {/* Info chip — always visible; click to toggle legend on mobile */}
+        <button
+          type="button"
+          onClick={() => setLegendOpen(o => !o)}
+          className="w-full flex items-center gap-2 px-3 py-2 text-left sm:cursor-default"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-[#1a1a1a] truncate">{chip.name}</p>
+            <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
+            <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
+          </div>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-[#999] transition-transform sm:hidden ${legendOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {/* Legend rows — always visible on desktop; collapsible on mobile */}
+        {(legendOpen || !isMobile) && (
+          <>
+            <div className="border-t border-black/10 mx-3" />
+            <div className="px-3 pt-2 pb-2.5">
+              {COUNTY_LEGEND.map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
+                  <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
+                  <span className="text-[10px] text-[var(--txt)]">{label}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {/* Divider */}
-        <div className="border-t border-black/8 mx-3" />
-        {/* Info */}
-        <div className="px-3 pt-2 pb-2.5">
-          <p className="text-sm font-bold text-[#1a1a1a]">{chip.name}</p>
-          <p className="text-xs font-semibold text-[#f59e0b]">{fmtUsd(chip.value)} potential/yr</p>
-          <p className="text-[10px] text-[#666]">{fmtNum(chip.buildings)} qualified buildings</p>
-        </div>
+          </>
+        )}
       </div>
     </div>
   )

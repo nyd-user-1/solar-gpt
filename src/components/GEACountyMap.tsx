@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { CambiumCountyMapEntry, CambiumCountyNameEntry } from '@/lib/queries'
 import { GEA_COLORS } from '@/lib/gea-colors'
 import { fmtUsd } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 type SunroofCounty = { fips?: string; untapped_annual_value_usd: number }
 
@@ -135,13 +136,14 @@ export default function GEACountyMap({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const center = { lat: (bounds.north + bounds.south) / 2, lng: (bounds.east + bounds.west) / 2 }
   const [hovered, setHovered] = useState<HoverInfo | null>(null)
+  const isMobile = useIsMobile()
 
   return (
     <div className={`relative ${className}`}>
       <APIProvider apiKey={apiKey}>
         <Map
           defaultCenter={center}
-          defaultZoom={4}
+          defaultZoom={isMobile ? 3 : 4}
           gestureHandling="cooperative"
           disableDefaultUI
           zoomControl
