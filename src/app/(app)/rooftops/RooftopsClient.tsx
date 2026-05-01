@@ -9,13 +9,19 @@ import {
   SEGMENT_COLORS, SEGMENT_LABELS, SEGMENT_SHORT, pct,
   type RooftopRow, type RooftopSegments,
 } from '@/lib/rooftops'
-import { cn, fmtNum } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { STATE_ABBRS } from '@/lib/us-states'
 
 type Scope = 'states' | 'counties'
 type View = 'list' | 'cards'
 type SegKey = 'residential' | 'lightCommercial' | 'industrial'
 type SortKey = 'total' | 'residential' | 'lightCommercial' | 'industrial'
+
+function abbr(name: string): string {
+  return STATE_ABBRS[name] ?? name
+}
 
 // Map a sort key to the segment it isolates (or null for the default mix view)
 function focusedSegment(key: SortKey): SegKey | null {
@@ -31,11 +37,11 @@ function focusValue(row: RooftopRow, seg: SegKey): number {
   return row[seg]
 }
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+const SORT_OPTIONS: { key: SortKey; label: string; dot?: string }[] = [
   { key: 'total', label: 'Total Qualified' },
-  { key: 'residential', label: 'Residential' },
-  { key: 'lightCommercial', label: 'Light Commercial' },
-  { key: 'industrial', label: 'Industrial' },
+  { key: 'residential', label: 'Residential', dot: SEGMENT_COLORS.residential },
+  { key: 'lightCommercial', label: 'Light Commercial', dot: SEGMENT_COLORS.lightCommercial },
+  { key: 'industrial', label: 'Industrial', dot: SEGMENT_COLORS.industrial },
 ]
 
 const PAGE_SIZE = 50
@@ -202,18 +208,15 @@ function NationalSummary({ national }: { national: RooftopSegments }) {
 // ── Sticky scope/search/view row ─────────────────────────────────────────────
 
 function StickyControls({
-  scope, onScopeChange, query, onQueryChange, view, onViewChange,
+  scope, query, onQueryChange,
 }: {
   scope: Scope
-  onScopeChange: (s: Scope) => void
   query: string
   onQueryChange: (q: string) => void
-  view: View
-  onViewChange: (v: View) => void
 }) {
   return (
-    <div className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 sm:px-6 py-2.5 space-y-2">
-      {/* Search bar — full width, top of the sticky stack */}
+    <div className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 sm:px-6 py-2.5">
+      {/* Search bar — full width, only thing in the sticky bar now */}
       <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-3 h-11">
         <Search className="h-4 w-4 text-[var(--muted)] shrink-0" />
         <input
@@ -224,52 +227,6 @@ function StickyControls({
           className="w-full bg-transparent text-sm text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
         />
       </div>
-
-      {/* Compact scope toggle (left) + view toggle (right) on the same row */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-full bg-[var(--inp-bg)] p-1 h-11">
-          {(['states', 'counties'] as Scope[]).map(s => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onScopeChange(s)}
-              className={cn(
-                'h-9 px-3 rounded-full text-xs font-semibold capitalize transition-colors',
-                scope === s
-                  ? 'bg-[var(--surface)] text-[var(--txt)] shadow-sm'
-                  : 'text-[var(--muted)]',
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1 rounded-full bg-[var(--inp-bg)] p-1 h-11">
-          <button
-            type="button"
-            onClick={() => onViewChange('list')}
-            aria-label="List view"
-            className={cn(
-              'h-9 w-9 grid place-items-center rounded-full transition-colors',
-              view === 'list' ? 'bg-[var(--surface)] text-[var(--txt)] shadow-sm' : 'text-[var(--muted)]',
-            )}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewChange('cards')}
-            aria-label="Card view"
-            className={cn(
-              'h-9 w-9 grid place-items-center rounded-full transition-colors',
-              view === 'cards' ? 'bg-[var(--surface)] text-[var(--txt)] shadow-sm' : 'text-[var(--muted)]',
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -278,22 +235,40 @@ function StickyControls({
 
 function SortControl({
   sortKey, sortDir, onSortKey, onToggleDir,
+  scope, onScopeChange,
+  view, onViewChange, showViewToggle,
 }: {
   sortKey: SortKey
   sortDir: 'asc' | 'desc'
   onSortKey: (k: SortKey) => void
   onToggleDir: () => void
+  scope: Scope
+  onScopeChange: (s: Scope) => void
+  view: View
+  onViewChange: (v: View) => void
+  showViewToggle: boolean
 }) {
+  // Square button variant matching the asc/desc icon button.
+  const btn = 'h-11 px-3 grid place-items-center rounded-xl border border-[var(--border)] text-xs font-semibold transition-colors'
   return (
-    <div className="px-4 sm:px-6 pt-3 pb-2 flex items-center gap-2">
-      <div className="flex-1">
+    <div className="px-4 sm:px-6 pt-3 pb-2 flex items-center gap-2 flex-wrap">
+      <div className="flex-1 min-w-[160px]">
         <Select value={sortKey} onValueChange={v => onSortKey(v as SortKey)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map(o => (
-              <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+              <SelectItem key={o.key} value={o.key}>
+                <span className="flex items-center gap-2">
+                  {o.dot ? (
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: o.dot }} />
+                  ) : (
+                    <span className="h-2.5 w-2.5" />
+                  )}
+                  <span>{o.label}</span>
+                </span>
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -306,6 +281,47 @@ function SortControl({
       >
         <ArrowDownUp className={cn('h-4 w-4 transition-transform', sortDir === 'asc' && 'rotate-180')} />
       </button>
+      {(['states', 'counties'] as Scope[]).map(s => (
+        <button
+          key={s}
+          type="button"
+          onClick={() => onScopeChange(s)}
+          className={cn(
+            btn,
+            scope === s
+              ? 'bg-[var(--inp-bg)] text-[var(--txt)] border-[var(--txt)]'
+              : 'text-[var(--muted)] hover:text-[var(--txt)] hover:bg-[var(--inp-bg)]',
+          )}
+        >
+          {s === 'states' ? 'States' : 'Counties'}
+        </button>
+      ))}
+      {showViewToggle && (
+        <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] p-1 h-11">
+          <button
+            type="button"
+            onClick={() => onViewChange('list')}
+            aria-label="List view"
+            className={cn(
+              'h-7 w-7 grid place-items-center rounded-lg transition-colors',
+              view === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)]',
+            )}
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewChange('cards')}
+            aria-label="Card view"
+            className={cn(
+              'h-7 w-7 grid place-items-center rounded-lg transition-colors',
+              view === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)]',
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -325,10 +341,8 @@ function ListRow({
   focus: SegKey | null
   max: number
 }) {
-  // When focused, show only the focused segment chip below the bar.
-  // The headline number on the right also swaps to the focused segment count.
   const headline = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
-  const visibleSegs: SegKey[] = focus ? [focus] : ['residential', 'lightCommercial', 'industrial']
+  const title = scope === 'states' ? abbr(row.state_name) : row.region_name
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -336,9 +350,9 @@ function ListRow({
     >
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-semibold text-[var(--txt)] truncate">
-          {row.region_name}
+          {title}
           {scope === 'counties' && (
-            <span className="ml-1 font-normal text-[var(--muted)]">· {row.state_name}</span>
+            <span className="ml-1 font-normal text-[var(--muted)]">· {abbr(row.state_name)}</span>
           )}
         </p>
         <p
@@ -350,15 +364,6 @@ function ListRow({
       </div>
       <div className="mt-2">
         <RowBar row={row} height={16} focus={focus} max={max} minLabelPct={15} />
-      </div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
-        {visibleSegs.map(k => (
-          <span key={k} className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
-            <span className="font-semibold text-[var(--txt)]">{fmtCompact(row[k])}</span>
-            <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
-          </span>
-        ))}
       </div>
     </Link>
   )
@@ -374,7 +379,7 @@ function CardRow({
 }) {
   const headline = focus ? fmtCompact(row[focus]) : fmtCompact(row.total)
   const headlineCaption = focus ? SEGMENT_LABELS[focus] : 'qualified'
-  const visibleSegs: SegKey[] = focus ? [focus] : ['residential', 'lightCommercial', 'industrial']
+  const title = scope === 'states' ? abbr(row.state_name) : row.region_name
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -382,9 +387,9 @@ function CardRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-base font-bold text-[var(--txt)] truncate">{row.region_name}</p>
+          <p className="text-base font-bold text-[var(--txt)] truncate">{title}</p>
           {scope === 'counties' && (
-            <p className="text-[11px] text-[var(--muted)] truncate">{row.state_name}</p>
+            <p className="text-[11px] text-[var(--muted)] truncate">{abbr(row.state_name)}</p>
           )}
         </div>
         <div className="text-right shrink-0">
@@ -399,18 +404,6 @@ function CardRow({
       </div>
       <div className="mt-3">
         <RowBar row={row} height={28} focus={focus} max={max} minLabelPct={12} />
-      </div>
-      <div className={cn(
-        'mt-2 grid gap-2 text-[11px] tabular-nums',
-        focus ? 'grid-cols-1' : 'grid-cols-3',
-      )}>
-        {visibleSegs.map(k => (
-          <div key={k} className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
-            <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
-            <span className="font-semibold text-[var(--txt)]">{focus ? fmtCompact(row[k]) : `${pct(row[k], row.total).toFixed(0)}%`}</span>
-          </div>
-        ))}
       </div>
     </Link>
   )
@@ -560,12 +553,15 @@ export default function RooftopsClient({
   initialCounties: RooftopRow[]
   national: RooftopSegments
 }) {
+  const isMobile = useIsMobile()
   const [scope, setScope] = useState<Scope>('states')
-  const [view, setView] = useState<View>('list')
+  const [view, setView] = useState<View>('cards')
   const [query, setQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  // Mobile gets card view only — no list-view toggle.
+  const effectiveView: View = isMobile ? 'cards' : view
 
   const rows = scope === 'states' ? initialStates : initialCounties
 
@@ -620,32 +616,28 @@ export default function RooftopsClient({
         {/* National summary */}
         <NationalSummary national={national} />
 
-        {/* Sticky controls */}
+        {/* Sticky controls — search only */}
         <StickyControls
           scope={scope}
-          onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
           query={query}
           onQueryChange={q => { setQuery(q); setVisibleCount(PAGE_SIZE) }}
-          view={view}
-          onViewChange={setView}
         />
 
-        {/* Sort */}
+        {/* Sort + scope buttons + (desktop) view toggle */}
         <SortControl
           sortKey={sortKey}
           sortDir={sortDir}
           onSortKey={k => { setSortKey(k); setVisibleCount(PAGE_SIZE) }}
           onToggleDir={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+          scope={scope}
+          onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
+          view={view}
+          onViewChange={setView}
+          showViewToggle={!isMobile}
         />
 
-        {/* Result count */}
-        <div className="px-4 sm:px-6 pb-2 text-[11px] text-[var(--muted)] tabular-nums">
-          {fmtNum(totalCount)} {scope === 'states' ? 'states' : 'counties'}
-          {totalCount > visibleCount && ` · showing ${fmtNum(visibleCount)}`}
-        </div>
-
         {/* List or Card view */}
-        {view === 'list' ? (
+        {effectiveView === 'list' ? (
           <div className="border-t border-[var(--border)]">
             {visibleRows.map(row => (
               <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
