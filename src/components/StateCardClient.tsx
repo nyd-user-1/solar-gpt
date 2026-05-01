@@ -49,7 +49,7 @@ export function StateCardClient({ state, index }: { state: StateKpi; index: numb
 
   return (
     <div
-      className={`group relative shrink-0 w-[calc(58vw-18px)] sm:w-[300px] aspect-[16/9] sm:aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer transition-shadow ${pressed ? 'ring-2 ring-solar ring-offset-2 ring-offset-[var(--surface)]' : ''}`}
+      className={`group relative shrink-0 w-[calc(58vw-18px)] sm:w-[300px] aspect-[16/9] sm:aspect-[4/3] rounded-2xl snap-start shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden cursor-pointer border-2 transition-colors ${pressed ? 'border-solar' : 'border-transparent'}`}
       onMouseEnter={highlight}
       onMouseLeave={unhighlight}
       onClick={zoomToState}
