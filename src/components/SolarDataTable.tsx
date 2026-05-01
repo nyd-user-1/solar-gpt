@@ -68,7 +68,7 @@ const COLS: ColDef[] = [
     fmt: r => formatNumber(r.number_of_panels_total),
   },
   {
-    key: 'carbon_offset_metric_tons', header: 'CO₂ Offset', anchor: 'co2-offset', mobile: true,
+    key: 'carbon_offset_metric_tons', header: 'CO₂ Offset', anchor: 'co2-offset', mobile: false,
     tooltip: 'Metric tons of CO₂ avoided per year if every qualified rooftop went solar.',
     fmt: r => formatNumber(r.carbon_offset_metric_tons, { suffix: 't' }),
   },
@@ -88,7 +88,7 @@ const COLS: ColDef[] = [
     fmt: r => fmtKwMedian(r.kw_median),
   },
   {
-    key: 'existing_installs_count', header: 'Installed', anchor: 'existing-installs', mobile: true,
+    key: 'existing_installs_count', header: 'Installed', anchor: 'existing-installs', mobile: false,
     tooltip: 'Solar systems already installed and operating in this region.',
     fmt: r => formatNumber(r.existing_installs_count),
   },
@@ -158,12 +158,12 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
   const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
   return (
-    <div className="mx-6 mb-8 rounded-lg border border-[var(--border)]">
+    <div className="mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)]">
       <table className="w-full table-fixed text-left text-sm">
         <thead className="sticky top-0 z-10">
           <tr>
             {/* Region — always visible, no tooltip */}
-            <th className="w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-20">
+            <th className="w-[55%] md:w-[18%] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-20">
               <button
                 onClick={() => onSort('region')}
                 className={cn(
@@ -207,11 +207,11 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               key={row.id}
               onClick={href ? () => router.push(href) : undefined}
               className={cn(
-                'group/row transition-colors hover:bg-[var(--inp-bg)]',
+                'group/row transition-colors hover:bg-[var(--inp-bg)] active:bg-[var(--row-hover)]',
                 href && 'cursor-pointer',
               )}
             >
-              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] overflow-hidden bg-[var(--surface)] group-hover/row:bg-[var(--row-hover)] transition-colors">
+              <td className="px-4 py-3 font-medium text-[var(--txt)] sticky left-0 z-[1] overflow-hidden bg-[var(--surface)] group-hover/row:bg-[var(--row-hover)] group-active/row:bg-[var(--row-hover)] transition-colors">
                 {renderRegion(row)}
               </td>
               {extraCols?.map(col => (

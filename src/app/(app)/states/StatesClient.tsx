@@ -91,36 +91,36 @@ function SolarStars({ count }: { count: number }) {
 
 function StateCardGrid({ states }: { states: StateKpi[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       {states.map(state => (
         <Link
           key={state.id}
           href={`/states/${nameToSlug(state.state_name)}`}
-          className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg transition-all"
+          className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden hover:shadow-lg active:bg-[var(--inp-bg)] transition-all"
         >
-          <div className="relative h-40 overflow-hidden bg-[var(--inp-bg)]">
+          <div className="relative h-28 sm:h-40 overflow-hidden bg-[var(--inp-bg)]">
             {state.flag_url ? (
               <img src={`${state.flag_url}?width=600`} alt={`${state.state_name} flag`} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
             ) : (
               <div className="flex h-full items-center justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--inp-bg)] border border-[var(--border)]">
-                  <Map className="h-8 w-8 text-[var(--muted)]" />
+                <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-[var(--inp-bg)] border border-[var(--border)]">
+                  <Map className="h-6 w-6 sm:h-8 sm:w-8 text-[var(--muted)]" />
                 </div>
               </div>
             )}
           </div>
-          <div className="p-4">
-            <p className="font-bold text-[var(--txt)] text-lg truncate mb-2">{state.state_name}</p>
-            <div className="flex items-center gap-1.5 mb-5">
-              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)]">{state.sunlight_grade}</span>
-              <span className="rounded-full border border-solar/40 px-2 py-0.5 text-[11px] text-solar">★ {state.sunlight_stars}</span>
+          <div className="p-3 sm:p-4">
+            <p className="font-bold text-[var(--txt)] text-sm sm:text-lg truncate mb-1.5 sm:mb-2">{state.state_name}</p>
+            <div className="flex items-center gap-1 sm:gap-1.5 mb-3 sm:mb-5">
+              <span className="rounded-full border border-[var(--border)] px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] text-[var(--muted)]">{state.sunlight_grade}</span>
+              <span className="rounded-full border border-solar/40 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] text-solar">★ {state.sunlight_stars}</span>
             </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xl font-bold text-[var(--txt)]">{fmtUsd(state.untapped_annual_value_usd)}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Potential/yr</p>
+            <div className="flex items-end justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-base sm:text-xl font-bold text-[var(--txt)] truncate">{fmtUsd(state.untapped_annual_value_usd)}</p>
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mt-0.5">Potential/yr</p>
               </div>
-              <span className="rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">Explore →</span>
+              <span className="hidden sm:inline-flex rounded-xl bg-[var(--txt)] px-4 py-2.5 text-sm font-semibold text-[var(--bg)] shrink-0">Explore →</span>
             </div>
           </div>
         </Link>
