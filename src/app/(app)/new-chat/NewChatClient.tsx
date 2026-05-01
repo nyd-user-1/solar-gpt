@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Sun, ArrowUp, Map, X, MapPin, Square } from 'lucide-react'
+import { Sun, ArrowUp, Map, X, MapPin, Square, Mic } from 'lucide-react'
 import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
 import { SolarPlusMenu } from '@/components/SolarPlusMenu'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -83,6 +83,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const [isListening, setIsListening] = useState(false)
 
   const selectedModel = MODEL_OPTIONS.find(m => m.id === selectedModelId) ?? MODEL_OPTIONS[0]
 
@@ -281,6 +283,23 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streaming])
 
+  const toggleDictation = () => {
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return }
+    const SR = (window as unknown as { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition
+      ?? (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition
+    if (!SR) return
+    const rec = new SR()
+    rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US'
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const t = e.results[0][0].transcript
+      if (addressMode) { setAddressInput(prev => prev + t); fetchSuggestions(t, userLocation) }
+      else setInput(prev => prev + t)
+    }
+    rec.onend = () => setIsListening(false)
+    rec.onerror = () => setIsListening(false)
+    rec.start(); recognitionRef.current = rec; setIsListening(true)
+  }
+
   const isEmpty = messages.length === 0
 
   const exitAddressMode = () => { setAddressMode(false); setAddressInput(''); setSuggestions([]) }
@@ -422,6 +441,16 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             }`}
             title={addressMode ? 'Exit address mode' : 'Look up an address'}>
             <MapPin className="h-4 w-4" />
+          </button>
+
+          <button
+            onClick={toggleDictation}
+            className={`ml-2 shrink-0 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+              isListening ? 'text-red-500 bg-red-50 animate-pulse' : 'text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)]'
+            }`}
+            title={isListening ? 'Stop dictation' : 'Dictate'}
+          >
+            <Mic className="h-4 w-4" />
           </button>
 
           <div className="flex-1" />
