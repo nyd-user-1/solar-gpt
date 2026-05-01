@@ -285,12 +285,12 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
 
   const toggleDictation = () => {
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return }
-    const SR = (window as unknown as { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition
-      ?? (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SR) return
-    const rec = new SR()
+    const rec = new SR() as SpeechRecognition
     rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US'
-    rec.onresult = (e: SpeechRecognitionEvent) => {
+    rec.onresult = (e: SpeechRecognitionEvent) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       const t = e.results[0][0].transcript
       if (addressMode) { setAddressInput(prev => prev + t); fetchSuggestions(t, userLocation) }
       else setInput(prev => prev + t)
