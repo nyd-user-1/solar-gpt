@@ -378,7 +378,7 @@ export default function GEAChoropleth({
                 <div className="border-t border-black/10 mx-3" />
                 <div className="px-3 pt-2 pb-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-1.5">Grid Regions</p>
-                  <div className="grid grid-cols-1 max-h-[200px] overflow-y-auto">
+                  <div className="grid grid-cols-1 max-h-[100px] overflow-y-auto">
                     {Object.entries(GEA_COLORS).map(([gea, color]) => {
                       const isPinned = pinnedGea === gea
                       const isActive = legendHoveredGea === gea || isPinned
