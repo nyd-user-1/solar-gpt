@@ -2,19 +2,42 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Search, List, LayoutGrid, ArrowDownUp, ChevronDown } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, Legend } from 'recharts'
+import { Search, List, LayoutGrid, ArrowDownUp } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { nameToSlug } from '@/lib/queries'
 import {
   SEGMENT_COLORS, SEGMENT_LABELS, SEGMENT_SHORT, pct,
   type RooftopRow, type RooftopSegments,
 } from '@/lib/rooftops'
 import { cn, fmtNum } from '@/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type Scope = 'states' | 'counties'
 type View = 'list' | 'cards'
 type SegKey = 'residential' | 'lightCommercial' | 'industrial'
 type SortKey = 'total' | 'residential' | 'lightCommercial' | 'industrial' | 'pctRes' | 'pctLC' | 'pctInd'
+
+// Map a sort key to the segment it isolates (or null for the default mix view)
+function focusedSegment(key: SortKey): SegKey | null {
+  switch (key) {
+    case 'residential':
+    case 'pctRes':
+      return 'residential'
+    case 'lightCommercial':
+    case 'pctLC':
+      return 'lightCommercial'
+    case 'industrial':
+    case 'pctInd':
+      return 'industrial'
+    default:
+      return null
+  }
+}
+
+function focusValue(row: RooftopRow, seg: SegKey, asPct: boolean): number {
+  if (asPct) return pct(row[seg], row.total)
+  return row[seg]
+}
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'total', label: 'Total Qualified' },
@@ -92,6 +115,66 @@ function MixBar({
       })}
     </div>
   )
+}
+
+// Single-segment, right-anchored bar used when sorting by a specific segment.
+// Width is normalized to `max` across the visible rows so the #1 row fills
+// the bar and lower-ranked rows scale down. Growth direction: right → left.
+function FocusBar({
+  value, max, segment, height = 12, showLabel = true, isPct = false,
+}: {
+  value: number
+  max: number
+  segment: SegKey
+  height?: number
+  showLabel?: boolean
+  isPct?: boolean
+}) {
+  const ratio = max > 0 ? Math.min(1, value / max) : 0
+  const widthPct = ratio * 100
+  return (
+    <div
+      className="w-full overflow-hidden rounded-full bg-[var(--inp-bg)] flex justify-end"
+      style={{ height }}
+    >
+      <div
+        className="h-full flex items-center justify-end pr-2 text-white transition-[width] duration-300 ease-out"
+        style={{ width: `${widthPct}%`, background: SEGMENT_COLORS[segment] }}
+        title={`${SEGMENT_LABELS[segment]}: ${isPct ? value.toFixed(1) + '%' : fmtCompact(value)}`}
+      >
+        {showLabel && widthPct >= 25 && (
+          <span className="text-[10px] font-semibold tabular-nums leading-none truncate">
+            {isPct ? `${value.toFixed(1)}%` : fmtCompact(value)}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Picks the right bar based on whether we're focusing on a single segment.
+function RowBar({
+  row, height, focus, max, isPct, minLabelPct = 15,
+}: {
+  row: RooftopRow
+  height: number
+  focus: SegKey | null
+  max: number
+  isPct: boolean
+  minLabelPct?: number
+}) {
+  if (focus) {
+    return (
+      <FocusBar
+        value={focusValue(row, focus, isPct)}
+        max={max}
+        segment={focus}
+        height={height}
+        isPct={isPct}
+      />
+    )
+  }
+  return <MixBar seg={row} height={height} minLabelPct={minLabelPct} />
 }
 
 // ── National summary bar ─────────────────────────────────────────────────────
@@ -207,17 +290,17 @@ function SortControl({
   return (
     <div className="px-4 sm:px-6 pt-3 pb-2 flex items-center gap-2">
       <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">Sort</label>
-      <div className="relative flex-1">
-        <select
-          value={sortKey}
-          onChange={e => onSortKey(e.target.value as SortKey)}
-          className="w-full appearance-none h-11 rounded-xl border border-[var(--border)] bg-[var(--surface)] pl-3 pr-8 text-sm text-[var(--txt)] focus:outline-none"
-        >
-          {SORT_OPTIONS.map(o => (
-            <option key={o.key} value={o.key}>{o.label}</option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+      <div className="flex-1">
+        <Select value={sortKey} onValueChange={v => onSortKey(v as SortKey)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(o => (
+              <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <button
         type="button"
@@ -238,7 +321,22 @@ function listHrefFor(scope: Scope, row: RooftopRow): string {
   return `/counties/${nameToSlug(row.state_name)}/${nameToSlug(row.region_name)}`
 }
 
-function ListRow({ row, scope }: { row: RooftopRow; scope: Scope }) {
+function ListRow({
+  row, scope, focus, max, isPct,
+}: {
+  row: RooftopRow
+  scope: Scope
+  focus: SegKey | null
+  max: number
+  isPct: boolean
+}) {
+  // When a single segment is focused, show the focused number on the right
+  // instead of the row's total — keeps the bar and the headline metric aligned.
+  const headline = focus
+    ? (isPct
+      ? `${pct(row[focus], row.total).toFixed(1)}%`
+      : fmtCompact(row[focus]))
+    : fmtCompact(row.total)
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -251,33 +349,52 @@ function ListRow({ row, scope }: { row: RooftopRow; scope: Scope }) {
             <span className="ml-1 font-normal text-[var(--muted)]">· {row.state_name}</span>
           )}
         </p>
-        <p className="text-sm font-bold tabular-nums text-[var(--txt)] shrink-0">{fmtCompact(row.total)}</p>
+        <p
+          className="text-sm font-bold tabular-nums shrink-0"
+          style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}
+        >
+          {headline}
+        </p>
       </div>
       <div className="mt-2">
-        <MixBar seg={row} height={12} minLabelPct={15} />
+        <RowBar row={row} height={12} focus={focus} max={max} isPct={isPct} minLabelPct={15} />
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS.residential }} />
-          <span className="font-semibold text-[var(--txt)]">{fmtCompact(row.residential)}</span>
-          <span className="text-[var(--muted)]">Res</span>
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS.lightCommercial }} />
-          <span className="font-semibold text-[var(--txt)]">{fmtCompact(row.lightCommercial)}</span>
-          <span className="text-[var(--muted)]">LC</span>
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS.industrial }} />
-          <span className="font-semibold text-[var(--txt)]">{fmtCompact(row.industrial)}</span>
-          <span className="text-[var(--muted)]">Ind</span>
-        </span>
+        {(['residential', 'lightCommercial', 'industrial'] as SegKey[]).map(k => (
+          <span
+            key={k}
+            className={cn(
+              'inline-flex items-center gap-1 transition-opacity',
+              focus && focus !== k && 'opacity-40',
+            )}
+          >
+            <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
+            <span className="font-semibold text-[var(--txt)]">{fmtCompact(row[k])}</span>
+            <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
+          </span>
+        ))}
       </div>
     </Link>
   )
 }
 
-function CardRow({ row, scope }: { row: RooftopRow; scope: Scope }) {
+function CardRow({
+  row, scope, focus, max, isPct,
+}: {
+  row: RooftopRow
+  scope: Scope
+  focus: SegKey | null
+  max: number
+  isPct: boolean
+}) {
+  const headline = focus
+    ? (isPct
+      ? `${pct(row[focus], row.total).toFixed(1)}%`
+      : fmtCompact(row[focus]))
+    : fmtCompact(row.total)
+  const headlineCaption = focus
+    ? `${SEGMENT_LABELS[focus]}${isPct ? ' share' : ''}`
+    : 'qualified'
   return (
     <Link
       href={listHrefFor(scope, row)}
@@ -291,16 +408,27 @@ function CardRow({ row, scope }: { row: RooftopRow; scope: Scope }) {
           )}
         </div>
         <div className="text-right shrink-0">
-          <p className="text-xl font-bold tabular-nums text-[var(--txt)]">{fmtCompact(row.total)}</p>
-          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">qualified</p>
+          <p
+            className="text-xl font-bold tabular-nums"
+            style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}
+          >
+            {headline}
+          </p>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">{headlineCaption}</p>
         </div>
       </div>
       <div className="mt-3">
-        <MixBar seg={row} height={24} minLabelPct={12} />
+        <RowBar row={row} height={24} focus={focus} max={max} isPct={isPct} minLabelPct={12} />
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] tabular-nums">
         {(['residential', 'lightCommercial', 'industrial'] as SegKey[]).map(k => (
-          <div key={k} className="flex items-center gap-1">
+          <div
+            key={k}
+            className={cn(
+              'flex items-center gap-1 transition-opacity',
+              focus && focus !== k && 'opacity-40',
+            )}
+          >
             <span className="h-2 w-2 rounded-sm" style={{ background: SEGMENT_COLORS[k] }} />
             <span className="text-[var(--muted)]">{SEGMENT_SHORT[k]}</span>
             <span className="font-semibold text-[var(--txt)]">{pct(row[k], row.total).toFixed(0)}%</span>
@@ -485,6 +613,22 @@ export default function RooftopsClient({
   const totalCount = filtered.length
   const visibleRows = filtered.slice(0, visibleCount)
 
+  // When sorting by a single segment, the row bars switch to a single-color,
+  // right-anchored bar normalized to the max value across the FILTERED list
+  // (not just the visible page) so the rankings cascade consistently as the
+  // user scrolls / loads more.
+  const focus = focusedSegment(sortKey)
+  const isPct = sortKey === 'pctRes' || sortKey === 'pctLC' || sortKey === 'pctInd'
+  const focusMax = useMemo(() => {
+    if (!focus) return 0
+    let m = 0
+    for (const r of filtered) {
+      const v = focusValue(r, focus, isPct)
+      if (v > m) m = v
+    }
+    return m
+  }, [filtered, focus, isPct])
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
       <div className="flex-1 overflow-y-auto">
@@ -528,13 +672,13 @@ export default function RooftopsClient({
         {view === 'list' ? (
           <div className="border-t border-[var(--border)]">
             {visibleRows.map(row => (
-              <ListRow key={row.id} row={row} scope={scope} />
+              <ListRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} isPct={isPct} />
             ))}
           </div>
         ) : (
           <div className="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {visibleRows.map(row => (
-              <CardRow key={row.id} row={row} scope={scope} />
+              <CardRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} isPct={isPct} />
             ))}
           </div>
         )}
