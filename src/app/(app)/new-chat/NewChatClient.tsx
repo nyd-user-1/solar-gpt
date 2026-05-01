@@ -400,6 +400,9 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             stateChips={stateChips}
             countyChips={countyChips}
             onSelect={(text) => { setInput(text); textareaRef.current?.focus() }}
+            modelOptions={MODEL_OPTIONS.map(m => ({ id: m.id, label: m.label, icon: modelIcon(m.provider) }))}
+            selectedModelId={selectedModelId}
+            onModelChange={setSelectedModelId}
           />
           <button
             onClick={() => addressMode ? exitAddressMode() : setAddressMode(true)}
@@ -410,48 +413,21 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             <MapPin className="h-4 w-4" />
           </button>
 
+          <div className="flex-1" />
+
+          {/* X to exit address mode — far right, before send */}
           {addressMode && (
             <button
               onClick={exitAddressMode}
-              className="ml-1.5 shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
+              className="mr-1 shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[rgba(0,0,0,0.07)] hover:text-[var(--txt)] transition-colors"
               title="Exit address mode"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           )}
 
-          <div className="flex-1" />
-
-          {/* Right: model selector + send */}
-          <div className="relative shrink-0" ref={modelRef}>
-            <button ref={modelBtnRef} type="button"
-              onClick={() => {
-                if (!modelMenuOpen && modelBtnRef.current) {
-                  const rect = modelBtnRef.current.getBoundingClientRect()
-                  setModelMenuAbove(rect.top > 300)
-                }
-                setModelMenuOpen(v => !v)
-              }}
-              className="inline-flex items-center text-[var(--muted)] hover:text-[var(--txt)] transition-colors rounded-lg p-1.5"
-              aria-label={`Model: ${selectedModel.label}`}>
-              {modelIcon(selectedModel.provider)}
-            </button>
-            {modelMenuOpen && (
-              <div className={`absolute right-0 w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden py-1 z-20 ${modelMenuAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
-                {MODEL_OPTIONS.map(m => (
-                  <button key={m.id} onClick={() => { setSelectedModelId(m.id); setModelMenuOpen(false) }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--inp-bg)] transition-colors">
-                    <span className="shrink-0 text-[var(--muted)]">{modelIcon(m.provider)}</span>
-                    <span className="flex-1 text-left font-medium text-[var(--txt)]">{m.label}</span>
-                    {m.id === selectedModelId && (
-                      <svg className="h-4 w-4 shrink-0 text-[var(--txt)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Send / stop */}
+          <div className="relative shrink-0">
           </div>
 
           {streaming ? (
