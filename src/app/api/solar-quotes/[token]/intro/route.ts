@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 
-const openai = createOpenAI({ apiKey: process.env.SOLARGPT_OPENAI_KEY ?? process.env.SOLAR_OPENAI_KEY })
+const openai = createOpenAI({ apiKey: process.env.NEW_SOLAR_OPENAI_KEY })
 
 export async function POST(req: NextRequest) {
   const q = await req.json()
