@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Sun, ArrowUp, Map, X, MapPin } from 'lucide-react'
+import { Sun, ArrowUp, Map, X, MapPin, Square } from 'lucide-react'
 import { SolarAddressDrawer } from '@/components/SolarAddressDrawer'
 import { SolarPlusMenu } from '@/components/SolarPlusMenu'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -82,6 +82,7 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const modelBtnRef = useRef<HTMLButtonElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const selectedModel = MODEL_OPTIONS.find(m => m.id === selectedModelId) ?? MODEL_OPTIONS[0]
 
@@ -232,10 +233,13 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
         body.address = selectedAddress.description
         if (solarInsight) body.solarInsight = solarInsight
       }
+      const controller = new AbortController()
+      abortControllerRef.current = controller
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
       if (!res.ok || !res.body) {
         setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Something went wrong. Please try again.' }])
@@ -257,6 +261,25 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
       setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Connection error. Please check your network and try again.' }])
     } finally { setLoading(false); setStreaming(false) }
   }
+
+  const stopStream = () => {
+    abortControllerRef.current?.abort()
+    setStreaming(false)
+    setLoading(false)
+  }
+
+  // Spacebar stops streaming when not focused in an input
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!streaming) return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (e.code === 'Space') { e.preventDefault(); stopStream() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming])
 
   const isEmpty = messages.length === 0
 
@@ -431,12 +454,21 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
             )}
           </div>
 
-          <button type="button"
-            onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
-            disabled={(!input.trim() && !selectedStateName) || loading || streaming}
-            className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
-            <ArrowUp className="h-4 w-4" />
-          </button>
+          {streaming ? (
+            <button type="button"
+              onClick={stopStream}
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+              title="Stop (Space)">
+              <Square className="h-4 w-4 fill-white" />
+            </button>
+          ) : (
+            <button type="button"
+              onClick={() => submit(selectedStateName ? `What is the solar energy potential in ${selectedStateName}?` : input)}
+              disabled={(!input.trim() && !selectedStateName) || loading}
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] disabled:opacity-25 hover:opacity-80 transition-opacity">
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
