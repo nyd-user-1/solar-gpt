@@ -5,6 +5,12 @@ const SOLAR_DOMAIN_PROMPT =
   'SolarGPT, kilowatt-hour, photovoltaic, solar panel, GEA region, LRMER, Cambium, NREL, ' +
   'Project Sunroof, net metering, ITC, IRA, interconnection, rooftop solar, grid emissions, capacity factor.'
 
+const ADDRESS_PROMPT =
+  'The user is dictating a US street address for a solar property lookup. ' +
+  'Transcribe exactly what is said as a street address, including house number, street name, ' +
+  'city or town, and state if given. Common address components: street, avenue, road, drive, ' +
+  'lane, place, court, boulevard, terrace, circle, way.'
+
 const MAX_BYTES = 25 * 1024 * 1024 // OpenAI hard limit
 
 export async function POST(req: NextRequest) {
@@ -26,12 +32,15 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_BYTES)
     return NextResponse.json({ error: 'Audio file too large (max 25 MB)' }, { status: 400 })
 
+  const mode = formData.get('mode') as string | null
+  const prompt = mode === 'address' ? ADDRESS_PROMPT : SOLAR_DOMAIN_PROMPT
+
   try {
     const openaiForm = new FormData()
     openaiForm.append('file', file)
     openaiForm.append('model', 'gpt-4o-mini-transcribe')
     openaiForm.append('response_format', 'json')
-    openaiForm.append('prompt', SOLAR_DOMAIN_PROMPT)
+    openaiForm.append('prompt', prompt)
 
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',

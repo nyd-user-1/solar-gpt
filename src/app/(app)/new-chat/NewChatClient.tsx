@@ -414,13 +414,20 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     try {
       const form = new FormData()
       form.append('file', blob, `recording.${ext}`)
+      if (addressMode) form.append('mode', 'address')
       const res = await fetch('/api/transcribe', { method: 'POST', body: form })
       if (!res.ok) { setToast('Transcription failed — please try again.'); setRecordingState('idle'); return }
       const data = await res.json()
       const text: string = (data.text ?? '').trim()
       if (!text) { setToast("Couldn't hear anything — try again?"); setRecordingState('idle'); return }
       setRecordingState('idle')
-      submit(text)
+      if (addressMode) {
+        // Route into the address search field so Places autocomplete can pick it up
+        setAddressInput(text)
+        fetchSuggestions(text, userLocation)
+      } else {
+        submit(text)
+      }
     } catch {
       setToast('Transcription failed — please try again.')
       setRecordingState('idle')
