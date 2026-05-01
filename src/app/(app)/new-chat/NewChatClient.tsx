@@ -83,7 +83,8 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
   const [isListening, setIsListening] = useState(false)
 
   const selectedModel = MODEL_OPTIONS.find(m => m.id === selectedModelId) ?? MODEL_OPTIONS[0]
@@ -288,9 +289,10 @@ export default function NewChatClient({ stateChips, countyChips }: { stateChips:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SR) return
-    const rec = new SR() as SpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec: any = new SR()
     rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US'
-    rec.onresult = (e: SpeechRecognitionEvent) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
       const t = e.results[0][0].transcript
       if (addressMode) { setAddressInput(prev => prev + t); fetchSuggestions(t, userLocation) }
       else setInput(prev => prev + t)
