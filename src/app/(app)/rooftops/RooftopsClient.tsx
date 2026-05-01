@@ -327,7 +327,7 @@ function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: Scop
       <table className="w-full text-left text-sm">
         <thead className="sticky top-0 z-10">
           <tr>
-            <th className="w-[200px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            <th className="w-[220px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)] whitespace-nowrap">
               {scope === 'states' ? 'State' : 'County'}
             </th>
             <th className="w-[56px] px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">ST</th>
@@ -345,7 +345,7 @@ function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: Scop
                 onClick={() => { if (typeof window !== 'undefined') window.location.href = listHrefFor(scope, row) }}
                 className="cursor-pointer hover:bg-[var(--inp-bg)] transition-colors group/row"
               >
-                <td className="px-4 py-3 font-medium text-[var(--txt)] group-hover/row:text-solar transition-colors">{name}</td>
+                <td className="px-4 py-3 font-medium text-[var(--txt)] group-hover/row:text-solar transition-colors whitespace-nowrap">{name}</td>
                 <td className="px-3 py-3 text-xs tabular-nums text-[var(--muted)]">{abbr(row.state_name)}</td>
                 <td className="px-3 py-3"><RowBar row={row} height={12} focus={focus} max={max} minLabelPct={20} /></td>
                 <td className="px-3 py-3 tabular-nums font-bold text-right" style={{ color: focus ? SEGMENT_COLORS[focus] : undefined }}>{value}</td>
