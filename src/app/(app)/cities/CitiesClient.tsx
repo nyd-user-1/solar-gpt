@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Search, Building2, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
-import { SolarTopChart } from '@/components/SolarTopChart'
+import { GeoDashboard } from '@/components/GeoDashboard'
 import { cn, fmtUsd, fmtNum, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
@@ -144,16 +144,14 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
         </div>
       </div>
 
-      {showChart && (
-        <SolarTopChart
+      {showChart ? (
+        <GeoDashboard
           rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
           getLabel={r => (r as unknown as CityKpi).region_name}
           getHref={r => `/cities/${nameToSlug((r as unknown as CityKpi).state_name)}/${nameToSlug((r as unknown as CityKpi).region_name)}`}
           yAxisWidth={130}
         />
-      )}
-
-      {/* Scroll area */}
+      ) : (
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
 
         {viewMode === 'cards' && (
@@ -230,6 +228,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
         {visibleCount >= filtered.length && <div className="h-8" />}
 
       </div>
+      )}{/* end chart/table toggle */}
     </div>
   )
 }

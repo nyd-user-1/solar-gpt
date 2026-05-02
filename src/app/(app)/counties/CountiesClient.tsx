@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, MapPin, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
-import { SolarTopChart } from '@/components/SolarTopChart'
+import { GeoDashboard } from '@/components/GeoDashboard'
 import { cn, fmtUsd, fmtGea, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CountyKpi } from '@/lib/queries'
@@ -116,16 +116,14 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
         </div>
       </div>
 
-      {showChart && (
-        <SolarTopChart
+      {showChart ? (
+        <GeoDashboard
           rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
           getLabel={r => (r as unknown as CountyKpi).region_name}
           getHref={r => `/counties/${nameToSlug((r as unknown as CountyKpi).state_name)}/${nameToSlug((r as unknown as CountyKpi).region_name)}`}
           yAxisWidth={150}
         />
-      )}
-
-      {/* Scroll area */}
+      ) : (
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
 
       {viewMode === 'cards' && (
@@ -194,7 +192,8 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
         />
       )}
 
-      </div>{/* end scroll area */}
+      </div>
+      )}{/* end chart/table toggle */}
     </div>
   )
 }

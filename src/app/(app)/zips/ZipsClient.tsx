@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, Plus, Check, BarChart2 } from 'lucide-react'
-import { SolarTopChart } from '@/components/SolarTopChart'
+import { GeoDashboard } from '@/components/GeoDashboard'
 import { cn } from '@/lib/utils'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 import type { ZipKpi } from '@/lib/queries'
@@ -98,15 +98,14 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         </div>
       </div>
 
-      {showChart && (
-        <SolarTopChart
+      {showChart ? (
+        <GeoDashboard
           rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
           getLabel={r => (r as unknown as ZipKpi).zip_code}
           getHref={r => `/zips/${(r as unknown as ZipKpi).zip_code}`}
           yAxisWidth={60}
         />
-      )}
-
+      ) : (
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
         <SolarDataTable
           rows={filtered as SolarRow[]}
@@ -139,6 +138,7 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
           }}
         />
       </div>
+      )}{/* end chart/table toggle */}
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, ChevronDown, ChevronUp, List, LayoutGrid, Plus, Check, Sun, Map, BarChart2 } from 'lucide-react'
-import { SolarTopChart } from '@/components/SolarTopChart'
+import { GeoDashboard } from '@/components/GeoDashboard'
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { StateKpi } from '@/lib/queries'
@@ -207,16 +207,14 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         </div>
       </div>
 
-      {showChart && (
-        <SolarTopChart
+      {showChart ? (
+        <GeoDashboard
           rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
           getLabel={r => (r as unknown as StateKpi).state_name}
           getHref={r => `/states/${nameToSlug((r as unknown as StateKpi).state_name)}`}
           yAxisWidth={120}
         />
-      )}
-
-      {/* Scroll area — handles both axes so sticky thead works */}
+      ) : (
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
 
       {/* Card view */}
@@ -300,7 +298,8 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
         </>
       )}
 
-      </div>{/* end scroll area */}
+      </div>
+      )}{/* end chart/table toggle */}
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
-import { SolarTopChart } from '@/components/SolarTopChart'
+import { GeoDashboard } from '@/components/GeoDashboard'
 import { cn, fmtUsd, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
@@ -109,15 +109,14 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
         </div>
       </div>
 
-      {showChart && (
-        <SolarTopChart
+      {showChart ? (
+        <GeoDashboard
           rows={filtered.map(g => ({ ...g, id: g.cambium_gea })) as unknown as import('@/components/SolarDataTable').SolarRow[]}
           getLabel={r => fmtGea((r as unknown as GeaKpi).cambium_gea)}
           getHref={r => `/gea-regions/${geaToSlug((r as unknown as GeaKpi).cambium_gea)}`}
           yAxisWidth={100}
         />
-      )}
-
+      ) : (
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
         {viewMode === 'cards' && (
           <div className="px-6 pb-8 pt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -173,6 +172,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
           />
         )}
       </div>
+      )}{/* end chart/table toggle */}
     </div>
   )
 }
