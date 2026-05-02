@@ -82,16 +82,19 @@ NUMERIC_FIELDS = {"sp_mw", "wp_mw"}
 
 # ── Filename -> snapshot_date ───────────────────────────────────────────────
 DATE_PATTERNS = [
-    # NYISO-Interconnection-Queue-MM-DD-YYYY.xlsx
+    # NYISO-Interconnection-Queue-MM-DD-YYYY.xlsx (4-digit year must match first)
     (re.compile(r"(\d{1,2})-(\d{1,2})-(\d{4})"), ("m", "d", "Y")),
     # NYISO-Interconnection-Queue-MM_DD_YYYY.xlsx
     (re.compile(r"(\d{1,2})_(\d{1,2})_(\d{4})"), ("m", "d", "Y")),
     # NYISO Interconnection Queue M.D.YY.xlsx
     (re.compile(r"(\d{1,2})\.(\d{1,2})\.(\d{2,4})"), ("m", "d", "Y")),
-    # NYISO-Interconnection-Queue-MMDDYY.xlsx (053119 -> 2019-05-31)
-    (re.compile(r"-(\d{2})(\d{2})(\d{2})\.xlsx$", re.I), ("m", "d", "y")),
     # NYISO-Interconnection-Queue-MMDDYYYY.xlsx
     (re.compile(r"-(\d{2})(\d{2})(\d{4})\.xlsx$", re.I), ("m", "d", "Y")),
+    # NYISO-Interconnection-Queue-MMDDYY.xlsx (053119 -> 2019-05-31)
+    (re.compile(r"-(\d{2})(\d{2})(\d{2})\.xlsx$", re.I), ("m", "d", "y")),
+    # M-D-YY or MM-DD-YY with 2-digit year (most NYISO files: 1-31-21, 11-30-23, etc.)
+    # (?:[^0-9]|$) ensures we don't match the first two digits of a 4-digit year
+    (re.compile(r"(\d{1,2})-(\d{1,2})-(\d{2})(?:[^0-9]|$)"), ("m", "d", "y")),
     # YYYY-MM-DD anywhere in filename
     (re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})"), ("Y", "m", "d")),
 ]
@@ -255,36 +258,38 @@ def parse_file(path: Path) -> tuple[list[dict], dict]:
 
 
 def parse_sheet(ws, sheet_name: str, status: str, snap: date, source_file: str):
-    # Find the header row by scanning the first 5 rows.
+    # Read all rows up front via iter_rows (required for read_only mode — row
+    # indexing ws[r] is O(n²) in read_only and becomes extremely slow on large files).
+    all_rows = [list(row) for row in ws.iter_rows(min_row=1, max_row=None, values_only=True)]
+    if not all_rows:
+        return [], "empty sheet"
+
+    # Find header row in first 5 rows.
     header_row_idx = None
     second_row_idx = None
-    for r in range(1, 6):
-        row = [c.value for c in ws[r]] if ws.max_row >= r else []
+    for i, row in enumerate(all_rows[:5]):
         if looks_like_header(row):
-            header_row_idx = r
-            # Check if next row is also a header continuation (for 2-row headers)
-            next_row = [c.value for c in ws[r + 1]] if ws.max_row >= r + 1 else []
-            if next_row and any(
+            header_row_idx = i
+            if i + 1 < len(all_rows) and any(
                 normalize_header(c) in {"pos", "owner", "developer", "projectname", "ofir"}
-                for c in next_row if c is not None
+                for c in all_rows[i + 1] if c is not None
             ):
-                second_row_idx = r + 1
+                second_row_idx = i + 1
             break
 
     if header_row_idx is None:
         return [], "no header found"
 
-    header_row = [c.value for c in ws[header_row_idx]]
-    second_row = [c.value for c in ws[second_row_idx]] if second_row_idx else None
+    header_row = all_rows[header_row_idx]
+    second_row = all_rows[second_row_idx] if second_row_idx is not None else None
     col_map = build_column_map(header_row, second_row)
 
     if "queue_pos" not in col_map:
         return [], f"no queue_pos column (saw row {header_row_idx}: {header_row[:5]})"
 
-    data_start = (second_row_idx or header_row_idx) + 1
+    data_start = (second_row_idx if second_row_idx is not None else header_row_idx) + 1
     out = []
-    for r in range(data_start, ws.max_row + 1):
-        raw_row = [c.value for c in ws[r]]
+    for raw_row in all_rows[data_start:]:
         qp = normalize_queue_pos(raw_row[col_map["queue_pos"]] if col_map["queue_pos"] < len(raw_row) else None)
         if not qp:
             continue
