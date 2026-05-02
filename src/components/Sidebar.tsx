@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/dashboard',    icon: LayoutDashboard,  label: 'Dashboard' },
   { to: '/explore',      icon: Compass,          label: 'Explore' },
   { to: '/grid',         icon: Zap,              label: 'Grid' },
+  { to: '/map',          icon: Map,              label: 'Map' },
   { to: '/gea-regions',  icon: Map,              label: 'Regions' },
   { to: '/states',       icon: Map,              label: 'States' },
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
@@ -203,6 +204,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           { to: '/',            icon: MessageCircle, label: 'Chat' },
           { to: '/explore',     icon: Compass,       label: 'Explore' },
           { to: '/grid',        icon: Zap,           label: 'Grid' },
+          { to: '/map',         icon: Map,           label: 'Map' },
           { to: '/states',      icon: Map,           label: 'States' },
           { to: '/counties',    icon: MapPin,        label: 'Counties' },
         ].map(({ to, icon: Icon, label }) => (
