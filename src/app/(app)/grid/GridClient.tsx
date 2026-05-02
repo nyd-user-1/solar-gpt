@@ -423,36 +423,48 @@ export default function GridClient({ baLoad, retailRates, retailHistory, fuelMix
       </div>
 
       {/* Tab content — scrollable */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-8">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
 
         {tab === 'Retail Rates' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="px-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <RetailRatePanel retailHistory={retailHistory} />
             <RetailRateBar retailRates={retailRates} />
           </div>
         )}
 
         {tab === 'Fuel Mix' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {CHART_BAS.map(ba => (
-              <FuelMixPanel key={ba} fuelMix={fuelMix} ba={ba} />
-            ))}
+          <div className="overflow-x-auto no-scrollbar px-6">
+            <div className="flex gap-4 pb-2" style={{ minWidth: 'max-content' }}>
+              {CHART_BAS.map(ba => (
+                <div key={ba} style={{ width: 380 }}>
+                  <FuelMixPanel fuelMix={fuelMix} ba={ba} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {tab === 'Load' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {CHART_BAS.map(ba => (
-              <LoadPanel key={ba} demandData={demandData} ba={ba} />
-            ))}
+          <div className="overflow-x-auto no-scrollbar px-6">
+            <div className="flex gap-4 pb-2" style={{ minWidth: 'max-content' }}>
+              {CHART_BAS.map(ba => (
+                <div key={ba} style={{ width: 380 }}>
+                  <LoadPanel demandData={demandData} ba={ba} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {tab === 'Renewables' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {CHART_BAS.map(ba => (
-              <RenewablesPanel key={ba} fuelMix={fuelMix} ba={ba} />
-            ))}
+          <div className="overflow-x-auto no-scrollbar px-6">
+            <div className="flex gap-4 pb-2" style={{ minWidth: 'max-content' }}>
+              {CHART_BAS.map(ba => (
+                <div key={ba} style={{ width: 380 }}>
+                  <RenewablesPanel fuelMix={fuelMix} ba={ba} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
