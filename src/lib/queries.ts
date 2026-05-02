@@ -981,6 +981,29 @@ export async function getInterconnectionQueue(): Promise<NyisoQueueRow[]> {
   })) as NyisoQueueRow[]
 }
 
+export type QueueGrowthRow = {
+  snapshot_date: string
+  active_count: number
+  total_sp_mw: number
+}
+
+export async function getQueueGrowth(): Promise<QueueGrowthRow[]> {
+  const rows = await sql`
+    SELECT snapshot_date::text,
+           COUNT(*)::int                              AS active_count,
+           ROUND(SUM(COALESCE(sp_mw, 0))::numeric, 0)::int AS total_sp_mw
+      FROM solargpt.raw_nyiso_queue
+     WHERE status = 'active'
+     GROUP BY snapshot_date
+     ORDER BY snapshot_date
+  `
+  return (rows as Record<string, unknown>[]).map(r => ({
+    snapshot_date: r.snapshot_date as string,
+    active_count:  Number(r.active_count),
+    total_sp_mw:   Number(r.total_sp_mw),
+  }))
+}
+
 // ── Heatmap ───────────────────────────────────────────────────────────────────
 export type HeatmapPoint = { lat: number; lng: number; weight: number }
 

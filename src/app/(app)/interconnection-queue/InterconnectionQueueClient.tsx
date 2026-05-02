@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Search, ChevronDown, ChevronUp, Plus, Check } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Plus, Check, BarChart2 } from 'lucide-react'
+import {
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend,
+} from 'recharts'
 import { cn, formatNumber } from '@/lib/utils'
-import type { NyisoQueueRow } from '@/lib/queries'
+import type { NyisoQueueRow, QueueGrowthRow } from '@/lib/queries'
 
 type SortCol =
   | 'queue_pos'
@@ -140,6 +144,96 @@ function FuelFilterMenu({ selected, onChange, fuels }: { selected: string[]; onC
   )
 }
 
+function QueueGrowthChart({ data }: { data: QueueGrowthRow[] }) {
+  const fmt = (v: string) => {
+    const d = new Date(v + 'T00:00:00Z')
+    if (d.getUTCMonth() !== 0) return ''
+    return `'${d.getUTCFullYear().toString().slice(2)}`
+  }
+  return (
+    <div className="px-6 pb-4">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-2">
+        <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-3">Queue Growth — Active Projects &amp; MW</p>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart data={data} margin={{ top: 4, right: 40, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="snapshot_date"
+              tickFormatter={fmt}
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={false}
+              tickLine={false}
+              interval={0}
+            />
+            <YAxis
+              yAxisId="mw"
+              orientation="left"
+              tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={false}
+              tickLine={false}
+              width={36}
+            />
+            <YAxis
+              yAxisId="count"
+              orientation="right"
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={false}
+              tickLine={false}
+              width={36}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+              labelFormatter={v => {
+                const d = new Date(v + 'T00:00:00Z')
+                return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' })
+              }}
+              formatter={(value, name) => {
+                const n = Number(value)
+                return name === 'total_sp_mw'
+                  ? [`${formatNumber(n)} MW`, 'Total SP (MW)']
+                  : [n.toLocaleString(), 'Active Projects']
+              }}
+            />
+            <Area
+              yAxisId="mw"
+              type="monotone"
+              dataKey="total_sp_mw"
+              fill="#f59e0b22"
+              stroke="#f59e0b"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 3 }}
+            />
+            <Line
+              yAxisId="count"
+              type="monotone"
+              dataKey="active_count"
+              stroke="#6366f1"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 3 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <div className="flex items-center gap-5 mt-1 px-9">
+          <span className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]">
+            <span className="inline-block w-3 h-0.5 rounded bg-[#f59e0b]" /> Total SP (MW)
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]">
+            <span className="inline-block w-3 h-0.5 rounded bg-[#6366f1]" /> Active Projects
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function HeaderButton({ active, dir, onClick, label }: {
   active: boolean
   dir: 'asc' | 'desc'
@@ -163,11 +257,12 @@ function HeaderButton({ active, dir, onClick, label }: {
   )
 }
 
-export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueRow[] }) {
+export default function InterconnectionQueueClient({ rows, growth }: { rows: NyisoQueueRow[]; growth: QueueGrowthRow[] }) {
   const [query, setQuery] = useState('')
   const [fuels, setFuels] = useState<string[]>([])
   const [sortCol, setSortCol] = useState<SortCol>('date_of_ir')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [showChart, setShowChart] = useState(false)
 
   const fuelOptions = useMemo(() => {
     const set = new Set<string>()
@@ -231,6 +326,18 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <FuelFilterMenu selected={fuels} onChange={setFuels} fuels={fuelOptions} />
+          <button
+            onClick={() => setShowChart(o => !o)}
+            className={cn(
+              'rounded-lg p-1.5 transition-colors',
+              showChart
+                ? 'bg-[var(--inp-bg)] text-[var(--txt)]'
+                : 'text-[var(--muted)] hover:text-[var(--txt)]'
+            )}
+            title="Queue growth chart"
+          >
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted)]">
             <span>{filtered.length.toLocaleString()} projects</span>
             <span className="text-[var(--border)]">·</span>
@@ -244,6 +351,9 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
           </div>
         </div>
       </div>
+
+      {/* Queue growth chart panel */}
+      {showChart && <QueueGrowthChart data={growth} />}
 
       {/* Scroll area — full-bleed horizontal scroll, sticky thead + sticky queue col */}
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] scroll-smooth">
