@@ -178,16 +178,6 @@ function RegionTable({ baLoad, retailRates, fuelMix }: {
 
   return (
     <div className={cn(CARD, 'flex flex-col overflow-hidden h-full')}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={CHART_TITLE + ' mb-0'}>Live Grid Overview</p>
-        {avgRate ? (
-          <span className="text-xs text-[var(--muted)]">
-            Nat. avg retail: <span className="font-semibold text-[var(--txt)]">${(avgRate / 100).toFixed(3)}/kWh</span>
-          </span>
-        ) : null}
-      </div>
-
       {/* Column headers */}
       <div className="grid grid-cols-[1fr_80px_100px_110px_110px] shrink-0 border-b border-[var(--border)] pb-1.5 mb-0">
         {['Region', 'Load (MW)', 'Net Load', 'Rate $/MWh', 'Main Source'].map(h => (
@@ -443,6 +433,7 @@ export default function GridClient({
             sunroofCounties={sunroofCounties}
             geaKpis={geaKpis}
             className="w-full h-full"
+            hoverByRegion
           />
         </div>
 

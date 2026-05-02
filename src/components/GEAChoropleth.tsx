@@ -157,7 +157,7 @@ type SunroofEntry = { name: string; state: string; value: number; buildings: num
 
 // Full-coverage Cambium county layer — separate load + style effects so hoveredGea can re-style
 function GEACambiumCountyLayer({
-  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea, sunroofLookup, onCountyClick,
+  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea, sunroofLookup, onCountyClick, onRegionHoverChange,
 }: {
   cambiumCounties: CambiumCountyMapEntry[]
   geaKpisMap: Record<string, GeaKpi>
@@ -165,6 +165,7 @@ function GEACambiumCountyLayer({
   hoveredGea: string | null
   sunroofLookup: Record<string, SunroofEntry>
   onCountyClick: (gea: string | null, sunroof: SunroofEntry | null) => void
+  onRegionHoverChange?: (gea: string | null) => void
 }) {
   const map = useMap()
   const loadedRef = useRef(false)
@@ -178,6 +179,8 @@ function GEACambiumCountyLayer({
   sunroofLookupRef.current = sunroofLookup
   const onCountyClickRef = useRef(onCountyClick)
   onCountyClickRef.current = onCountyClick
+  const onRegionHoverRef = useRef(onRegionHoverChange)
+  onRegionHoverRef.current = onRegionHoverChange
 
   // Load GeoJSON and wire listeners once
   useEffect(() => {
@@ -196,20 +199,27 @@ function GEACambiumCountyLayer({
           map.data.overrideStyle(e.feature, { strokeWeight: 1.8, strokeColor: '#111827', fillOpacity: 0.92 })
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
-          const color = gea ? GEA_COLORS[gea] : undefined
-          // Prefer county-level Sunroof data; fall back to GEA aggregate
-          const sunroof = sunroofLookupRef.current[fips]
-          if (sunroof) {
-            onHoverRef.current({ name: sunroof.name, value: sunroof.value, buildings: sunroof.buildings, color })
+          if (onRegionHoverRef.current) {
+            // Region-level hover: highlight whole GEA, no county chip
+            onRegionHoverRef.current(gea ?? null)
           } else {
-            // County exists but no Sunroof data — show county name with no value sentinel
-            const countyName = (e.feature.getProperty('NAME') as string ?? '') + ' County'
-            onHoverRef.current({ name: countyName, value: -1, buildings: 0, color })
+            const color = gea ? GEA_COLORS[gea] : undefined
+            const sunroof = sunroofLookupRef.current[fips]
+            if (sunroof) {
+              onHoverRef.current({ name: sunroof.name, value: sunroof.value, buildings: sunroof.buildings, color })
+            } else {
+              const countyName = (e.feature.getProperty('NAME') as string ?? '') + ' County'
+              onHoverRef.current({ name: countyName, value: -1, buildings: 0, color })
+            }
           }
         })
         map.data.addListener('mouseout', (e: google.maps.Data.MouseEvent) => {
           map.data.revertStyle(e.feature)
-          onHoverRef.current(null)
+          if (onRegionHoverRef.current) {
+            onRegionHoverRef.current(null)
+          } else {
+            onHoverRef.current(null)
+          }
         })
         map.data.addListener('click', (e: google.maps.Data.MouseEvent) => {
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
@@ -252,6 +262,7 @@ export default function GEAChoropleth({
   mode = 'county',
   stateGeaMap,
   className = 'w-full h-[480px] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+  hoverByRegion = false,
 }: {
   counties?: CountyMapEntry[]
   cambiumCounties?: CambiumCountyMapEntry[]
@@ -260,6 +271,7 @@ export default function GEAChoropleth({
   mode?: 'county' | 'state' | 'cambium'
   stateGeaMap?: Record<string, string>
   className?: string
+  hoverByRegion?: boolean
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [hoveredInfo, setHoveredInfo] = useState<ChipData | null>(null)
@@ -268,7 +280,7 @@ export default function GEAChoropleth({
   const [selectedGea, setSelectedGea] = useState<string | null>(null)
   const [selectedCounty, setSelectedCounty] = useState<CountyDrawerData | null>(null)
   const isMobile = useIsMobile()
-  const [legendOpen, setLegendOpen] = useState(true)
+  const [legendOpen, setLegendOpen] = useState(false)
 
   // FIPS → county Sunroof data for county-level chip on hover
   const sunroofLookup = useMemo<Record<string, SunroofEntry>>(() => {
@@ -348,7 +360,7 @@ export default function GEAChoropleth({
             style={{ width: '100%', height: '100%' }}
           >
             {mode === 'cambium' && cambiumCounties
-              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={activeHoveredGea} sunroofLookup={sunroofLookup} onCountyClick={handleCountyClick} />
+              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={activeHoveredGea} sunroofLookup={sunroofLookup} onCountyClick={handleCountyClick} onRegionHoverChange={hoverByRegion ? setLegendHoveredGea : undefined} />
               : mode === 'state'
               ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
               : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
