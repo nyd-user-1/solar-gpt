@@ -8,7 +8,7 @@ import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 
-type SortCol = SortableKey | 'region'
+type SortCol = SortableKey | 'region' | 'state_name'
 
 const PAGE_SIZE = 500
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
@@ -69,6 +69,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
     if (grades.length > 0) list = list.filter(c => grades.includes(c.sunlight_grade))
     list.sort((a, b) => {
       if (sortCol === 'region') return sortDir === 'asc' ? a.region_name.localeCompare(b.region_name) : b.region_name.localeCompare(a.region_name)
+      if (sortCol === 'state_name') return sortDir === 'asc' ? a.state_name.localeCompare(b.state_name) : b.state_name.localeCompare(a.state_name)
       let av: number, bv: number
       if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
@@ -184,7 +185,9 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             extraCols={[{
               key: 'state',
               header: 'State',
-
+              sortKey: 'state_name',
+              tooltip: 'The US state this city belongs to.',
+              anchor: 'state',
               render: (row) => {
                 const c = row as unknown as CityKpi
                 return <span>{stateAbbr(c.state_name)}</span>

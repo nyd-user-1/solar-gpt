@@ -229,12 +229,15 @@ const COLS: ColDef[] = [
 interface ExtraCol<T> {
   key: string
   header: string
+  tooltip?: string
+  anchor?: string
+  sortKey?: string
   render: (row: T) => React.ReactNode
 }
 
 interface Props<T extends SolarRow> {
   rows: T[]
-  sortCol: SortableKey | 'region'
+  sortCol: string
   sortDir: 'asc' | 'desc'
   onSort: (key: SortableKey) => void
   renderRegion: (row: T) => React.ReactNode
@@ -292,6 +295,47 @@ function ColHeader({ col, active, dir, onSort }: {
   )
 }
 
+function ExtraColHeader<T>({ col, sortCol, sortDir, onSort }: {
+  col: ExtraCol<T>
+  sortCol: string
+  sortDir: 'asc' | 'desc'
+  onSort: (key: SortableKey) => void
+}) {
+  const isActive = !!col.sortKey && sortCol === col.sortKey
+  return (
+    <th className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap">
+      <div className="relative group/col inline-block">
+        <button
+          onClick={col.sortKey ? () => onSort(col.sortKey as unknown as SortableKey) : undefined}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide transition-colors',
+            col.sortKey ? 'hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--txt)] cursor-pointer' : 'cursor-default',
+            isActive ? 'text-[var(--txt)]' : 'text-[var(--muted)]',
+          )}
+        >
+          {col.header}
+          {col.sortKey && (isActive
+            ? sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+            : <ChevronUp className="h-3 w-3 opacity-0 group-hover/col:opacity-40" />
+          )}
+        </button>
+        {col.tooltip && col.anchor && (
+          <div className="pointer-events-none group-hover/col:pointer-events-auto absolute top-full left-0 z-50 mt-2 hidden group-hover/col:block w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left overflow-hidden normal-case tracking-normal whitespace-normal">
+            <div className="px-3.5 py-3 whitespace-normal">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--txt)] mb-1.5 whitespace-normal break-words">{col.header}</p>
+              <p className="text-[12px] text-[var(--muted)] leading-relaxed font-normal whitespace-normal break-words">{col.tooltip}</p>
+            </div>
+            <Link href={`/glossary#${col.anchor}`} onClick={e => e.stopPropagation()} className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-3.5 py-2.5 text-[11px] font-medium text-solar hover:bg-[var(--inp-bg)] transition-colors">
+              <span className="inline-flex items-center gap-1.5"><Info className="h-3 w-3" />Learn more</span>
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+      </div>
+    </th>
+  )
+}
+
 export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onSort, renderRegion, regionLabel = 'Region', hideCols, extraCols, getRowHref }: Props<T>) {
   const router = useRouter()
   const visibleCols = hideCols ? COLS.filter(c => !hideCols.includes(c.key)) : COLS
@@ -316,12 +360,7 @@ export function SolarDataTable<T extends SolarRow>({ rows, sortCol, sortDir, onS
               </button>
             </th>
             {extraCols?.map(col => (
-              <th
-                key={col.key}
-                className="px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap"
-              >
-                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{col.header}</span>
-              </th>
+              <ExtraColHeader key={col.key} col={col} sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
             ))}
             {visibleCols.map(col => (
               <ColHeader

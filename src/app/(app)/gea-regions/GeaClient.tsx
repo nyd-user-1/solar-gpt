@@ -8,7 +8,7 @@ import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 
-type SortCol = SortableKey | 'region'
+type SortCol = SortableKey | 'region' | 'county_count'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
 const GRADE_ORDER: Record<string, number> = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 }
@@ -63,6 +63,7 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
       if (sortCol === 'region') return sortDir === 'asc' ? a.cambium_gea.localeCompare(b.cambium_gea) : b.cambium_gea.localeCompare(a.cambium_gea)
       let av: number, bv: number
       if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
+      else if (sortCol === 'county_count') { av = a.county_count; bv = b.county_count }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -146,6 +147,9 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
               {
                 key: 'counties',
                 header: 'Counties',
+                sortKey: 'county_count',
+                tooltip: 'Number of counties that fall within this grid evaluation area.',
+                anchor: 'gea-county-count',
                 render: (row) => {
                   const g = row as unknown as GeaKpi
                   return <span className="tabular-nums">{g.county_count.toLocaleString()}</span>

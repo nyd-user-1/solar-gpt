@@ -45,7 +45,7 @@ function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange:
 export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
-  const [sortCol, setSortCol] = useState<SortableKey | 'region'>('count_qualified')
+  const [sortCol, setSortCol] = useState<SortableKey | 'region' | 'state_name'>('count_qualified')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   const filtered = useMemo(() => {
@@ -56,6 +56,7 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
     if (grades.length > 0) list = list.filter(z => grades.includes(z.sunlight_grade))
     list.sort((a, b) => {
       if (sortCol === 'region') return sortDir === 'asc' ? a.zip_code.localeCompare(b.zip_code) : b.zip_code.localeCompare(a.zip_code)
+      if (sortCol === 'state_name') return sortDir === 'asc' ? a.state_name.localeCompare(b.state_name) : b.state_name.localeCompare(a.state_name)
       let av: number, bv: number
       if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
@@ -100,8 +101,10 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         regionLabel="ZIP"
         extraCols={[{
           key: 'state',
-          header: 'STATE',
-
+          header: 'State',
+          sortKey: 'state_name',
+          tooltip: 'The US state this ZIP code belongs to.',
+          anchor: 'state',
           render: (row) => {
             const z = row as unknown as ZipKpi
             return <span>{stateAbbr(z.state_name)}</span>
