@@ -53,12 +53,13 @@ async function getRetailHistory() {
 }
 
 async function getFuelMix() {
+  // 7 BAs × ~10 fuel types × 48 hours ≈ 3360 rows — request 5000 to be safe
   const data = await eiaFetch('electricity/rto/fuel-type-data/data/', {
     'frequency': 'hourly',
     'data[0]': 'value',
     'sort[0][column]': 'period',
     'sort[0][direction]': 'desc',
-    'length': '600',
+    'length': '5000',
   })
   return data?.response?.data ?? []
 }
@@ -71,7 +72,7 @@ async function getNetLoad() {
       'facets[type][]': 'D',
       'sort[0][column]': 'period',
       'sort[0][direction]': 'desc',
-      'length': '200',
+      'length': '1000',
     }),
     eiaFetch('electricity/rto/region-data/data/', {
       'frequency': 'hourly',
@@ -79,7 +80,7 @@ async function getNetLoad() {
       'facets[type][]': 'NG',
       'sort[0][column]': 'period',
       'sort[0][direction]': 'desc',
-      'length': '200',
+      'length': '1000',
     }),
   ])
   return {
