@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, ChevronDown, ChevronUp, Plus, Check, BarChart2 } from 'lucide-react'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, AreaChart, LineChart,
+  ResponsiveContainer, BarChart, Bar, AreaChart, LineChart, PieChart, Pie, Cell,
 } from 'recharts'
 import { cn, formatNumber } from '@/lib/utils'
 import type { NyisoQueueRow, QueueGrowthRow } from '@/lib/queries'
@@ -340,6 +340,49 @@ function MonthlyAdditionsChart({ data }: { data: QueueGrowthRow[] }) {
   )
 }
 
+const PIE_COLORS = ['#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', '#172554', '#818cf8']
+
+function CountyPieChart({ rows }: { rows: NyisoQueueRow[] }) {
+  const data = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const r of rows) {
+      const key = r.county ?? 'Unknown'
+      counts[key] = (counts[key] ?? 0) + 1
+    }
+    const sorted = Object.entries(counts).sort(([, a], [, b]) => b - a)
+    const top8 = sorted.slice(0, 8).map(([name, value]) => ({ name, value }))
+    const other = sorted.slice(8).reduce((s, [, n]) => s + n, 0)
+    if (other > 0) top8.push({ name: 'Other', value: other })
+    return top8
+  }, [rows])
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
+      <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Projects by County</p>
+      <p className="text-[11px] text-[var(--muted2)] mb-1">Current queue — active project count</p>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={78} strokeWidth={1} stroke="var(--surface)">
+            {data.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+          </Pie>
+          <Tooltip
+            contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+            formatter={(v, name) => [`${v} projects`, name]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+        {data.slice(0, 6).map((d, i) => (
+          <span key={d.name} className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
+            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: PIE_COLORS[i] }} />
+            {d.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function HeaderButton({ active, dir, onClick, label }: {
   active: boolean
   dir: 'asc' | 'desc'
@@ -466,8 +509,9 @@ export default function InterconnectionQueueClient({ rows, growth }: { rows: Nyi
             <FuelMixChart rows={rows} />
             <AvgSizeChart data={growth} />
           </div>
-          <div className="px-6 pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 pb-8">
             <MonthlyAdditionsChart data={growth} />
+            <CountyPieChart rows={rows} />
           </div>
         </div>
       ) : (
