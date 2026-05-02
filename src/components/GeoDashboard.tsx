@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
-  ScatterChart, Scatter, CartesianGrid,
+  ScatterChart, Scatter, CartesianGrid, LabelList,
 } from 'recharts'
 import { useRouter } from 'next/navigation'
 import { SolarTopChart } from '@/components/SolarTopChart'
@@ -120,10 +120,24 @@ function TopInstallsChart({ rows, getLabel, getHref, yAxisWidth }: {
   )
 }
 
+function AdoptionScatterTooltip({ active, payload }: { active?: boolean; payload?: { payload?: { name?: string; x?: number; y?: number } }[] }) {
+  if (!active || !payload?.length) return null
+  const d = payload[0]?.payload
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12 }}>
+      <p style={{ fontWeight: 600, color: 'var(--txt)', marginBottom: 4 }}>{d?.name ?? ''}</p>
+      <p style={{ color: 'var(--muted)' }}>Adoption: <span style={{ color: 'var(--txt)' }}>{(d?.x ?? 0).toFixed(1)}%</span></p>
+      <p style={{ color: 'var(--muted)' }}>Potential/yr: <span style={{ color: 'var(--txt)' }}>${fmtCompact(d?.y ?? 0)}</span></p>
+    </div>
+  )
+}
+
 function AdoptionScatter({ rows, getLabel }: { rows: SolarRow[]; getLabel: (r: SolarRow) => string }) {
   const data = useMemo(() =>
-    rows
+    [...rows]
       .filter(r => r.adoption_rate_pct != null && r.untapped_annual_value_usd != null)
+      .sort((a, b) => Number(b.untapped_annual_value_usd) - Number(a.untapped_annual_value_usd))
+      .slice(0, 20)
       .map(r => ({
         x: Number(r.adoption_rate_pct),
         y: Number(r.untapped_annual_value_usd),
@@ -136,7 +150,7 @@ function AdoptionScatter({ rows, getLabel }: { rows: SolarRow[]; getLabel: (r: S
       <p className={CHART_TITLE}>Adoption Rate vs Untapped Potential</p>
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 4, right: 16, bottom: 20, left: 8 }}>
+          <ScatterChart margin={{ top: 16, right: 16, bottom: 20, left: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               type="number"
@@ -155,17 +169,10 @@ function AdoptionScatter({ rows, getLabel }: { rows: SolarRow[]; getLabel: (r: S
               tickFormatter={(v) => '$' + fmtCompact(v)}
               width={52}
             />
-            <Tooltip
-              cursor={{ strokeDasharray: '3 3' }}
-              contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-              formatter={(v: unknown, name: unknown) =>
-                name === 'Potential/yr' ? ['$' + fmtCompact(Number(v)), name as string] : [Number(v).toFixed(1) + '%', name as string]
-              }
-              labelFormatter={(_: unknown, payload: readonly { payload?: { name?: string } }[]) =>
-                payload[0]?.payload?.name ?? ''
-              }
-            />
-            <Scatter data={data} fill="#f59e0b" fillOpacity={0.75} />
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<AdoptionScatterTooltip />} />
+            <Scatter data={data} fill="#f59e0b" fillOpacity={0.8}>
+              <LabelList dataKey="name" position="top" style={{ fontSize: 9, fill: 'var(--muted)' }} />
+            </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -180,43 +187,60 @@ function KwhPerRoofChart({ rows, getLabel, getHref, yAxisWidth }: {
   yAxisWidth: number
 }) {
   const router = useRouter()
-  const data = useMemo(() =>
-    [...rows]
-      .filter(r => (r.median_annual_kwh_per_roof ?? 0) > 0)
-      .sort((a, b) => (b.median_annual_kwh_per_roof ?? 0) - (a.median_annual_kwh_per_roof ?? 0))
+  const data = useMemo(() => {
+    const sorted = [...rows]
+      .filter(r => Number(r.median_annual_kwh_per_roof ?? 0) > 0)
+      .sort((a, b) => Number(b.median_annual_kwh_per_roof) - Number(a.median_annual_kwh_per_roof))
       .slice(0, 10)
-      .map(r => ({ name: getLabel(r), value: r.median_annual_kwh_per_roof ?? 0, href: getHref?.(r) }))
-  , [rows, getLabel, getHref])
+      .map(r => ({ name: getLabel(r), value: Number(r.median_annual_kwh_per_roof), href: getHref?.(r) }))
+    if (sorted.length > 0) return sorted
+    // fallback to kw_median when median_annual_kwh_per_roof is unavailable
+    return [...rows]
+      .filter(r => Number(r.kw_median ?? 0) > 0)
+      .sort((a, b) => Number(b.kw_median) - Number(a.kw_median))
+      .slice(0, 10)
+      .map(r => ({ name: getLabel(r), value: Number(r.kw_median), href: getHref?.(r), isFallback: true }))
+  }, [rows, getLabel, getHref])
+
+  const isFallback = data.length > 0 && (data[0] as { isFallback?: boolean }).isFallback
+  const title = isFallback ? 'Top 10 — Median kW Capacity' : 'Top 10 — kWh/Roof (Median)'
+  const unit = isFallback ? 'kW' : 'kWh/roof'
 
   return (
     <div className={CHART_CARD}>
-      <p className={CHART_TITLE}>Top 10 — kWh/Roof (Median)</p>
-      <div className="overflow-y-auto" style={{ maxHeight: 10 * 26 }}>
-        <div style={{ height: data.length * 26 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" barSize={14} margin={{ top: 2, right: 60, bottom: 2, left: 4 }}>
-              <XAxis type="number" hide />
-              <YAxis dataKey="name" type="category" width={yAxisWidth} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
-              <Tooltip
-                cursor={{ fill: 'rgba(0,0,0,0.04)' }}
-                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                formatter={(v: unknown) => [fmtCompact(Number(v)), 'kWh/roof']}
-              />
-              <Bar
-                dataKey="value"
-                fill="#10b981"
-                radius={[0, 4, 4, 0]}
-                cursor={getHref ? 'pointer' : 'default'}
-                onClick={(d: unknown) => {
-                  const href = (d as { payload?: { href?: string } })?.payload?.href
-                  if (href) router.push(href)
-                }}
-                label={{ position: 'right', fill: 'var(--txt)', fontSize: 11, formatter: (v: unknown) => fmtCompact(Number(v)) }}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+      <p className={CHART_TITLE}>{title}</p>
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center" style={{ height: 10 * 26 }}>
+          <span className="text-xs text-[var(--muted)]">No data available</span>
         </div>
-      </div>
+      ) : (
+        <div className="overflow-y-auto" style={{ maxHeight: 10 * 26 }}>
+          <div style={{ height: data.length * 26 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} layout="vertical" barSize={14} margin={{ top: 2, right: 60, bottom: 2, left: 4 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={yAxisWidth} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: unknown) => [fmtCompact(Number(v)), unit]}
+                />
+                <Bar
+                  dataKey="value"
+                  fill="#10b981"
+                  radius={[0, 4, 4, 0]}
+                  cursor={getHref ? 'pointer' : 'default'}
+                  onClick={(d: unknown) => {
+                    const href = (d as { payload?: { href?: string } })?.payload?.href
+                    if (href) router.push(href)
+                  }}
+                  label={{ position: 'right', fill: 'var(--txt)', fontSize: 11, formatter: (v: unknown) => fmtCompact(Number(v)) }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
