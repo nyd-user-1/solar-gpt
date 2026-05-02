@@ -11,6 +11,13 @@ import { GEA_COLORS, getGeaColor } from '@/lib/gea-colors'
 import { GEADrawer, type CountyDrawerData } from '@/components/GEADrawer'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
+function darkenHex(hex: string, factor = 0.55): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `#${Math.round(r * factor).toString(16).padStart(2, '0')}${Math.round(g * factor).toString(16).padStart(2, '0')}${Math.round(b * factor).toString(16).padStart(2, '0')}`
+}
+
 const COUNTIES_URL = 'https://gist.githubusercontent.com/sdwfrost/d1c73f91dd9d175998ed166eb216994a/raw/counties.geojson'
 const STATES_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
 
@@ -246,16 +253,9 @@ function GEACambiumCountyLayer({
       const isPinnedRegion = pinnedGea !== null && gea === pinnedGea
       const isSelectedCounty = selectedCountyFips !== null && fips === selectedCountyFips
 
-      // fillOpacity at 1.0 on selected county reads as a darker shade of the region
-      // color (white basemap shows through at 0.72, disappears at 1.0) — cleaner
-      // than any stroke approach which clips/doubles at shared polygon edges
-      const fillOpacity = isSelectedCounty
-        ? 1.0
-        : gea ? (dimmed ? 0.12 : 0.72) : 0.08
-
       return {
-        fillColor: color,
-        fillOpacity,
+        fillColor: isSelectedCounty ? darkenHex(color) : color,
+        fillOpacity: isSelectedCounty ? 0.95 : gea ? (dimmed ? 0.12 : 0.72) : 0.08,
         strokeColor: '#374151',
         strokeWeight: dimmed ? 0.15 : 0.4,
         strokeOpacity: dimmed ? 0.2 : 0.55,
