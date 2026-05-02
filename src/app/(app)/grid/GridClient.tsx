@@ -97,9 +97,17 @@ const TT = {
 const ROW_H = 40 // px per row
 const VISIBLE_ROWS = 8
 
+// BA → representative state for retail rate lookup
+const BA_STATE: Record<string, string> = {
+  ERCO: 'TX', CISO: 'CA', SWPP: 'KS', PJM: 'PA',
+  MISO: 'IL', NYIS: 'NY', ISNE: 'MA', BPAT: 'WA',
+  PACW: 'OR', WACM: 'CO', AZPS: 'AZ', SOCO: 'GA',
+}
+
 function RegionTable({ baLoad, retailRates, fuelMix }: {
   baLoad: EiaRow[]; retailRates: EiaRow[]; fuelMix: EiaRow[]
 }) {
+  // Latest demand per BA
   const latestLoad = useMemo(() => {
     const byBA: Record<string, number> = {}
     for (const row of baLoad) {
@@ -109,6 +117,24 @@ function RegionTable({ baLoad, retailRates, fuelMix }: {
     return byBA
   }, [baLoad])
 
+  // Latest solar + wind per BA (for net load = load − renewables)
+  const latestRenewables = useMemo(() => {
+    const byBA: Record<string, { solar: number; wind: number; period: string }> = {}
+    for (const row of fuelMix) {
+      const ba = row.respondent ?? ''
+      const period = row.period ?? ''
+      if (!byBA[ba] || period > byBA[ba].period) {
+        byBA[ba] = { solar: 0, wind: 0, period }
+      }
+      if (period === byBA[ba].period) {
+        if (row.fueltype === 'SUN') byBA[ba].solar += Number(row.value)
+        if (row.fueltype === 'WND') byBA[ba].wind += Number(row.value)
+      }
+    }
+    return byBA
+  }, [fuelMix])
+
+  // Main source per BA from latest fuel mix hour
   const mainSource = useMemo(() => {
     const byBAPeriod: Record<string, Record<string, Record<string, number>>> = {}
     for (const row of fuelMix) {
@@ -131,6 +157,18 @@ function RegionTable({ baLoad, retailRates, fuelMix }: {
     return result
   }, [fuelMix])
 
+  // Latest retail rate per state (¢/kWh → $/MWh = multiply by 10)
+  const stateRates = useMemo(() => {
+    const latest = retailRates[0]?.period
+    const byState: Record<string, number> = {}
+    for (const r of retailRates) {
+      if (r.period === latest && r.stateid && r.price != null) {
+        byState[r.stateid] = Number(r.price) * 10 // $/MWh
+      }
+    }
+    return byState
+  }, [retailRates])
+
   const avgRate = useMemo(() => {
     const latest = retailRates[0]?.period
     const rows = retailRates.filter(r => r.period === latest && r.price != null)
@@ -151,8 +189,8 @@ function RegionTable({ baLoad, retailRates, fuelMix }: {
       </div>
 
       {/* Column headers */}
-      <div className="grid grid-cols-[1fr_100px_130px] shrink-0 border-b border-[var(--border)] pb-1.5 mb-0">
-        {['Region', 'Load (MW)', 'Main Source'].map(h => (
+      <div className="grid grid-cols-[1fr_80px_100px_110px_110px] shrink-0 border-b border-[var(--border)] pb-1.5 mb-0">
+        {['Region', 'Load (MW)', 'Net Load', 'Rate $/MWh', 'Main Source'].map(h => (
           <span key={h} className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">{h}</span>
         ))}
       </div>
@@ -164,17 +202,23 @@ function RegionTable({ baLoad, retailRates, fuelMix }: {
       >
         {GEA_ROWS.map(({ gea, label, ba }) => {
           const load = ba ? latestLoad[ba] : undefined
+          const ren = ba ? latestRenewables[ba] : undefined
+          const netLoad = load != null && ren != null ? load - ren.solar - ren.wind : undefined
           const src = ba ? mainSource[ba] : undefined
+          const state = ba ? BA_STATE[ba] : undefined
+          const rate = state ? stateRates[state] : undefined
           const color = GEA_COLORS[gea] ?? '#94a3b8'
           return (
             <div key={gea}
-              className="grid grid-cols-[1fr_100px_130px] items-center hover:bg-[var(--inp-bg)] transition-colors"
+              className="grid grid-cols-[1fr_80px_100px_110px_110px] items-center hover:bg-[var(--inp-bg)] transition-colors"
               style={{ height: ROW_H }}>
               <span className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} />
                 <span className="text-sm font-medium text-[var(--txt)]">{label}</span>
               </span>
-              <span className="text-sm tabular-nums text-[var(--txt)]">{load ? fmtNum(load) : '—'}</span>
+              <span className="text-sm tabular-nums text-[var(--txt)]">{load != null ? fmtNum(load) : '—'}</span>
+              <span className="text-sm tabular-nums text-[var(--txt)]">{netLoad != null ? fmtNum(netLoad) : '—'}</span>
+              <span className="text-sm tabular-nums text-[var(--txt)]">{rate != null ? `$${rate.toFixed(0)}` : '—'}</span>
               <span className="text-sm text-[var(--muted)]">{src ?? '—'}</span>
             </div>
           )
@@ -381,7 +425,7 @@ export default function GridClient({
   const [tab, setTab] = useState<Tab>('Retail Rates')
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in gap-4 p-4">
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in gap-5 p-4">
 
       {/* ── Top half: table (left) + GEA map (right) ── */}
       <div className="flex-1 min-h-0 flex gap-4">
