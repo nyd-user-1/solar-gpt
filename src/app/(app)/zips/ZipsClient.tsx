@@ -73,8 +73,8 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden relative animate-zoom-in">
-      <div className="sticky top-0 z-20 px-6 pt-4 pb-3 bg-[var(--surface)]">
+    <div className="flex flex-1 flex-col overflow-hidden animate-zoom-in">
+      <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
         <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
           <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
           <input
@@ -93,36 +93,38 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         </div>
       </div>
 
-      <SolarDataTable
-        rows={filtered as SolarRow[]}
-        sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
-        sortDir={sortDir}
-        onSort={handleSort}
-        regionLabel="ZIP"
-        extraCols={[{
-          key: 'state',
-          header: 'State',
-          sortKey: 'state_name',
-          tooltip: 'The US state this ZIP code belongs to.',
-          anchor: 'state',
-          render: (row) => {
+      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
+        <SolarDataTable
+          rows={filtered as SolarRow[]}
+          sortCol={sortCol === 'region' ? 'count_qualified' : sortCol}
+          sortDir={sortDir}
+          onSort={handleSort}
+          regionLabel="ZIP"
+          extraCols={[{
+            key: 'state',
+            header: 'State',
+            sortKey: 'state_name',
+            tooltip: 'The US state this ZIP code belongs to.',
+            anchor: 'state',
+            render: (row) => {
+              const z = row as unknown as ZipKpi
+              return <span>{stateAbbr(z.state_name)}</span>
+            },
+          }]}
+          getRowHref={(row) => {
             const z = row as unknown as ZipKpi
-            return <span>{stateAbbr(z.state_name)}</span>
-          },
-        }]}
-        getRowHref={(row) => {
-          const z = row as unknown as ZipKpi
-          return `/zips/${z.zip_code}`
-        }}
-        renderRegion={(row) => {
-          const z = row as unknown as ZipKpi
-          return (
-            <span className="group-hover/row:text-solar transition-colors">
-              {z.zip_code}
-            </span>
-          )
-        }}
-      />
+            return `/zips/${z.zip_code}`
+          }}
+          renderRegion={(row) => {
+            const z = row as unknown as ZipKpi
+            return (
+              <span className="group-hover/row:text-solar transition-colors">
+                {z.zip_code}
+              </span>
+            )
+          }}
+        />
+      </div>
     </div>
   )
 }
