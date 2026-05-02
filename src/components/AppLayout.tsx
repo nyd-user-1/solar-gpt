@@ -46,6 +46,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     '/gea-regions': 'Regions',
     '/zips': 'ZIP Codes',
     '/rooftops': 'Rooftops',
+    '/interconnection-queue': 'Interconnection',
     '/leads': 'Leads',
     '/explore': 'Explore',
     '/grid': 'Grid',
