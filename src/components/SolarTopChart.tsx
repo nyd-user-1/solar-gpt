@@ -72,9 +72,11 @@ export function SolarTopChart({ rows, getLabel, getHref, yAxisWidth = 130 }: Pro
         <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
           Top {data.length} — {metric.label}
         </p>
-        <div className="h-72 w-full">
+        {/* 10 bars visible; scroll for the rest */}
+        <div className="overflow-y-auto" style={{ maxHeight: 10 * 30 }}>
+          <div style={{ height: data.length * 30 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" margin={{ top: 2, right: 60, bottom: 2, left: 4 }}>
+            <BarChart data={data} layout="vertical" barSize={16} margin={{ top: 2, right: 60, bottom: 2, left: 4 }}>
               <XAxis type="number" hide />
               <YAxis
                 dataKey="name"
@@ -112,6 +114,7 @@ export function SolarTopChart({ rows, getLabel, getHref, yAxisWidth = 130 }: Pro
               />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
