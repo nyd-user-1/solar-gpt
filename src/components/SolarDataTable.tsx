@@ -257,12 +257,12 @@ function ColHeader({ col, active, dir, onSort }: {
           }
         </button>
         {/* Tooltip */}
-        <div className="pointer-events-none group-hover/col:pointer-events-auto absolute top-full left-0 z-50 mt-2 hidden group-hover/col:block w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left overflow-hidden normal-case tracking-normal">
-          <div className="px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--txt)] mb-1.5">{col.header}</p>
-            <p className="text-[12px] text-[var(--muted)] leading-relaxed font-normal">{col.tooltip}</p>
+        <div className="pointer-events-none group-hover/col:pointer-events-auto absolute top-full left-0 z-50 mt-2 hidden group-hover/col:block w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left overflow-hidden normal-case tracking-normal whitespace-normal">
+          <div className="px-3.5 py-3 whitespace-normal">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--txt)] mb-1.5 whitespace-normal break-words">{col.header}</p>
+            <p className="text-[12px] text-[var(--muted)] leading-relaxed font-normal whitespace-normal break-words">{col.tooltip}</p>
             {col.footnote && (
-              <p className="mt-2 text-[10.5px] italic text-[var(--muted2)] leading-snug font-normal">{col.footnote}</p>
+              <p className="mt-2 text-[10.5px] italic text-[var(--muted2)] leading-snug font-normal whitespace-normal break-words">{col.footnote}</p>
             )}
           </div>
           <Link
