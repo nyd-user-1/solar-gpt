@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import GridClient from './GridClient'
+import { getAllGeas, getGeaKpi, getAllCambiumCountiesForMap, getCountiesForMap, type GeaKpi, type CambiumCountyMapEntry, type CountyMapEntry } from '@/lib/queries'
 
 const API_KEY = process.env.EIA_API_KEY ?? ''
 const EIA = 'https://api.eia.gov/v2'
@@ -18,48 +19,32 @@ async function eiaFetch(path: string, params: Record<string, string>) {
 
 async function getBaLoad() {
   const data = await eiaFetch('electricity/rto/region-data/data/', {
-    'frequency': 'hourly',
-    'data[0]': 'value',
-    'facets[type][]': 'D',
-    'sort[0][column]': 'period',
-    'sort[0][direction]': 'desc',
-    'length': '100',
+    'frequency': 'hourly', 'data[0]': 'value', 'facets[type][]': 'D',
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '1000',
   })
   return data?.response?.data ?? []
 }
 
 async function getRetailRates() {
   const data = await eiaFetch('electricity/retail-sales/data/', {
-    'frequency': 'monthly',
-    'data[0]': 'price',
-    'facets[sectorid][]': 'RES',
-    'sort[0][column]': 'period',
-    'sort[0][direction]': 'desc',
-    'length': '51',
+    'frequency': 'monthly', 'data[0]': 'price', 'facets[sectorid][]': 'RES',
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '51',
   })
   return data?.response?.data ?? []
 }
 
 async function getRetailHistory() {
   const data = await eiaFetch('electricity/retail-sales/data/', {
-    'frequency': 'monthly',
-    'data[0]': 'price',
-    'facets[sectorid][]': 'RES',
-    'sort[0][column]': 'period',
-    'sort[0][direction]': 'desc',
-    'length': '612', // 51 states × 12 months
+    'frequency': 'monthly', 'data[0]': 'price', 'facets[sectorid][]': 'RES',
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '1200',
   })
   return data?.response?.data ?? []
 }
 
 async function getFuelMix() {
-  // 7 BAs × ~10 fuel types × 48 hours ≈ 3360 rows — request 5000 to be safe
   const data = await eiaFetch('electricity/rto/fuel-type-data/data/', {
-    'frequency': 'hourly',
-    'data[0]': 'value',
-    'sort[0][column]': 'period',
-    'sort[0][direction]': 'desc',
-    'length': '5000',
+    'frequency': 'hourly', 'data[0]': 'value',
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '5000',
   })
   return data?.response?.data ?? []
 }
@@ -67,36 +52,31 @@ async function getFuelMix() {
 async function getNetLoad() {
   const [demand, netGen] = await Promise.all([
     eiaFetch('electricity/rto/region-data/data/', {
-      'frequency': 'hourly',
-      'data[0]': 'value',
-      'facets[type][]': 'D',
-      'sort[0][column]': 'period',
-      'sort[0][direction]': 'desc',
-      'length': '1000',
+      'frequency': 'hourly', 'data[0]': 'value', 'facets[type][]': 'D',
+      'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '1000',
     }),
     eiaFetch('electricity/rto/region-data/data/', {
-      'frequency': 'hourly',
-      'data[0]': 'value',
-      'facets[type][]': 'NG',
-      'sort[0][column]': 'period',
-      'sort[0][direction]': 'desc',
-      'length': '1000',
+      'frequency': 'hourly', 'data[0]': 'value', 'facets[type][]': 'NG',
+      'sort[0][column]': 'period', 'sort[0][direction]': 'desc', 'length': '1000',
     }),
   ])
-  return {
-    demand: demand?.response?.data ?? [],
-    netGen: netGen?.response?.data ?? [],
-  }
+  return { demand: demand?.response?.data ?? [], netGen: netGen?.response?.data ?? [] }
 }
 
 export default async function GridPage() {
-  const [baLoad, retailRates, retailHistory, fuelMix, loadData] = await Promise.all([
-    getBaLoad(),
-    getRetailRates(),
-    getRetailHistory(),
-    getFuelMix(),
-    getNetLoad(),
-  ])
+  const [baLoad, retailRates, retailHistory, fuelMix, loadData, geas, cambiumCounties, sunroofCounties] =
+    await Promise.all([
+      getBaLoad(),
+      getRetailRates(),
+      getRetailHistory(),
+      getFuelMix(),
+      getNetLoad(),
+      getAllGeas(),
+      getAllCambiumCountiesForMap(),
+      getCountiesForMap(),
+    ])
+
+  const geaKpis = (await Promise.all(geas.map((g: string) => getGeaKpi(g)))).filter(Boolean) as GeaKpi[]
 
   return (
     <GridClient
@@ -106,6 +86,9 @@ export default async function GridPage() {
       fuelMix={fuelMix}
       demandData={loadData.demand}
       netGenData={loadData.netGen}
+      geaKpis={geaKpis}
+      cambiumCounties={cambiumCounties as CambiumCountyMapEntry[]}
+      sunroofCounties={sunroofCounties as CountyMapEntry[]}
     />
   )
 }

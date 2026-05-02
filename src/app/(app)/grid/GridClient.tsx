@@ -5,8 +5,12 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
+import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { GEA_COLORS } from '@/lib/gea-colors'
+import type { GeaKpi, CambiumCountyMapEntry, CountyMapEntry } from '@/lib/queries'
+
+const GEAChoropleth = dynamic(() => import('@/components/GEAChoropleth'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,10 +19,8 @@ interface EiaRow {
   respondent?: string
   fueltype?: string
   stateid?: string
-  sectorid?: string
-  // EIA v2 field names vary by endpoint:
-  value?: number | string    // rto/region-data, rto/fuel-type-data
-  price?: number | string    // retail-sales
+  value?: number | string
+  price?: number | string
   [key: string]: unknown
 }
 
@@ -29,10 +31,13 @@ interface Props {
   fuelMix: EiaRow[]
   demandData: EiaRow[]
   netGenData: EiaRow[]
+  geaKpis: GeaKpi[]
+  cambiumCounties: CambiumCountyMapEntry[]
+  sunroofCounties: CountyMapEntry[]
 }
 
-// ─── Region definitions ───────────────────────────────────────────────────────
-// Maps every Cambium GEA to its EIA-930 BA code (null = no direct mapping)
+// ─── GEA → EIA-930 BA mapping ─────────────────────────────────────────────────
+
 const GEA_ROWS: { gea: string; label: string; ba: string | null }[] = [
   { gea: 'CAISO',              label: 'CAISO',              ba: 'CISO' },
   { gea: 'ERCOT',              label: 'ERCOT',              ba: 'ERCO' },
@@ -54,21 +59,19 @@ const GEA_ROWS: { gea: string; label: string; ba: string | null }[] = [
   { gea: 'WestConnect_South',  label: 'WestConnect South',  ba: 'AZPS' },
 ]
 
-// Chart BAs (subset with richest EIA-930 data) and their representative GEA color
 const CHART_BAS: { ba: string; label: string; color: string }[] = [
-  { ba: 'ERCO', label: 'ERCOT',  color: GEA_COLORS['ERCOT'] },
-  { ba: 'CISO', label: 'CAISO',  color: GEA_COLORS['CAISO'] },
-  { ba: 'SWPP', label: 'SPP',    color: GEA_COLORS['SPP_North'] },
-  { ba: 'PJM',  label: 'PJM',    color: GEA_COLORS['PJM_West'] },
-  { ba: 'MISO', label: 'MISO',   color: GEA_COLORS['MISO_Central'] },
-  { ba: 'NYIS', label: 'NYISO',  color: GEA_COLORS['NYISO'] },
-  { ba: 'ISNE', label: 'ISONE',  color: GEA_COLORS['ISONE'] },
+  { ba: 'ERCO', label: 'ERCOT',  color: GEA_COLORS['ERCOT']        },
+  { ba: 'CISO', label: 'CAISO',  color: GEA_COLORS['CAISO']        },
+  { ba: 'SWPP', label: 'SPP',    color: GEA_COLORS['SPP_North']     },
+  { ba: 'PJM',  label: 'PJM',    color: GEA_COLORS['PJM_West']      },
+  { ba: 'MISO', label: 'MISO',   color: GEA_COLORS['MISO_Central']  },
+  { ba: 'NYIS', label: 'NYISO',  color: GEA_COLORS['NYISO']        },
+  { ba: 'ISNE', label: 'ISONE',  color: GEA_COLORS['ISONE']        },
 ]
 
 const FUEL_COLORS: Record<string, string> = {
   SUN: '#f59e0b', WND: '#10b981', WAT: '#3b82f6', NUC: '#8b5cf6',
-  NG:  '#6366f1', COL: '#64748b', OIL: '#f97316', OTH: '#94a3b8',
-  BAT: '#06b6d4', GEO: '#84cc16',
+  NG:  '#6366f1', COL: '#64748b', OIL: '#f97316', OTH: '#94a3b8', BAT: '#06b6d4',
 }
 
 const TABS = ['Retail Rates', 'Fuel Mix', 'Load', 'Renewables', 'Capacity'] as const
@@ -83,16 +86,18 @@ function fmtNum(n: number) {
   return n.toFixed(0)
 }
 
-const tooltipStyle = {
+const TT = {
   contentStyle: {
-    background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: 8, fontSize: 12,
+    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12,
   },
 }
 
-// ─── BA Summary Table ─────────────────────────────────────────────────────────
+// ─── Region Table ─────────────────────────────────────────────────────────────
 
-function BaSummaryTable({ baLoad, retailRates, fuelMix }: {
+const ROW_H = 40 // px per row
+const VISIBLE_ROWS = 8
+
+function RegionTable({ baLoad, retailRates, fuelMix }: {
   baLoad: EiaRow[]; retailRates: EiaRow[]; fuelMix: EiaRow[]
 }) {
   const latestLoad = useMemo(() => {
@@ -134,50 +139,169 @@ function BaSummaryTable({ baLoad, retailRates, fuelMix }: {
   }, [retailRates])
 
   return (
-    <div className={cn(CARD, 'overflow-hidden')}>
-      <div className="flex items-center justify-between mb-3">
+    <div className={cn(CARD, 'flex flex-col overflow-hidden h-full')}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2 shrink-0">
         <p className={CHART_TITLE + ' mb-0'}>Live Grid Overview</p>
         {avgRate ? (
           <span className="text-xs text-[var(--muted)]">
-            Nat. avg retail: <span className="text-[var(--txt)] font-semibold">${(avgRate / 100).toFixed(3)}/kWh</span>
+            Nat. avg retail: <span className="font-semibold text-[var(--txt)]">${(avgRate / 100).toFixed(3)}/kWh</span>
           </span>
         ) : null}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)]">
-              {['Region', 'Load (MW)', 'Main Source'].map(h => (
-                <th key={h} className="text-left px-2 py-2 text-xs font-semibold text-[var(--muted)] uppercase tracking-wide whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {GEA_ROWS.map(({ gea, label, ba }) => {
-              const load = ba ? latestLoad[ba] : undefined
-              const src = ba ? mainSource[ba] : undefined
-              const color = GEA_COLORS[gea] ?? '#94a3b8'
-              return (
-                <tr key={gea} className="hover:bg-[var(--inp-bg)] transition-colors">
-                  <td className="px-2 py-2">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/10" style={{ background: color }} />
-                      <span className="font-medium text-[var(--txt)] text-xs">{label}</span>
-                    </span>
-                  </td>
-                  <td className="px-2 py-2 tabular-nums text-xs text-[var(--txt)]">{load ? fmtNum(load) : '—'}</td>
-                  <td className="px-2 py-2 text-xs text-[var(--muted)]">{src ?? '—'}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_100px_130px] shrink-0 border-b border-[var(--border)] pb-1.5 mb-0">
+        {['Region', 'Load (MW)', 'Main Source'].map(h => (
+          <span key={h} className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">{h}</span>
+        ))}
+      </div>
+
+      {/* Rows — first VISIBLE_ROWS shown, rest scroll */}
+      <div
+        className="overflow-y-auto no-scrollbar divide-y divide-[var(--border)] flex-1"
+        style={{ maxHeight: VISIBLE_ROWS * ROW_H }}
+      >
+        {GEA_ROWS.map(({ gea, label, ba }) => {
+          const load = ba ? latestLoad[ba] : undefined
+          const src = ba ? mainSource[ba] : undefined
+          const color = GEA_COLORS[gea] ?? '#94a3b8'
+          return (
+            <div key={gea}
+              className="grid grid-cols-[1fr_100px_130px] items-center hover:bg-[var(--inp-bg)] transition-colors"
+              style={{ height: ROW_H }}>
+              <span className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} />
+                <span className="text-sm font-medium text-[var(--txt)]">{label}</span>
+              </span>
+              <span className="text-sm tabular-nums text-[var(--txt)]">{load ? fmtNum(load) : '—'}</span>
+              <span className="text-sm text-[var(--muted)]">{src ?? '—'}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-// ─── Retail Rate Charts ───────────────────────────────────────────────────────
+// ─── Chart panels ─────────────────────────────────────────────────────────────
+
+function FuelMixPanel({ fuelMix, ba, label, color }: { fuelMix: EiaRow[]; ba: string; label: string; color: string }) {
+  const { data, fuels } = useMemo(() => {
+    const byPeriod: Record<string, Record<string, number>> = {}
+    for (const row of fuelMix) {
+      if (row.respondent !== ba) continue
+      const period = row.period ?? '', fuel = row.fueltype ?? ''
+      if (!byPeriod[period]) byPeriod[period] = {}
+      byPeriod[period][fuel] = (byPeriod[period][fuel] ?? 0) + Number(row.value)
+    }
+    const sorted = Object.entries(byPeriod).sort(([a], [b]) => a.localeCompare(b)).slice(-48)
+    const fuelSet = new Set<string>()
+    for (const [, v] of sorted) Object.keys(v).forEach(f => fuelSet.add(f))
+    return {
+      data: sorted.map(([p, v]) => ({ period: p.slice(11, 16), ...v })),
+      fuels: [...fuelSet],
+    }
+  }, [fuelMix, ba])
+
+  return (
+    <div className={CARD}>
+      <p className={CHART_TITLE} style={{ color }}>Fuel Mix — {label}</p>
+      <div style={{ height: 240 }}>
+        {data.length > 2 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
+              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
+              <Tooltip {...TT} formatter={(v: unknown, n: unknown) => [fmtNum(Number(v)) + ' MW', String(n)]} />
+              {fuels.map(f => (
+                <Area key={f} type="monotone" dataKey={f} stackId="1"
+                  stroke={FUEL_COLORS[f] ?? '#94a3b8'} fill={FUEL_COLORS[f] ?? '#94a3b8'} fillOpacity={0.8} strokeWidth={0} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <span className="text-xs text-[var(--muted)]">Loading…</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LoadPanel({ demandData, ba, label, color }: { demandData: EiaRow[]; ba: string; label: string; color: string }) {
+  const data = useMemo(() =>
+    demandData.filter(r => r.respondent === ba)
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .slice(-48)
+      .map(r => ({ period: r.period.slice(11, 16), load: Number(r.value) }))
+  , [demandData, ba])
+
+  return (
+    <div className={CARD}>
+      <p className={CHART_TITLE} style={{ color }}>Load — {label} (MW)</p>
+      <div style={{ height: 240 }}>
+        {data.length > 1 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
+              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
+              <Tooltip {...TT} formatter={(v: unknown) => [fmtNum(Number(v)) + ' MW', 'Load']} />
+              <Area type="monotone" dataKey="load" stroke={color} fill={color} fillOpacity={0.15} strokeWidth={2} dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <span className="text-xs text-[var(--muted)]">Loading…</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function RenewablesPanel({ fuelMix, ba, label, color }: { fuelMix: EiaRow[]; ba: string; label: string; color: string }) {
+  const data = useMemo(() => {
+    const byPeriod: Record<string, { Solar: number; Wind: number }> = {}
+    for (const row of fuelMix) {
+      if (row.respondent !== ba) continue
+      const period = row.period ?? ''
+      if (!byPeriod[period]) byPeriod[period] = { Solar: 0, Wind: 0 }
+      const v = Number(row.value)
+      if (row.fueltype === 'SUN') byPeriod[period].Solar += v
+      if (row.fueltype === 'WND') byPeriod[period].Wind += v
+    }
+    return Object.entries(byPeriod).sort(([a], [b]) => a.localeCompare(b)).slice(-48)
+      .map(([p, v]) => ({ period: p.slice(11, 16), ...v }))
+  }, [fuelMix, ba])
+
+  return (
+    <div className={CARD}>
+      <p className={CHART_TITLE} style={{ color }}>Renewables — {label}</p>
+      <div style={{ height: 240 }}>
+        {data.length > 2 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
+              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
+              <Tooltip {...TT} formatter={(v: unknown, n: unknown) => [fmtNum(Number(v)) + ' MW', String(n)]} />
+              <Area type="monotone" dataKey="Solar" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.8} strokeWidth={0} />
+              <Area type="monotone" dataKey="Wind" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} strokeWidth={0} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <span className="text-xs text-[var(--muted)]">Loading…</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 const TOP_STATES = ['CA', 'TX', 'NY', 'FL', 'MA', 'HI', 'WA', 'ID']
 
@@ -192,9 +316,7 @@ function RetailRatePanel({ retailHistory }: { retailHistory: EiaRow[] }) {
       const p = Number(row.price)
       if (!isNaN(p) && p > 0) byPeriod[period][state] = p / 100
     }
-    return Object.entries(byPeriod)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-24)
+    return Object.entries(byPeriod).sort(([a], [b]) => a.localeCompare(b)).slice(-24)
       .map(([period, vals]) => ({ period, ...vals }))
   }, [retailHistory])
 
@@ -209,7 +331,7 @@ function RetailRatePanel({ retailHistory }: { retailHistory: EiaRow[] }) {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="period" tick={{ fontSize: 10, fill: 'var(--muted)' }} tickLine={false} interval={3} />
             <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => `$${Number(v).toFixed(2)}`} width={48} />
-            <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(3)}/kWh`]} />
+            <Tooltip {...TT} formatter={(v: unknown) => [`$${Number(v).toFixed(3)}/kWh`]} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             {TOP_STATES.map((s, i) => (
               <Line key={s} type="monotone" dataKey={s} stroke={colors[i]} dot={false} strokeWidth={1.5} connectNulls />
@@ -240,7 +362,7 @@ function RetailRateBar({ retailRates }: { retailRates: EiaRow[] }) {
           <BarChart data={data} layout="vertical" barSize={14} margin={{ top: 2, right: 56, bottom: 2, left: 4 }}>
             <XAxis type="number" hide />
             <YAxis dataKey="state" type="category" width={28} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
-            <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(3)}/kWh`, 'Rate']} />
+            <Tooltip {...TT} formatter={(v: unknown) => [`$${Number(v).toFixed(3)}/kWh`, 'Rate']} />
             <Bar dataKey="rate" fill="#f59e0b" radius={[0, 4, 4, 0]}
               label={{ position: 'right', fill: 'var(--txt)', fontSize: 10, formatter: (v: unknown) => `$${Number(v).toFixed(2)}` }} />
           </BarChart>
@@ -250,163 +372,43 @@ function RetailRateBar({ retailRates }: { retailRates: EiaRow[] }) {
   )
 }
 
-// ─── Fuel Mix ─────────────────────────────────────────────────────────────────
-
-function FuelMixPanel({ fuelMix, ba, label, color }: { fuelMix: EiaRow[]; ba: string; label: string; color: string }) {
-  const { data, fuels } = useMemo(() => {
-    const byPeriod: Record<string, Record<string, number>> = {}
-    for (const row of fuelMix) {
-      if (row.respondent !== ba) continue
-      const period = row.period ?? '', fuel = row.fueltype ?? ''
-      if (!byPeriod[period]) byPeriod[period] = {}
-      byPeriod[period][fuel] = (byPeriod[period][fuel] ?? 0) + Number(row.value)
-    }
-    const sorted = Object.entries(byPeriod).sort(([a], [b]) => a.localeCompare(b)).slice(-48)
-    const fuelSet = new Set<string>()
-    for (const [, vals] of sorted) Object.keys(vals).forEach(f => fuelSet.add(f))
-    return {
-      data: sorted.map(([p, vals]) => ({ period: p.slice(11, 16), ...vals })),
-      fuels: [...fuelSet],
-    }
-  }, [fuelMix, ba])
-
-  const hasData = data.length > 2
-
-  return (
-    <div className={CARD}>
-      <p className={CHART_TITLE} style={{ color }}>Fuel Mix — {label}</p>
-      <div style={{ height: 240 }}>
-        {hasData ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
-              <Tooltip {...tooltipStyle} formatter={(v: unknown, name: unknown) => [fmtNum(Number(v)) + ' MW', String(name)]} />
-              {fuels.map(f => (
-                <Area key={f} type="monotone" dataKey={f} stackId="1"
-                  stroke={FUEL_COLORS[f] ?? '#94a3b8'} fill={FUEL_COLORS[f] ?? '#94a3b8'}
-                  fillOpacity={0.8} strokeWidth={0} />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[var(--muted)]">Loading…</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Load ─────────────────────────────────────────────────────────────────────
-
-function LoadPanel({ demandData, ba, label, color }: { demandData: EiaRow[]; ba: string; label: string; color: string }) {
-  const data = useMemo(() =>
-    demandData
-      .filter(r => r.respondent === ba)
-      .sort((a, b) => a.period.localeCompare(b.period))
-      .slice(-48)
-      .map(r => ({ period: r.period.slice(11, 16), load: Number(r.value) }))
-  , [demandData, ba])
-
-  return (
-    <div className={CARD}>
-      <p className={CHART_TITLE} style={{ color }}>Load — {label} (MW)</p>
-      <div style={{ height: 240 }}>
-        {data.length > 1 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
-              <Tooltip {...tooltipStyle} formatter={(v: unknown) => [fmtNum(Number(v)) + ' MW', 'Load']} />
-              <Area type="monotone" dataKey="load" stroke={color} fill={color} fillOpacity={0.15} strokeWidth={2} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[var(--muted)]">Loading…</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Renewables ───────────────────────────────────────────────────────────────
-
-function RenewablesPanel({ fuelMix, ba, label, color }: { fuelMix: EiaRow[]; ba: string; label: string; color: string }) {
-  const data = useMemo(() => {
-    const byPeriod: Record<string, { solar: number; wind: number; total: number }> = {}
-    for (const row of fuelMix) {
-      if (row.respondent !== ba) continue
-      const period = row.period ?? ''
-      if (!byPeriod[period]) byPeriod[period] = { solar: 0, wind: 0, total: 0 }
-      const v = Number(row.value)
-      if (row.fueltype === 'SUN') byPeriod[period].solar += v
-      if (row.fueltype === 'WND') byPeriod[period].wind += v
-      byPeriod[period].total += Math.max(v, 0)
-    }
-    return Object.entries(byPeriod)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-48)
-      .map(([p, v]) => ({ period: p.slice(11, 16), Solar: v.solar, Wind: v.wind }))
-  }, [fuelMix, ba])
-
-  return (
-    <div className={CARD}>
-      <p className={CHART_TITLE} style={{ color }}>Renewables — {label}</p>
-      <div style={{ height: 240 }}>
-        {data.length > 2 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="period" tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} interval={7} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--muted)' }} tickLine={false} tickFormatter={v => fmtNum(v)} width={36} />
-              <Tooltip {...tooltipStyle} formatter={(v: unknown, name: unknown) => [fmtNum(Number(v)) + ' MW', String(name)]} />
-              <Area type="monotone" dataKey="Solar" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.8} strokeWidth={0} />
-              <Area type="monotone" dataKey="Wind" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} strokeWidth={0} />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[var(--muted)]">Loading…</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Horizontal chart row ─────────────────────────────────────────────────────
-
-function ChartRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto no-scrollbar px-6">
-      {/* 380px cards × 7 = 2660px + gaps; peek of 7th card is visible at ~1200px viewport */}
-      <div className="flex gap-4 pb-2" style={{ minWidth: 'max-content' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function GridClient({ baLoad, retailRates, retailHistory, fuelMix, demandData }: Props) {
+export default function GridClient({
+  baLoad, retailRates, retailHistory, fuelMix, demandData,
+  geaKpis, cambiumCounties, sunroofCounties,
+}: Props) {
   const [tab, setTab] = useState<Tab>('Retail Rates')
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in gap-4 p-4">
 
-      <div className="px-6 pt-4 pb-4 shrink-0">
-        <BaSummaryTable baLoad={baLoad} retailRates={retailRates} fuelMix={fuelMix} />
+      {/* ── Top half: table (left) + GEA map (right) ── */}
+      <div className="flex-1 min-h-0 flex gap-4">
+
+        {/* Left: region table */}
+        <div className="w-[42%] min-w-0 shrink-0">
+          <RegionTable baLoad={baLoad} retailRates={retailRates} fuelMix={fuelMix} />
+        </div>
+
+        {/* Right: GEA choropleth map */}
+        <div className="flex-1 min-w-0 rounded-xl border border-[var(--border)] overflow-hidden">
+          <GEAChoropleth
+            mode="cambium"
+            cambiumCounties={cambiumCounties}
+            sunroofCounties={sunroofCounties}
+            geaKpis={geaKpis}
+            className="w-full h-full"
+          />
+        </div>
+
       </div>
 
-      <div className="px-6 pb-3 shrink-0">
-        <div className="flex items-center gap-1 border-b border-[var(--border)]">
+      {/* ── Bottom half: tabs + charts ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
+
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 border-b border-[var(--border)] shrink-0 mb-3">
           {TABS.map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={cn(
@@ -417,57 +419,43 @@ export default function GridClient({ baLoad, retailRates, retailHistory, fuelMix
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
+        {/* Chart content */}
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
 
-        {tab === 'Retail Rates' && (
-          <div className="px-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <RetailRatePanel retailHistory={retailHistory} />
-            <RetailRateBar retailRates={retailRates} />
-          </div>
-        )}
-
-        {tab === 'Fuel Mix' && (
-          <ChartRow>
-            {CHART_BAS.map(({ ba, label, color }) => (
-              <div key={ba} style={{ width: 380 }}>
-                <FuelMixPanel fuelMix={fuelMix} ba={ba} label={label} color={color} />
-              </div>
-            ))}
-          </ChartRow>
-        )}
-
-        {tab === 'Load' && (
-          <ChartRow>
-            {CHART_BAS.map(({ ba, label, color }) => (
-              <div key={ba} style={{ width: 380 }}>
-                <LoadPanel demandData={demandData} ba={ba} label={label} color={color} />
-              </div>
-            ))}
-          </ChartRow>
-        )}
-
-        {tab === 'Renewables' && (
-          <ChartRow>
-            {CHART_BAS.map(({ ba, label, color }) => (
-              <div key={ba} style={{ width: 380 }}>
-                <RenewablesPanel fuelMix={fuelMix} ba={ba} label={label} color={color} />
-              </div>
-            ))}
-          </ChartRow>
-        )}
-
-        {tab === 'Capacity' && (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center">
-              <p className="text-sm font-medium text-[var(--txt)] mb-1">Capacity data coming soon</p>
-              <p className="text-xs text-[var(--muted)]">EIA state-level generating capacity by fuel type</p>
+          {tab === 'Retail Rates' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
+              <RetailRatePanel retailHistory={retailHistory} />
+              <RetailRateBar retailRates={retailRates} />
             </div>
-          </div>
-        )}
+          )}
 
+          {(tab === 'Fuel Mix' || tab === 'Load' || tab === 'Renewables') && (
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="flex gap-4 pb-2" style={{ minWidth: 'max-content' }}>
+                {CHART_BAS.map(({ ba, label, color }) => (
+                  <div key={ba} style={{ width: 380 }}>
+                    {tab === 'Fuel Mix' && <FuelMixPanel fuelMix={fuelMix} ba={ba} label={label} color={color} />}
+                    {tab === 'Load' && <LoadPanel demandData={demandData} ba={ba} label={label} color={color} />}
+                    {tab === 'Renewables' && <RenewablesPanel fuelMix={fuelMix} ba={ba} label={label} color={color} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'Capacity' && (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <p className="text-sm font-medium text-[var(--txt)] mb-1">Capacity data coming soon</p>
+                <p className="text-xs text-[var(--muted)]">EIA state-level generating capacity by fuel type</p>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
+
     </div>
   )
 }
