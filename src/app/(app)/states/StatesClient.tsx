@@ -12,6 +12,7 @@ import { US_STATES } from '@/lib/us-states'
 type SortCol = SortableKey | 'region'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
+const GRADE_ORDER: Record<string, number> = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 }
 
 function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false)
@@ -144,8 +145,9 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
     if (query) list = list.filter(s => s.state_name.toLowerCase().includes(query.toLowerCase()))
     if (grades.length > 0) list = list.filter(s => grades.includes(s.sunlight_grade))
     list.sort((a, b) => {
-      let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'region') { av = a.state_name; bv = b.state_name }
+      let av: number = 0, bv: number = 0
+      if (sortCol === 'region') { return sortDir === 'asc' ? a.state_name.localeCompare(b.state_name) : b.state_name.localeCompare(a.state_name) }
+      if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1

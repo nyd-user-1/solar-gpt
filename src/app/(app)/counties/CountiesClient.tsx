@@ -11,6 +11,7 @@ import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTab
 type SortCol = SortableKey | 'region'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
+const GRADE_ORDER: Record<string, number> = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 }
 
 function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false)
@@ -64,8 +65,9 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
       : [...unique]
     if (grades.length > 0) list = list.filter(c => grades.includes(c.sunlight_grade))
     list.sort((a, b) => {
-      let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'region') { av = a.region_name; bv = b.region_name }
+      if (sortCol === 'region') return sortDir === 'asc' ? a.region_name.localeCompare(b.region_name) : b.region_name.localeCompare(a.region_name)
+      let av: number, bv: number
+      if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1

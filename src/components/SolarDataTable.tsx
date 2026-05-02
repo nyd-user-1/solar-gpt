@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronUp, ChevronDown, Info, ArrowUpRight } from 'lucide-react'
@@ -7,6 +8,7 @@ import { cn, formatNumber, fmtUsd, fmtPct, fmtKwMedian } from '@/lib/utils'
 
 export type SortableKey =
   | 'region'
+  | 'sunlight_grade'
   | 'count_qualified'
   | 'percent_covered'
   | 'percent_qualified'
@@ -35,6 +37,7 @@ export type SortableKey =
 
 export interface SolarRow {
   id: string | number
+  sunlight_grade?: string | null
   count_qualified?: number | null
   percent_covered?: number | null
   percent_qualified?: number | null
@@ -68,7 +71,7 @@ interface ColDef {
   anchor: string
   tooltip: string
   footnote?: string
-  fmt: (row: SolarRow) => string
+  fmt: (row: SolarRow) => React.ReactNode
 }
 
 function fmtUsdOrDash(v: number | null | undefined): string {
@@ -81,6 +84,13 @@ function fmtYearsOrDash(v: number | null | undefined): string {
 }
 
 const COLS: ColDef[] = [
+  {
+    key: 'sunlight_grade', header: 'Grade', anchor: 'sunlight-grade',
+    tooltip: 'Solar suitability grade from A+ (exceptional sunlight, roof conditions, and opportunity) to D (poor). Derived from aggregate Project Sunroof data.',
+    fmt: r => r.sunlight_grade
+      ? <span className="font-bold text-solar">{r.sunlight_grade}</span>
+      : <span className="text-[var(--muted)]">—</span>,
+  },
   {
     key: 'count_qualified', header: 'Bldgs.', anchor: 'suitable-bldgs',
     tooltip: 'Buildings whose rooftops are suitable for solar panels based on shade, orientation, and roof area.',

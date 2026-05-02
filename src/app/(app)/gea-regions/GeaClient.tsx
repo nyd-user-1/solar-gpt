@@ -11,6 +11,7 @@ import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTab
 type SortCol = SortableKey | 'region'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
+const GRADE_ORDER: Record<string, number> = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 }
 
 function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false)
@@ -59,8 +60,9 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
     if (query) list = list.filter(g => fmtGea(g.cambium_gea).toLowerCase().includes(query.toLowerCase()))
     if (grades.length > 0) list = list.filter(g => grades.includes(g.sunlight_grade))
     list.sort((a, b) => {
-      let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'region') { av = a.cambium_gea; bv = b.cambium_gea }
+      if (sortCol === 'region') return sortDir === 'asc' ? a.cambium_gea.localeCompare(b.cambium_gea) : b.cambium_gea.localeCompare(a.cambium_gea)
+      let av: number, bv: number
+      if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -147,14 +149,6 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
                 render: (row) => {
                   const g = row as unknown as GeaKpi
                   return <span className="tabular-nums">{g.county_count.toLocaleString()}</span>
-                },
-              },
-              {
-                key: 'grade',
-                header: 'Grade',
-                render: (row) => {
-                  const g = row as unknown as GeaKpi
-                  return <span className="font-bold text-solar">{g.sunlight_grade}</span>
                 },
               },
             ]}

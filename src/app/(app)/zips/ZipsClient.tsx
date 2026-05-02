@@ -8,6 +8,7 @@ import type { ZipKpi } from '@/lib/queries'
 import { stateAbbr } from '@/lib/utils'
 
 const GRADES = ['A+', 'A', 'B', 'C', 'D']
+const GRADE_ORDER: Record<string, number> = { 'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 }
 
 function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false)
@@ -54,8 +55,9 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
     )
     if (grades.length > 0) list = list.filter(z => grades.includes(z.sunlight_grade))
     list.sort((a, b) => {
-      let av: string | number = 0, bv: string | number = 0
-      if (sortCol === 'region') { av = a.zip_code; bv = b.zip_code }
+      if (sortCol === 'region') return sortDir === 'asc' ? a.zip_code.localeCompare(b.zip_code) : b.zip_code.localeCompare(a.zip_code)
+      let av: number, bv: number
+      if (sortCol === 'sunlight_grade') { av = GRADE_ORDER[a.sunlight_grade ?? ''] ?? 0; bv = GRADE_ORDER[b.sunlight_grade ?? ''] ?? 0 }
       else { av = (a as Record<string, unknown>)[sortCol] as number ?? 0; bv = (b as Record<string, unknown>)[sortCol] as number ?? 0 }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
