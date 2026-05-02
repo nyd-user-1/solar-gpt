@@ -1,0 +1,274 @@
+'use client'
+
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { Search, ChevronDown, ChevronUp, Plus, Check, Zap } from 'lucide-react'
+import { cn, formatNumber } from '@/lib/utils'
+import type { NyisoQueueRow } from '@/lib/queries'
+
+type SortCol =
+  | 'queue_pos'
+  | 'project_name'
+  | 'developer'
+  | 'sp_mw'
+  | 'type_fuel'
+  | 'county'
+  | 'zone'
+  | 'date_of_ir'
+  | 'proposed_cod'
+
+const FUEL_LABELS: Record<string, string> = {
+  S: 'Solar',
+  W: 'Wind',
+  OSW: 'Offshore Wind',
+  ES: 'Battery Storage',
+  CR: 'Solar + Storage',
+  CW: 'Wind + Storage',
+  L: 'Load',
+  AC: 'Transmission (AC)',
+  DC: 'Transmission (DC)',
+  NG: 'Natural Gas',
+  CT: 'Combustion Turbine',
+  'CT-NG': 'Combustion Turbine NG',
+  'CC-NG': 'Combined Cycle NG',
+  'CC-D': 'Combined Cycle Dual',
+  'CT-D': 'Combustion Turbine Dual',
+  'ST-NG': 'Steam Turbine NG',
+  'ST-D': 'Steam Turbine Dual',
+  H: 'Hydro',
+  FC: 'Fuel Cell',
+  SW: 'Solid Waste',
+}
+
+function fuelLabel(code: string | null): string {
+  if (!code) return '—'
+  return FUEL_LABELS[code] ?? code
+}
+
+function FuelFilterMenu({ selected, onChange, fuels }: { selected: string[]; onChange: (v: string[]) => void; fuels: string[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function h(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={cn(
+          'relative rounded-lg p-1.5 transition-colors',
+          open || selected.length > 0
+            ? 'bg-[var(--inp-bg)] text-[var(--txt)]'
+            : 'text-[var(--muted)] hover:text-[var(--txt)]'
+        )}
+      >
+        <Plus className="h-5 w-5" />
+        {selected.length > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-solar text-[8px] font-bold text-white leading-none">
+            {selected.length}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden max-h-80 overflow-y-auto">
+          <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between sticky top-0 bg-[var(--surface)]">
+            <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Fuel Type</span>
+            {selected.length > 0 && (
+              <button onClick={() => onChange([])} className="text-[10px] text-solar hover:underline">Clear</button>
+            )}
+          </div>
+          {fuels.map((f, i) => (
+            <button
+              key={f}
+              onClick={() => {
+                const next = selected.includes(f) ? selected.filter(v => v !== f) : [...selected, f]
+                onChange(next)
+              }}
+              className={cn(
+                'flex w-full items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-[var(--inp-bg)]',
+                i > 0 && 'border-t border-[var(--border)]'
+              )}
+            >
+              <span className="text-[var(--txt)]">{fuelLabel(f)}</span>
+              {selected.includes(f) && <Check className="h-4 w-4 text-solar" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HeaderCell({ label, col, sortCol, sortDir, onSort, align = 'left' }: {
+  label: string
+  col: SortCol
+  sortCol: SortCol
+  sortDir: 'asc' | 'desc'
+  onSort: (c: SortCol) => void
+  align?: 'left' | 'right'
+}) {
+  const active = sortCol === col
+  return (
+    <th
+      onClick={() => onSort(col)}
+      className={cn(
+        'sticky top-0 z-10 cursor-pointer select-none whitespace-nowrap bg-[var(--surface)] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--txt)] border-b border-[var(--border)]',
+        align === 'right' ? 'text-right' : 'text-left'
+      )}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+      </span>
+    </th>
+  )
+}
+
+function fmtDate(s: string | null): string {
+  if (!s) return '—'
+  const d = new Date(s + 'T00:00:00Z')
+  if (isNaN(d.getTime())) return s
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueRow[] }) {
+  const [query, setQuery] = useState('')
+  const [fuels, setFuels] = useState<string[]>([])
+  const [sortCol, setSortCol] = useState<SortCol>('date_of_ir')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const fuelOptions = useMemo(() => {
+    const set = new Set<string>()
+    rows.forEach(r => { if (r.type_fuel) set.add(r.type_fuel) })
+    return Array.from(set).sort()
+  }, [rows])
+
+  const filtered = useMemo(() => {
+    let list = [...rows]
+    if (query) {
+      const q = query.toLowerCase()
+      list = list.filter(r =>
+        (r.project_name?.toLowerCase().includes(q)) ||
+        (r.developer?.toLowerCase().includes(q)) ||
+        (r.county?.toLowerCase().includes(q)) ||
+        (r.queue_pos?.toLowerCase().includes(q))
+      )
+    }
+    if (fuels.length > 0) list = list.filter(r => r.type_fuel && fuels.includes(r.type_fuel))
+    list.sort((a, b) => {
+      const av = a[sortCol] as string | number | null
+      const bv = b[sortCol] as string | number | null
+      if (av == null && bv == null) return 0
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return list
+  }, [rows, query, fuels, sortCol, sortDir])
+
+  const totalMw = useMemo(
+    () => filtered.reduce((acc, r) => acc + (r.sp_mw ?? 0), 0),
+    [filtered]
+  )
+
+  const toggleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir(col === 'sp_mw' || col === 'date_of_ir' ? 'desc' : 'asc') }
+  }
+
+  const snapshotLabel = rows[0]?.snapshot_date
+    ? new Date(rows[0].snapshot_date + 'T00:00:00Z').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+    : null
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
+
+      {/* Search + toolbar */}
+      <div className="bg-[var(--surface)] px-6 pt-4 pb-3 shrink-0">
+        <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--inp-bg)] px-4 py-3 mb-3">
+          <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
+          <input
+            type="text"
+            placeholder="Search projects, developers, counties…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <FuelFilterMenu selected={fuels} onChange={setFuels} fuels={fuelOptions} />
+          <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted)]">
+            <span>{filtered.length.toLocaleString()} projects</span>
+            <span className="text-[var(--border)]">·</span>
+            <span>{formatNumber(Math.round(totalMw))} MW total</span>
+            {snapshotLabel && (
+              <>
+                <span className="text-[var(--border)]">·</span>
+                <span>NYISO snapshot {snapshotLabel}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll area */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
+        <table className="w-full border-separate border-spacing-0">
+          <thead>
+            <tr>
+              <HeaderCell label="Queue" col="queue_pos" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="Project" col="project_name" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="Developer" col="developer" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="MW" col="sp_mw" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} align="right" />
+              <HeaderCell label="Type" col="type_fuel" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="County" col="county" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="Zone" col="zone" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="Filed" col="date_of_ir" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <HeaderCell label="Proposed COD" col="proposed_cod" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r, i) => (
+              <tr
+                key={`${r.queue_pos}-${r.snapshot_date}`}
+                className={cn(
+                  'group/row hover:bg-[var(--inp-bg)] transition-colors',
+                  i > 0 && '[&>td]:border-t [&>td]:border-[var(--border)]'
+                )}
+              >
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-mono text-[var(--muted)]">#{r.queue_pos}</td>
+                <td className="px-4 py-3 text-sm font-medium text-[var(--txt)] group-hover/row:text-solar transition-colors">
+                  <span className="inline-flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-solar shrink-0" />
+                    {r.project_name ?? '—'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-[var(--muted)] max-w-[260px] truncate" title={r.developer ?? ''}>{r.developer ?? '—'}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-right font-semibold text-[var(--txt)]">
+                  {r.sp_mw != null ? formatNumber(Math.round(r.sp_mw)) : '—'}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{fuelLabel(r.type_fuel)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{r.county ?? '—'}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--muted)]">{r.zone ?? '—'}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--muted)]">{fmtDate(r.date_of_ir)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{r.proposed_cod ?? '—'}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-4 py-12 text-center text-sm text-[var(--muted)]">No projects match your filters.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}

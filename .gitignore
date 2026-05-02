@@ -41,4 +41,4 @@ next-env.d.ts
 # nyiso ingest artifacts (generated; not source)
 scripts/nyiso-data/*.xlsx
 scripts/nyiso-data/*.json
-scripts/nyiso-data/b*.sql
+scripts/nyiso-data/[a-z]*.sql

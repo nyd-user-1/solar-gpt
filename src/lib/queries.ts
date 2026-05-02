@@ -867,6 +867,49 @@ export async function getTopStates(limit = 8): Promise<StateKpi[]> {
   return rows as StateKpi[]
 }
 
+// ── NYISO Interconnection Queue ───────────────────────────────────────────────
+export type NyisoQueueRow = {
+  queue_pos: string
+  snapshot_date: string
+  developer: string | null
+  project_name: string | null
+  date_of_ir: string | null
+  sp_mw: number | null
+  wp_mw: number | null
+  type_fuel: string | null
+  county: string | null
+  state: string | null
+  zone: string | null
+  points_of_interconnection: string | null
+  utility: string | null
+  s: string | null
+  last_updated_date: string | null
+  availability_of_studies: string | null
+  proposed_in_service_date: string | null
+  proposed_cod: string | null
+  status: string
+}
+
+export async function getInterconnectionQueue(): Promise<NyisoQueueRow[]> {
+  const rows = await sql`
+    SELECT queue_pos, snapshot_date::text AS snapshot_date, developer, project_name,
+           date_of_ir::text AS date_of_ir,
+           sp_mw, wp_mw, type_fuel, county, state, zone,
+           points_of_interconnection, utility, s,
+           last_updated_date::text AS last_updated_date,
+           availability_of_studies, proposed_in_service_date, proposed_cod, status
+      FROM solargpt.raw_nyiso_queue
+     WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM solargpt.raw_nyiso_queue WHERE status = 'active')
+       AND status = 'active'
+     ORDER BY date_of_ir DESC NULLS LAST, queue_pos
+  `
+  return (rows as Record<string, unknown>[]).map(r => ({
+    ...r,
+    sp_mw: r.sp_mw == null ? null : Number(r.sp_mw),
+    wp_mw: r.wp_mw == null ? null : Number(r.wp_mw),
+  })) as NyisoQueueRow[]
+}
+
 // ── Heatmap ───────────────────────────────────────────────────────────────────
 export type HeatmapPoint = { lat: number; lng: number; weight: number }
 
