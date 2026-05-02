@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, ChevronDown, ChevronUp, Plus, Check, BarChart2 } from 'lucide-react'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, BarChart, Bar, AreaChart, LineChart,
 } from 'recharts'
 import { cn, formatNumber } from '@/lib/utils'
 import type { NyisoQueueRow, QueueGrowthRow } from '@/lib/queries'
@@ -234,6 +234,112 @@ function QueueGrowthChart({ data }: { data: QueueGrowthRow[] }) {
   )
 }
 
+function FuelMixChart({ rows }: { rows: NyisoQueueRow[] }) {
+  const data = useMemo(() => {
+    const totals: Record<string, number> = {}
+    for (const r of rows) {
+      if (!r.type_fuel) continue
+      totals[r.type_fuel] = (totals[r.type_fuel] ?? 0) + (r.sp_mw ?? 0)
+    }
+    return Object.entries(totals)
+      .map(([fuel, mw]) => ({ name: FUEL_LABELS[fuel] ?? fuel, mw: Math.round(mw) }))
+      .sort((a, b) => b.mw - a.mw)
+      .slice(0, 10)
+  }, [rows])
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
+      <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Capacity by Fuel Type</p>
+      <p className="text-[11px] text-[var(--muted2)] mb-3">Current queue — total SP (MW)</p>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={data} layout="vertical" margin={{ top: 2, right: 52, bottom: 2, left: 4 }}>
+          <XAxis type="number" hide />
+          <YAxis dataKey="name" type="category" width={120} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
+          <Tooltip
+            contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+            formatter={(v) => [`${Number(v).toLocaleString()} MW`, 'Capacity']}
+          />
+          <Bar dataKey="mw" fill="#6366f1" radius={[0, 4, 4, 0]}
+            label={{ position: 'right', fill: 'var(--txt)', fontSize: 11, formatter: (v: unknown) => `${(Number(v)/1000).toFixed(0)}k` }}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function AvgSizeChart({ data }: { data: QueueGrowthRow[] }) {
+  const chartData = useMemo(() =>
+    data.map(d => ({
+      snapshot_date: d.snapshot_date,
+      avg_mw: d.active_count > 0 ? Math.round(d.total_sp_mw / d.active_count) : 0,
+    }))
+  , [data])
+
+  const tickFmt = (v: string) => {
+    const d = new Date(v + 'T00:00:00Z')
+    if (d.getUTCMonth() !== 0) return ''
+    return `'${d.getUTCFullYear().toString().slice(2)}`
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
+      <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Avg Project Size</p>
+      <p className="text-[11px] text-[var(--muted2)] mb-3">Mean SP (MW) per active project over time</p>
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="snapshot_date" tickFormatter={tickFmt} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} interval={0} />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} width={36} />
+          <Tooltip
+            contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+            labelFormatter={v => new Date(v + 'T00:00:00Z').toLocaleDateString('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' })}
+            formatter={(v) => [`${Number(v)} MW`, 'Avg Size']}
+          />
+          <Line type="monotone" dataKey="avg_mw" stroke="#6366f1" strokeWidth={2}
+            dot={{ fill: '#1e1b4b', r: 3, strokeWidth: 0 }} activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function MonthlyAdditionsChart({ data }: { data: QueueGrowthRow[] }) {
+  const chartData = useMemo(() =>
+    data.slice(1).map((d, i) => ({
+      snapshot_date: d.snapshot_date,
+      delta: d.active_count - data[i].active_count,
+    }))
+  , [data])
+
+  const tickFmt = (v: string) => {
+    const d = new Date(v + 'T00:00:00Z')
+    if (d.getUTCMonth() !== 0) return ''
+    return `'${d.getUTCFullYear().toString().slice(2)}`
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
+      <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Monthly Queue Change</p>
+      <p className="text-[11px] text-[var(--muted2)] mb-3">Net new active projects added per snapshot</p>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="snapshot_date" tickFormatter={tickFmt} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} interval={0} />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} width={36} />
+          <Tooltip
+            contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+            labelFormatter={v => new Date(v + 'T00:00:00Z').toLocaleDateString('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' })}
+            formatter={(v) => [`${Number(v) > 0 ? '+' : ''}${Number(v)}`, 'Net Change']}
+          />
+          <Area type="step" dataKey="delta" fill="#6366f122" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 3 }} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 function HeaderButton({ active, dir, onClick, label }: {
   active: boolean
   dir: 'asc' | 'desc'
@@ -352,10 +458,20 @@ export default function InterconnectionQueueClient({ rows, growth }: { rows: Nyi
         </div>
       </div>
 
-      {/* Queue growth chart panel */}
-      {showChart && <QueueGrowthChart data={growth} />}
-
-      {/* Scroll area — full-bleed horizontal scroll, sticky thead + sticky queue col */}
+      {/* Chart dashboard — replaces table when active */}
+      {showChart ? (
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <QueueGrowthChart data={growth} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 pb-4">
+            <FuelMixChart rows={rows} />
+            <AvgSizeChart data={growth} />
+          </div>
+          <div className="px-6 pb-8">
+            <MonthlyAdditionsChart data={growth} />
+          </div>
+        </div>
+      ) : (
+      /* Table view */
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] scroll-smooth">
         <table className="w-max min-w-full text-left text-sm">
           <thead className="sticky top-0 z-20">
@@ -421,6 +537,7 @@ export default function InterconnectionQueueClient({ rows, growth }: { rows: Nyi
           </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }
