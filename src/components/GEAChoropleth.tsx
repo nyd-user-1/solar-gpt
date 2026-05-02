@@ -357,9 +357,10 @@ export default function GEAChoropleth({
         </APIProvider>
 
         {/* Legend + info chip — combined collapsible accordion on mobile, stacked panels on desktop */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto max-w-[calc(100%-24px)] sm:max-w-none">
-          {/* Mobile: combined accordion (chip = header, legend = body) */}
-          <div className="sm:hidden bg-white/95 backdrop-blur-sm rounded-xl shadow-md overflow-hidden w-[240px] max-w-full">
+        {/* Single accordion panel — chip header + collapsible legend — all screen sizes */}
+        <div className="absolute top-3 left-3 pointer-events-auto w-[280px] max-w-[calc(100%-24px)]">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-md overflow-hidden">
+            {/* Header — always visible */}
             <button
               type="button"
               onClick={() => setLegendOpen(o => !o)}
@@ -367,28 +368,33 @@ export default function GEAChoropleth({
             >
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight truncate">{chip.name}</p>
-                <p className="text-[22px] font-bold tabular-nums leading-none mt-1 truncate" style={{ color: chipColor }}>{chip.value === -1 ? '—' : fmtUsdFull(chip.value)}</p>
+                <p className="text-[22px] font-bold tabular-nums leading-none mt-1 truncate" style={{ color: chipColor }}>
+                  {chip.value === -1 ? '—' : fmtUsdFull(chip.value)}
+                </p>
                 <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
                 <p className="text-[11px] text-[#666] mt-1.5">{fmtNum(chip.buildings)} qualified buildings</p>
               </div>
-              <ChevronDown className={`h-4 w-4 shrink-0 mt-0.5 text-[#999] transition-transform ${legendOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-4 w-4 shrink-0 mt-1 text-[#999] transition-transform ${legendOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* Collapsible legend */}
             {legendOpen && (
               <>
                 <div className="border-t border-black/10 mx-3" />
-                <div className="px-3 pt-2 pb-2.5">
+                <div className="px-3 pt-2 pb-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-1.5">Grid Regions</p>
-                  <div className="grid grid-cols-1 max-h-[100px] overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-x-3">
                     {Object.entries(GEA_COLORS).map(([gea, color]) => {
                       const isPinned = pinnedGea === gea
                       const isActive = legendHoveredGea === gea || isPinned
                       return (
-                        <button
+                        <div
                           key={gea}
-                          type="button"
-                          className={`flex items-center gap-1.5 py-[5px] px-1 rounded-md text-left transition-colors select-none ${
-                            isPinned ? 'bg-black/10' : 'hover:bg-black/5'
+                          className={`flex items-center gap-1.5 py-[4px] px-1 rounded-md cursor-pointer transition-colors select-none ${
+                            isPinned ? 'bg-black/10' : legendHoveredGea === gea ? 'bg-black/5' : 'hover:bg-black/5'
                           }`}
+                          onMouseEnter={() => setLegendHoveredGea(gea)}
+                          onMouseLeave={() => setLegendHoveredGea(null)}
                           onClick={() => {
                             if (isPinned) {
                               setPinnedGea(null); setSelectedGea(null); setSelectedCounty(null)
@@ -398,57 +404,16 @@ export default function GEAChoropleth({
                           }}
                         >
                           <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
-                          <span className={`text-[11px] whitespace-nowrap transition-colors ${isActive ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
+                          <span className={`text-[10px] whitespace-nowrap transition-colors ${isActive ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
                             {gea.replace(/_/g, ' ')}
                           </span>
-                        </button>
+                        </div>
                       )
                     })}
                   </div>
                 </div>
               </>
             )}
-          </div>
-
-          {/* Desktop: separate legend panel */}
-          <div className="hidden sm:block bg-white/90 backdrop-blur-sm rounded-xl px-3 pt-2 pb-2 shadow-sm min-w-[290px]">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#999] mb-2">Grid Regions</p>
-            <div className="grid grid-cols-2 gap-x-4">
-              {Object.entries(GEA_COLORS).map(([gea, color]) => {
-                const isPinned = pinnedGea === gea
-                const isActive = legendHoveredGea === gea || isPinned
-                return (
-                  <div
-                    key={gea}
-                    className={`flex items-center gap-1.5 py-[3px] px-1 rounded-md cursor-pointer transition-colors select-none ${
-                      isPinned ? 'bg-black/10' : legendHoveredGea === gea ? 'bg-black/8' : 'hover:bg-black/5'
-                    }`}
-                    onMouseEnter={() => setLegendHoveredGea(gea)}
-                    onMouseLeave={() => setLegendHoveredGea(null)}
-                    onClick={() => {
-                      if (isPinned) {
-                        setPinnedGea(null); setSelectedGea(null); setSelectedCounty(null)
-                      } else {
-                        setPinnedGea(gea); setSelectedGea(gea); setSelectedCounty(null)
-                      }
-                    }}
-                  >
-                    <div className="h-2.5 w-2.5 rounded-sm shrink-0 border border-black/15" style={{ background: color }} />
-                    <span className={`text-[10px] whitespace-nowrap transition-colors ${isActive ? 'text-[#111] font-semibold' : 'text-[#444]'}`}>
-                      {gea.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Desktop: separate info chip — full width of legend */}
-          <div className="hidden sm:block bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-md pointer-events-none">
-            <p className="text-[12px] font-bold text-[#1a1a1a] leading-tight">{chip.name}</p>
-            <p className="text-[26px] font-bold tabular-nums leading-none mt-1" style={{ color: chipColor }}>{chip.value === -1 ? '—' : fmtUsdFull(chip.value)}</p>
-            <p className="text-[10px] text-[#999] mt-0.5 leading-none">potential/yr</p>
-            <p className="text-[11px] text-[#666] mt-2">{fmtNum(chip.buildings)} qualified buildings</p>
           </div>
         </div>
       </div>
