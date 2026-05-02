@@ -53,19 +53,19 @@ function fmtDate(s: string | null): string {
 }
 
 const COLS: ColDef[] = [
+  { key: 'utility',                         header: 'Utility',                  render: r => r.utility ?? '—' },
   { key: 'developer',                       header: 'Developer',                width: 'min-w-[220px]', render: r => r.developer ?? '—' },
   { key: 'project_name',                    header: 'Project Name',             width: 'min-w-[220px]', render: r => r.project_name ?? '—' },
   { key: 'date_of_ir',                      header: 'Date of IR',               render: r => fmtDate(r.date_of_ir) },
   { key: 'sp_mw',                           header: 'SP (MW)',                  align: 'right', numeric: true, render: r => r.sp_mw == null ? '—' : formatNumber(r.sp_mw) },
   { key: 'wp_mw',                           header: 'WP (MW)',                  align: 'right', numeric: true, render: r => r.wp_mw == null ? '—' : formatNumber(r.wp_mw) },
   { key: 'type_fuel',                       header: 'Type / Fuel',              render: r => r.type_fuel ?? '—' },
-  { key: 'energy_storage_capability',       header: 'Energy Storage Capability', render: r => r.energy_storage_capability ?? '—' },
-  { key: 'minimum_duration_full_discharge', header: 'Min Duration Full Discharge', render: r => r.minimum_duration_full_discharge ?? '—' },
   { key: 'county',                          header: 'County',                   render: r => r.county ?? '—' },
   { key: 'state',                           header: 'State',                    render: r => r.state ?? '—' },
   { key: 'zone',                            header: 'Z',                        render: r => r.zone ?? '—' },
   { key: 'points_of_interconnection',       header: 'Points of Interconnection', width: 'min-w-[260px]', render: r => r.points_of_interconnection ?? '—' },
-  { key: 'utility',                         header: 'Utility',                  render: r => r.utility ?? '—' },
+  { key: 'energy_storage_capability',       header: 'Energy Storage Capability', render: r => r.energy_storage_capability ?? '—' },
+  { key: 'minimum_duration_full_discharge', header: 'Min Duration Full Discharge', render: r => r.minimum_duration_full_discharge ?? '—' },
   { key: 'affected_transmission_owner',     header: 'Affected Transmission Owner (ATO)', width: 'min-w-[200px]', render: r => r.affected_transmission_owner ?? '—' },
   { key: 's',                               header: 'S',                        render: r => r.s ?? '—' },
   { key: 'last_updated_date',               header: 'Last Updated Date',        render: r => fmtDate(r.last_updated_date) },
