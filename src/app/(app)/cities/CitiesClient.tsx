@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Search, Building2, List, LayoutGrid } from 'lucide-react'
+import { Search, Building2, List, LayoutGrid, Plus, Check } from 'lucide-react'
 import { cn, fmtUsd, fmtNum, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
@@ -11,9 +11,43 @@ import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTab
 type SortCol = SortableKey | 'region'
 
 const PAGE_SIZE = 500
+const GRADES = ['A+', 'A', 'B', 'C', 'D']
+
+function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    if (open) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(o => !o)} className={cn('relative rounded-lg p-1.5 transition-colors', open || selected.length > 0 ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+        <Plus className="h-5 w-5" />
+        {selected.length > 0 && <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-solar text-[8px] font-bold text-white leading-none">{selected.length}</span>}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-44 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden">
+          <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
+            <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Sunlight Grade</span>
+            {selected.length > 0 && <button onClick={() => onChange([])} className="text-[10px] text-solar hover:underline">Clear</button>}
+          </div>
+          {GRADES.map((g, i) => (
+            <button key={g} onClick={() => onChange(selected.includes(g) ? selected.filter(v => v !== g) : [...selected, g])} className={cn('flex w-full items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-[var(--inp-bg)]', i > 0 && 'border-t border-[var(--border)]')}>
+              <span className="font-semibold text-[var(--txt)]">{g}</span>
+              {selected.includes(g) && <Check className="h-4 w-4 text-solar" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
+  const [grades, setGrades] = useState<string[]>([])
   const [sortCol, setSortCol] = useState<SortCol>('region')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
@@ -23,36 +57,15 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  // Full filtered+sorted array (all matching rows, not sliced)
   const filtered = useMemo(() => {
     const seen = new Set<number>()
-    const unique = cities.filter(c => {
-      if (seen.has(c.id)) return false
-      seen.add(c.id)
-      return true
-    })
-
-    // When searching: relevance order, skip column sort
-    if (query) {
-      const q = query.toLowerCase()
-      return unique
-        .filter(c =>
-          c.region_name.toLowerCase().includes(q) ||
-          c.state_name.toLowerCase().includes(q)
-        )
-        .sort((a, b) => {
-          const an = a.region_name.toLowerCase()
-          const bn = b.region_name.toLowerCase()
-          const aExact = an === q, bExact = bn === q
-          const aStarts = an.startsWith(q), bStarts = bn.startsWith(q)
-          if (aExact !== bExact) return aExact ? -1 : 1
-          if (aStarts !== bStarts) return aStarts ? -1 : 1
-          return an.localeCompare(bn)
-        })
-    }
-
-    // No query: apply column sort
-    const list = [...unique]
+    const unique = cities.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true })
+    const q = query.toLowerCase()
+    let list = query
+      ? unique.filter(c => c.region_name.toLowerCase().includes(q) || c.state_name.toLowerCase().includes(q))
+          .sort((a, b) => { const an = a.region_name.toLowerCase(), bn = b.region_name.toLowerCase(); const aE = an === q, bE = bn === q, aS = an.startsWith(q), bS = bn.startsWith(q); if (aE !== bE) return aE ? -1 : 1; if (aS !== bS) return aS ? -1 : 1; return an.localeCompare(bn) })
+      : [...unique]
+    if (grades.length > 0) list = list.filter(c => grades.includes(c.sunlight_grade))
     list.sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0
       if (sortCol === 'region') { av = a.region_name; bv = b.region_name }
@@ -62,7 +75,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
       return 0
     })
     return list
-  }, [cities, query, sortCol, sortDir])
+  }, [cities, query, grades, sortCol, sortDir])
 
   // Reset visible window whenever the filtered set changes
   useEffect(() => {
@@ -105,13 +118,14 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button onClick={() => { setViewMode('list'); localStorage.setItem('solargpt.viewPreference.cities', 'list') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'list' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
             <List className="h-5 w-5" />
           </button>
           <button onClick={() => { setViewMode('cards'); localStorage.setItem('solargpt.viewPreference.cities', 'cards') }} className={cn('rounded-lg p-1.5 transition-colors', viewMode === 'cards' ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
             <LayoutGrid className="h-5 w-5" />
           </button>
+          <GradeFilterMenu selected={grades} onChange={setGrades} />
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">
               {visibleCount < filtered.length

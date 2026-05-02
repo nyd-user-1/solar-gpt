@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Search, List, LayoutGrid, ArrowDownUp } from 'lucide-react'
+import { Search, List, LayoutGrid, ArrowDownUp, Plus, Check } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { nameToSlug } from '@/lib/queries'
 import {
@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { STATE_ABBRS } from '@/lib/us-states'
 
-type Scope = 'states' | 'counties'
 type View = 'list' | 'cards'
 type SegKey = 'residential' | 'lightCommercial' | 'industrial'
 type SortKey = 'total' | 'residential' | 'lightCommercial' | 'industrial'
@@ -204,7 +203,43 @@ function NationalSummary({ national }: { national: RooftopSegments }) {
   )
 }
 
-// ── Controls (search + view toggle + scope + segment selector) ───────────────
+// ── State filter menu ────────────────────────────────────────────────────────
+
+function StateFilterMenu({ selected, onChange, options }: { selected: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    if (open) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(o => !o)} className={cn('relative rounded-lg p-1.5 transition-colors', open || selected.length > 0 ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')}>
+        <Plus className="h-5 w-5" />
+        {selected.length > 0 && <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-solar text-[8px] font-bold text-white leading-none">{selected.length}</span>}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden">
+          <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between sticky top-0 bg-[var(--surface)]">
+            <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">State</span>
+            {selected.length > 0 && <button onClick={() => onChange([])} className="text-[10px] text-solar hover:underline">Clear</button>}
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {options.map((s, i) => (
+              <button key={s} onClick={() => onChange(selected.includes(s) ? selected.filter(v => v !== s) : [...selected, s])} className={cn('flex w-full items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-[var(--inp-bg)]', i > 0 && 'border-t border-[var(--border)]')}>
+                <span className="text-[var(--txt)]">{s}</span>
+                {selected.includes(s) && <Check className="h-4 w-4 text-solar" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Controls (search + view toggle + state filter + segment selector) ────────
 
 const SEGMENT_TOOLTIPS: Record<SortKey, string> = {
   total: 'Total Qualified',
@@ -214,7 +249,7 @@ const SEGMENT_TOOLTIPS: Record<SortKey, string> = {
 }
 
 function Controls({
-  scope, onScopeChange,
+  selectedStates, onStateChange, stateOptions,
   query, onQueryChange,
   view, onViewChange,
   sortKey, onSortKey,
@@ -222,7 +257,7 @@ function Controls({
   resultCount,
   showViewToggle,
 }: {
-  scope: Scope; onScopeChange: (s: Scope) => void
+  selectedStates: string[]; onStateChange: (v: string[]) => void; stateOptions: string[]
   query: string; onQueryChange: (q: string) => void
   view: View; onViewChange: (v: View) => void
   sortKey: SortKey; onSortKey: (k: SortKey) => void
@@ -236,7 +271,7 @@ function Controls({
         <Search className="h-5 w-5 text-[var(--muted)] shrink-0" />
         <input
           type="text"
-          placeholder={`Search ${scope}…`}
+          placeholder="Search counties…"
           value={query}
           onChange={e => onQueryChange(e.target.value)}
           className="w-full bg-transparent text-base text-[var(--txt)] placeholder:text-[var(--muted2)] focus:outline-none"
@@ -255,20 +290,8 @@ function Controls({
           </button>
         </>}
 
-        {/* Scope: States | Counties */}
-        {(['states', 'counties'] as Scope[]).map(s => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onScopeChange(s)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-              scope === s ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]',
-            )}
-          >
-            {s === 'states' ? 'States' : 'Counties'}
-          </button>
-        ))}
+        {/* State filter */}
+        <StateFilterMenu selected={selectedStates} onChange={onStateChange} options={stateOptions} />
 
         {/* Segment radio group — styled like Archive | Report pill */}
         <div className="inline-flex items-center divide-x divide-[var(--border)] border border-[var(--border)] rounded-xl overflow-hidden text-sm font-medium">
@@ -316,12 +339,12 @@ function Controls({
 
 // ── List + Card rows ─────────────────────────────────────────────────────────
 
-function listHrefFor(scope: Scope, row: RooftopRow): string {
+function listHrefFor(scope: 'states' | 'counties', row: RooftopRow): string {
   if (scope === 'states') return `/states/${nameToSlug(row.state_name)}`
   return `/counties/${nameToSlug(row.state_name)}/${nameToSlug(row.region_name)}`
 }
 
-function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: Scope; focus: SegKey | null; max: number }) {
+function ListView({ rows, scope, focus, max }: { rows: RooftopRow[]; scope: 'states' | 'counties'; focus: SegKey | null; max: number }) {
   return (
     <div className="mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] overflow-hidden">
       <table className="w-full text-left text-sm">
@@ -362,7 +385,7 @@ function CardRow({
   row, scope, focus, max,
 }: {
   row: RooftopRow
-  scope: Scope
+  scope: 'states' | 'counties'
   focus: SegKey | null
   max: number
 }) {
@@ -400,7 +423,7 @@ function CardRow({
 
 // ── Top-10 by segment ────────────────────────────────────────────────────────
 
-function Top10BySegment({ rows, scope }: { rows: RooftopRow[]; scope: Scope }) {
+function Top10BySegment({ rows, scope }: { rows: RooftopRow[]; scope: 'states' | 'counties' }) {
   const [tab, setTab] = useState<SegKey>('residential')
 
   const top10 = useMemo(() => {
@@ -485,7 +508,7 @@ function Top10BySegment({ rows, scope }: { rows: RooftopRow[]; scope: Scope }) {
 
 // ── Mix composition across regions ──────────────────────────────────────────
 
-function MixComposition({ rows, scope }: { rows: RooftopRow[]; scope: Scope }) {
+function MixComposition({ rows, scope }: { rows: RooftopRow[]; scope: 'states' | 'counties' }) {
   const top = useMemo(() => {
     return [...rows]
       .sort((a, b) => b.total - a.total)
@@ -536,40 +559,36 @@ function MixComposition({ rows, scope }: { rows: RooftopRow[]; scope: Scope }) {
 // ── Main client ──────────────────────────────────────────────────────────────
 
 export default function RooftopsClient({
-  initialStates, initialCounties, national,
+  initialStates: _initialStates, initialCounties, national,
 }: {
   initialStates: RooftopRow[]
   initialCounties: RooftopRow[]
   national: RooftopSegments
 }) {
   const isMobile = useIsMobile()
-  const [scope, setScope] = useState<Scope>('counties')
   const [view, setView] = useState<View>('list')
   const [query, setQuery] = useState('')
+  const [selectedStates, setSelectedStates] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<SortKey>('total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  // Mobile gets card view only — no list-view toggle.
   const effectiveView: View = isMobile ? 'cards' : view
 
-  const rows = scope === 'states' ? initialStates : initialCounties
+  const stateOptions = useMemo(() => [...new Set(initialCounties.map(r => r.state_name))].sort(), [initialCounties])
 
   const filtered = useMemo(() => {
-    let list = rows
+    let list = initialCounties
+    if (selectedStates.length > 0) list = list.filter(r => selectedStates.includes(r.state_name))
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(r =>
-        r.region_name.toLowerCase().includes(q) ||
-        r.state_name.toLowerCase().includes(q),
-      )
+      list = list.filter(r => r.region_name.toLowerCase().includes(q) || r.state_name.toLowerCase().includes(q))
     }
-    const sorted = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       const av = getSortValue(a, sortKey)
       const bv = getSortValue(b, sortKey)
       return sortDir === 'asc' ? av - bv : bv - av
     })
-    return sorted
-  }, [rows, query, sortKey, sortDir])
+  }, [initialCounties, selectedStates, query, sortKey, sortDir])
 
   // Reset visible count when filters/scope change
   const totalCount = filtered.length
@@ -600,7 +619,7 @@ export default function RooftopsClient({
 
         {/* Controls — search + toolbar */}
         <Controls
-          scope={scope} onScopeChange={s => { setScope(s); setVisibleCount(PAGE_SIZE) }}
+          selectedStates={selectedStates} onStateChange={v => { setSelectedStates(v); setVisibleCount(PAGE_SIZE) }} stateOptions={stateOptions}
           query={query} onQueryChange={q => { setQuery(q); setVisibleCount(PAGE_SIZE) }}
           view={view} onViewChange={setView}
           sortKey={sortKey} onSortKey={k => { setSortKey(k); setVisibleCount(PAGE_SIZE) }}
@@ -611,11 +630,11 @@ export default function RooftopsClient({
 
         {/* List or Card view */}
         {effectiveView === 'list' ? (
-          <ListView rows={visibleRows} scope={scope} focus={focus} max={focusMax} />
+          <ListView rows={visibleRows} scope="counties" focus={focus} max={focusMax} />
         ) : (
           <div className="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {visibleRows.map(row => (
-              <CardRow key={row.id} row={row} scope={scope} focus={focus} max={focusMax} />
+              <CardRow key={row.id} row={row} scope="counties" focus={focus} max={focusMax} />
             ))}
           </div>
         )}
@@ -634,10 +653,10 @@ export default function RooftopsClient({
         )}
 
         {/* Top 10 by segment */}
-        <Top10BySegment rows={rows} scope={scope} />
+        <Top10BySegment rows={filtered} scope="counties" />
 
         {/* Mix composition across regions */}
-        <MixComposition rows={rows} scope={scope} />
+        <MixComposition rows={filtered} scope="counties" />
 
         {/* Evaluation footer */}
         <footer className="px-4 sm:px-6 pb-10 pt-2">
