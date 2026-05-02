@@ -251,12 +251,12 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
           <thead className="sticky top-0 z-20">
             <tr>
               {/* Sticky Queue column */}
-              <th className="w-[110px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-30">
+              <th className="w-[88px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-30">
                 <HeaderButton
                   active={sortCol === 'queue_pos'}
                   dir={sortDir}
                   onClick={() => toggleSort('queue_pos')}
-                  label="Queue Pos."
+                  label="Queue"
                 />
               </th>
               {COLS.map(col => (
@@ -282,9 +282,9 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
             {filtered.map(row => (
               <tr
                 key={`${row.queue_pos}-${row.snapshot_date}`}
-                className="group/row transition-colors hover:bg-[var(--inp-bg)]"
+                className="group/row transition-colors hover:bg-[var(--row-hover)]"
               >
-                <td className="px-4 py-3 font-medium text-[var(--txt)] tabular-nums whitespace-nowrap sticky left-0 z-[1] bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors border-r border-[var(--border)]">
+                <td className="px-4 py-3 font-medium text-[var(--txt)] tabular-nums whitespace-nowrap sticky left-0 z-[1] bg-[var(--surface)] group-hover/row:bg-[var(--row-hover)] transition-colors">
                   {row.queue_pos}
                 </td>
                 {COLS.map(col => (
