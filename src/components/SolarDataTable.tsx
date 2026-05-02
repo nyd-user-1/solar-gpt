@@ -67,6 +67,7 @@ interface ColDef {
   header: string
   anchor: string
   tooltip: string
+  footnote?: string
   fmt: (row: SolarRow) => string
 }
 
@@ -159,11 +160,13 @@ const COLS: ColDef[] = [
   {
     key: 'untapped_annual_value_usd', header: 'Potential/yr', anchor: 'potential-annual',
     tooltip: 'Combined dollar value of energy + carbon if every untapped rooftop went solar — per year.',
+    footnote: 'Residential rates as of May 2026 (EIA Form 826). Actual rates vary by utility and tariff.',
     fmt: r => fmtUsdOrDash(r.untapped_annual_value_usd),
   },
   {
     key: 'untapped_lifetime_value_usd', header: 'Potential/life', anchor: 'potential-lifetime',
     tooltip: '25-year lifetime value of fully developing every untapped rooftop in this region.',
+    footnote: 'Residential rates as of May 2026 (EIA Form 826). Actual rates vary by utility and tariff.',
     fmt: r => fmtUsdOrDash(r.untapped_lifetime_value_usd),
   },
   {
@@ -180,11 +183,13 @@ const COLS: ColDef[] = [
   {
     key: 'median_annual_savings_usd', header: 'Median Savings/yr', anchor: 'median-savings',
     tooltip: 'Typical first-year electric-bill savings for a homeowner in this region going solar.',
+    footnote: 'Residential rates as of May 2026 (EIA Form 826). Actual rates vary by utility and tariff.',
     fmt: r => fmtUsdOrDash(r.median_annual_savings_usd),
   },
   {
     key: 'median_lifetime_savings_usd', header: 'Median Life Savings', anchor: 'median-life-savings',
     tooltip: '25-year electric-bill savings for the typical solar homeowner in this region.',
+    footnote: 'Residential rates as of May 2026 (EIA Form 826). Actual rates vary by utility and tariff.',
     fmt: r => fmtUsdOrDash(r.median_lifetime_savings_usd),
   },
   {
@@ -195,6 +200,7 @@ const COLS: ColDef[] = [
   {
     key: 'median_payback_years', header: 'Median Payback', anchor: 'median-payback',
     tooltip: 'Years until the typical homeowner recoups their install cost through bill savings.',
+    footnote: 'Residential rates as of May 2026 (EIA Form 826). Actual rates vary by utility and tariff.',
     fmt: r => fmtYearsOrDash(r.median_payback_years),
   },
   // ── Equivalents ───────────────────────────────────────────────────────────
@@ -255,6 +261,9 @@ function ColHeader({ col, active, dir, onSort }: {
           <div className="px-3.5 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--txt)] mb-1.5">{col.header}</p>
             <p className="text-[12px] text-[var(--muted)] leading-relaxed font-normal">{col.tooltip}</p>
+            {col.footnote && (
+              <p className="mt-2 text-[10.5px] italic text-[var(--muted2)] leading-snug font-normal">{col.footnote}</p>
+            )}
           </div>
           <Link
             href={`/glossary#${col.anchor}`}
