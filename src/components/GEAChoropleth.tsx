@@ -157,14 +157,17 @@ type SunroofEntry = { name: string; state: string; value: number; buildings: num
 
 // Full-coverage Cambium county layer — separate load + style effects so hoveredGea can re-style
 function GEACambiumCountyLayer({
-  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea, sunroofLookup, onCountyClick, onRegionHoverChange,
+  cambiumCounties, geaKpisMap, onHoverChange, hoveredGea, pinnedGea, selectedCountyFips,
+  sunroofLookup, onCountyClick, onRegionHoverChange,
 }: {
   cambiumCounties: CambiumCountyMapEntry[]
   geaKpisMap: Record<string, GeaKpi>
   onHoverChange: (d: ChipData | null) => void
   hoveredGea: string | null
+  pinnedGea: string | null
+  selectedCountyFips: string | null
   sunroofLookup: Record<string, SunroofEntry>
-  onCountyClick: (gea: string | null, sunroof: SunroofEntry | null) => void
+  onCountyClick: (gea: string | null, sunroof: SunroofEntry | null, fips: string) => void
   onRegionHoverChange?: (gea: string | null) => void
 }) {
   const map = useMap()
@@ -225,13 +228,13 @@ function GEACambiumCountyLayer({
           const fips = (e.feature.getProperty('STATEFP') as string) + (e.feature.getProperty('COUNTYFP') as string)
           const gea = fipsToGeaRef.current[fips]
           const sunroof = sunroofLookupRef.current[fips]
-          onCountyClickRef.current(gea ?? null, sunroof ?? null)
+          onCountyClickRef.current(gea ?? null, sunroof ?? null, fips)
         })
         setDataLoaded(true)
       })
   }, [map, cambiumCounties])
 
-  // Re-style whenever hoveredGea changes (or data first loads)
+  // Re-style whenever hover/pin/selection changes
   useEffect(() => {
     if (!map || !dataLoaded) return
     const fipsToGea = fipsToGeaRef.current
@@ -240,16 +243,36 @@ function GEACambiumCountyLayer({
       const gea = fipsToGea[fips]
       const color = gea ? (GEA_COLORS[gea] ?? '#e5e7eb') : '#e5e7eb'
       const dimmed = hoveredGea !== null && gea !== hoveredGea
+      const isPinnedRegion = pinnedGea !== null && gea === pinnedGea
+      const isSelectedCounty = selectedCountyFips !== null && fips === selectedCountyFips
+
+      let strokeColor = '#374151'
+      let strokeWeight = dimmed ? 0.15 : 0.4
+      let strokeOpacity = dimmed ? 0.2 : 0.55
+
+      if (isPinnedRegion) {
+        // Region border: GEA's own color, visible on all counties in the region
+        strokeColor = color
+        strokeWeight = 1.5
+        strokeOpacity = 0.9
+      }
+      if (isSelectedCounty) {
+        // County focus border: same dark stroke as hover, persists after click
+        strokeColor = '#111827'
+        strokeWeight = 2.0
+        strokeOpacity = 1.0
+      }
+
       return {
         fillColor: color,
         fillOpacity: gea ? (dimmed ? 0.12 : 0.72) : 0.08,
-        strokeColor: '#374151',
-        strokeWeight: dimmed ? 0.15 : 0.4,
-        strokeOpacity: dimmed ? 0.2 : 0.55,
+        strokeColor,
+        strokeWeight,
+        strokeOpacity,
         clickable: true,
       }
     })
-  }, [map, dataLoaded, hoveredGea])
+  }, [map, dataLoaded, hoveredGea, pinnedGea, selectedCountyFips])
 
   return null
 }
@@ -279,6 +302,7 @@ export default function GEAChoropleth({
   const [pinnedGea, setPinnedGea] = useState<string | null>(null)
   const [selectedGea, setSelectedGea] = useState<string | null>(null)
   const [selectedCounty, setSelectedCounty] = useState<CountyDrawerData | null>(null)
+  const [selectedCountyFips, setSelectedCountyFips] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const [legendOpen, setLegendOpen] = useState(false)
 
@@ -318,10 +342,12 @@ export default function GEAChoropleth({
   const chip = legendChip ?? hoveredInfo ?? pinnedChip ?? usDefault
   const chipColor = chip.color ?? '#f59e0b'
 
-  const handleCountyClick = (gea: string | null, sunroof: SunroofEntry | null) => {
+  const handleCountyClick = (gea: string | null, sunroof: SunroofEntry | null, fips: string) => {
     if (sunroof && gea) {
+      if (gea !== pinnedGea) setSelectedCountyFips(null) // switching region clears county focus
       setPinnedGea(gea)
       setSelectedGea(gea)
+      setSelectedCountyFips(fips)
       setSelectedCounty({
         name: sunroof.name,
         state: sunroof.state,
@@ -332,8 +358,10 @@ export default function GEAChoropleth({
         stateSlug: toSlug(sunroof.state),
       })
     } else if (gea) {
+      // Clicking a county with no Sunroof data — pin the region, clear county focus
       setPinnedGea(gea)
       setSelectedGea(gea)
+      setSelectedCountyFips(null)
       setSelectedCounty(null)
     }
   }
@@ -345,8 +373,8 @@ export default function GEAChoropleth({
         county={selectedCounty}
         // Close the drawer but preserve the pinned legend selection so the
         // user can still see the chip value for the region they selected.
-        onClose={() => { setSelectedGea(null); setSelectedCounty(null) }}
-        onCountyBack={() => setSelectedCounty(null)}
+        onClose={() => { setSelectedGea(null); setSelectedCounty(null); setSelectedCountyFips(null) }}
+        onCountyBack={() => { setSelectedCounty(null); setSelectedCountyFips(null) }}
       />
       <div className={`relative ${className}`}>
         <APIProvider apiKey={apiKey}>
@@ -360,7 +388,7 @@ export default function GEAChoropleth({
             style={{ width: '100%', height: '100%' }}
           >
             {mode === 'cambium' && cambiumCounties
-              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={activeHoveredGea} sunroofLookup={sunroofLookup} onCountyClick={handleCountyClick} onRegionHoverChange={hoverByRegion ? setLegendHoveredGea : undefined} />
+              ? <GEACambiumCountyLayer cambiumCounties={cambiumCounties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} hoveredGea={activeHoveredGea} pinnedGea={pinnedGea} selectedCountyFips={selectedCountyFips} sunroofLookup={sunroofLookup} onCountyClick={handleCountyClick} onRegionHoverChange={hoverByRegion ? setLegendHoveredGea : undefined} />
               : mode === 'state'
               ? <GEAStateChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} stateGeaMap={stateGeaMap} />
               : <GEAChoroplethLayer counties={counties} geaKpisMap={geaKpisMap} onHoverChange={setHoveredInfo} />
