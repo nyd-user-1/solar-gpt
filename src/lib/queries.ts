@@ -104,8 +104,13 @@ export type CityKpi = {
   kw_total: number
   kw_median: number
   yearly_sunlight_kwh_total: number
+  untapped_kwh_yr?: number | null
+  carbon_offset_metric_tons?: number | null
+  untapped_carbon_tonnes_yr?: number | null
   untapped_annual_value_usd: number
   untapped_lifetime_value_usd: number
+  untapped_install_cost_usd?: number | null
+  median_annual_kwh_per_roof?: number | null
   median_annual_savings_usd: number
   median_lifetime_savings_usd: number
   median_install_cost_usd: number
@@ -139,12 +144,19 @@ export type ZipKpi = {
   kw_total: number
   kw_median: number
   yearly_sunlight_kwh_total: number
+  untapped_kwh_yr?: number | null
+  carbon_offset_metric_tons?: number | null
+  untapped_carbon_tonnes_yr?: number | null
   untapped_annual_value_usd: number
   untapped_lifetime_value_usd: number
+  untapped_install_cost_usd?: number | null
+  median_annual_kwh_per_roof?: number | null
   median_annual_savings_usd: number
   median_lifetime_savings_usd: number
   median_install_cost_usd: number
   median_payback_years: number | null
+  cars_off_road_equivalent?: number | null
+  homes_powered_equivalent?: number | null
   sunlight_grade: string
   sunlight_stars: number
   percent_covered?: number | null
@@ -262,6 +274,13 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
            sub.yearly_sunlight_kwh_total, sub.carbon_offset_metric_tons,
            sub.kw_total, sub.kw_median,
            sub.untapped_annual_value_usd, sub.adoption_rate_pct,
+           sub.untapped_buildings, sub.untapped_pct,
+           sub.untapped_kwh_yr, sub.untapped_carbon_tonnes_yr,
+           sub.untapped_lifetime_value_usd, sub.untapped_install_cost_usd,
+           sub.median_annual_kwh_per_roof, sub.median_annual_savings_usd,
+           sub.median_lifetime_savings_usd, sub.median_install_cost_usd,
+           sub.median_payback_years,
+           sub.cars_off_road_equivalent, sub.homes_powered_equivalent,
            sub.sunlight_grade, sub.sunlight_stars,
            sub.seal_url, sub.number_of_panels_median, sub.number_of_panels_total
     FROM (
@@ -272,6 +291,13 @@ export async function getAllCounties(): Promise<CountyKpi[]> {
              v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
              v.kw_total, v.kw_median,
              v.untapped_annual_value_usd, v.adoption_rate_pct,
+             v.untapped_buildings, v.untapped_pct,
+             v.untapped_kwh_yr, v.untapped_carbon_tonnes_yr,
+             v.untapped_lifetime_value_usd, v.untapped_install_cost_usd,
+             v.median_annual_kwh_per_roof, v.median_annual_savings_usd,
+             v.median_lifetime_savings_usd, v.median_install_cost_usd,
+             v.median_payback_years,
+             v.cars_off_road_equivalent, v.homes_powered_equivalent,
              v.sunlight_grade, v.sunlight_stars,
              c.seal_url, c.number_of_panels_median, c.number_of_panels_total
       FROM solargpt.v_county_kpis v
@@ -555,6 +581,13 @@ export async function getAllCities(): Promise<CityKpi[]> {
            sub.yearly_sunlight_kwh_total, sub.carbon_offset_metric_tons,
            sub.kw_total, sub.kw_median,
            sub.untapped_annual_value_usd, sub.adoption_rate_pct,
+           sub.untapped_buildings, sub.untapped_pct,
+           sub.untapped_kwh_yr, sub.untapped_carbon_tonnes_yr,
+           sub.untapped_lifetime_value_usd, sub.untapped_install_cost_usd,
+           sub.median_annual_kwh_per_roof, sub.median_annual_savings_usd,
+           sub.median_lifetime_savings_usd, sub.median_install_cost_usd,
+           sub.median_payback_years,
+           sub.cars_off_road_equivalent, sub.homes_powered_equivalent,
            sub.sunlight_grade, sub.sunlight_stars,
            sub.percent_covered, sub.percent_qualified,
            sub.number_of_panels_total, sub.number_of_panels_median
@@ -565,6 +598,13 @@ export async function getAllCities(): Promise<CityKpi[]> {
              v.yearly_sunlight_kwh_total, v.carbon_offset_metric_tons,
              v.kw_total, v.kw_median,
              v.untapped_annual_value_usd, v.adoption_rate_pct,
+             v.untapped_buildings, v.untapped_pct,
+             v.untapped_kwh_yr, v.untapped_carbon_tonnes_yr,
+             v.untapped_lifetime_value_usd, v.untapped_install_cost_usd,
+             v.median_annual_kwh_per_roof, v.median_annual_savings_usd,
+             v.median_lifetime_savings_usd, v.median_install_cost_usd,
+             v.median_payback_years,
+             v.cars_off_road_equivalent, v.homes_powered_equivalent,
              v.sunlight_grade, v.sunlight_stars,
              v.percent_covered, v.percent_qualified,
              c.number_of_panels_total, c.number_of_panels_median
@@ -705,6 +745,13 @@ export async function getAllZips(): Promise<ZipKpi[]> {
            yearly_sunlight_kwh_total, carbon_offset_metric_tons,
            kw_total, kw_median,
            untapped_annual_value_usd, adoption_rate_pct,
+           untapped_buildings, untapped_pct,
+           untapped_kwh_yr, untapped_carbon_tonnes_yr,
+           untapped_lifetime_value_usd, untapped_install_cost_usd,
+           median_annual_kwh_per_roof, median_annual_savings_usd,
+           median_lifetime_savings_usd, median_install_cost_usd,
+           median_payback_years,
+           cars_off_road_equivalent, homes_powered_equivalent,
            sunlight_grade, sunlight_stars,
            percent_covered, percent_qualified,
            number_of_panels_total, number_of_panels_median
