@@ -251,7 +251,7 @@ function FuelMixChart({ rows }: { rows: NyisoQueueRow[] }) {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
       <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Capacity by Fuel Type</p>
       <p className="text-[11px] text-[var(--muted2)] mb-3">Current queue — total SP (MW)</p>
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={268}>
         <BarChart data={data} layout="vertical" margin={{ top: 2, right: 52, bottom: 2, left: 4 }}>
           <XAxis type="number" hide />
           <YAxis dataKey="name" type="category" width={120} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
@@ -286,7 +286,7 @@ function AvgSizeChart({ data }: { data: QueueGrowthRow[] }) {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
       <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Avg Project Size</p>
       <p className="text-[11px] text-[var(--muted2)] mb-3">Mean SP (MW) per active project over time</p>
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={268}>
         <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <XAxis dataKey="snapshot_date" tickFormatter={tickFmt} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} interval={0} />
@@ -323,7 +323,7 @@ function MonthlyAdditionsChart({ data }: { data: QueueGrowthRow[] }) {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
       <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Monthly Queue Change</p>
       <p className="text-[11px] text-[var(--muted2)] mb-3">Net new active projects added per snapshot</p>
-      <ResponsiveContainer width="100%" height={180}>
+      <ResponsiveContainer width="100%" height={208}>
         <AreaChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <XAxis dataKey="snapshot_date" tickFormatter={tickFmt} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} interval={0} />
@@ -360,7 +360,7 @@ function CountyPieChart({ rows }: { rows: NyisoQueueRow[] }) {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pt-4 pb-3">
       <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-0.5">Projects by County</p>
       <p className="text-[11px] text-[var(--muted2)] mb-1">Current queue — active project count</p>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={228}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={78} strokeWidth={1} stroke="var(--surface)">
             {data.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
