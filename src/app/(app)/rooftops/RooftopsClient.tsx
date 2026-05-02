@@ -612,11 +612,6 @@ export default function RooftopsClient({
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-zoom-in">
       <div className="flex-1 overflow-y-auto">
-        {/* Header + preamble */}
-        <header className="px-4 sm:px-6 pt-4 pb-2">
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--txt)]">Rooftop Opportunity Explorer</h1>
-        </header>
-
         {/* Controls — search + toolbar */}
         <Controls
           selectedStates={selectedStates} onStateChange={v => { setSelectedStates(v); setVisibleCount(PAGE_SIZE) }} stateOptions={stateOptions}
