@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose, Plus } from 'lucide-react'
+import { Sun, ChevronLeft, ChevronRight, PanelLeftOpen, PanelLeftClose, Plus, MessagesSquare } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { DASHBOARD_CONFIGS } from '@/lib/dashboard-config'
 
@@ -119,6 +119,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
               <span className="hidden sm:inline font-normal text-[var(--muted)]">|</span>
               <span className="hidden sm:inline font-medium">{pageTitle}</span>
+              <Link
+                href="/new-chat"
+                aria-label="New chat"
+                className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--inp-bg)]"
+              >
+                <MessagesSquare className="h-5 w-5 text-[var(--txt)]" />
+              </Link>
             </span>
           )}
 

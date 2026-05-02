@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { to: '/counties',     icon: MapPin,           label: 'Counties' },
   { to: '/cities',       icon: Building2,        label: 'Cities' },
   { to: '/zips',         icon: Hash,             label: 'ZIP Codes' },
-  { to: '/interconnection-queue', icon: PlugZap,  label: 'Interconnection Queue' },
+  { to: '/interconnection-queue', icon: PlugZap,  label: 'Interconnection' },
   { to: '/rooftops',     icon: BarChart3,        label: 'Rooftops' },
   { to: '/leads',        icon: Users,            label: 'Leads' },
 ]
