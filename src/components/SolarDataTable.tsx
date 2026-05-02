@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, Info, ArrowUpRight } from 'lucide-react'
 import { cn, formatNumber, fmtUsd, fmtPct, fmtKwMedian } from '@/lib/utils'
 
 export type SortableKey =
@@ -251,14 +251,21 @@ function ColHeader({ col, active, dir, onSort }: {
           }
         </button>
         {/* Tooltip */}
-        <div className="pointer-events-none group-hover/col:pointer-events-auto absolute top-full left-0 z-50 mt-1 hidden group-hover/col:block w-56 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-left">
-          <p className="text-xs text-[var(--muted)] leading-relaxed">{col.tooltip}</p>
+        <div className="pointer-events-none group-hover/col:pointer-events-auto absolute top-full left-0 z-50 mt-2 hidden group-hover/col:block w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left overflow-hidden normal-case tracking-normal">
+          <div className="px-3.5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--txt)] mb-1.5">{col.header}</p>
+            <p className="text-[12px] text-[var(--muted)] leading-relaxed font-normal">{col.tooltip}</p>
+          </div>
           <Link
             href={`/glossary#${col.anchor}`}
-            className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--solar)] hover:underline"
             onClick={e => e.stopPropagation()}
+            className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-3.5 py-2.5 text-[11px] font-medium text-solar hover:bg-[var(--inp-bg)] transition-colors"
           >
-            ⓘ Learn more →
+            <span className="inline-flex items-center gap-1.5">
+              <Info className="h-3 w-3" />
+              Learn more
+            </span>
+            <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
       </div>
