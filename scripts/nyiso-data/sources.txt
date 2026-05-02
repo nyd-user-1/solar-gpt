@@ -1,0 +1,13 @@
+# NYISO Interconnection Queue snapshot URLs — one xlsx URL per line.
+#
+# How to populate:
+#   1. Open https://www.nyiso.com/interconnections in Chrome
+#   2. View Source (⌘+U on Mac, Ctrl+U on Windows)
+#   3. Search the source for ".xlsx"
+#   4. Copy each href that contains "Interconnection-Queue" or
+#      "Interconnection Queue" — these are the monthly snapshots.
+#   5. Paste below, one URL per line. Blank lines and #-comments are ignored.
+#
+# Going forward: when NYISO posts a new monthly snapshot, just append the
+# new URL to this file and re-run `node scrape.mjs && python3 parse.py
+# && node ingest.mjs`. Already-downloaded files are skipped.
