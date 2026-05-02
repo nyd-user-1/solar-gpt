@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, ChevronDown, ChevronUp, List, LayoutGrid, Plus, Check, Sun, Map } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, List, LayoutGrid, Plus, Check, Sun, Map, BarChart2 } from 'lucide-react'
+import { SolarTopChart } from '@/components/SolarTopChart'
 import { cn, fmtUsd, fmtNum } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { StateKpi } from '@/lib/queries'
@@ -133,6 +134,7 @@ function StateCardGrid({ states }: { states: StateKpi[] }) {
 export default function StatesClient({ states }: { states: StateKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
+  const [showChart, setShowChart] = useState(false)
   const [sortCol, setSortCol] = useState<SortCol>('region')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
@@ -196,11 +198,23 @@ export default function StatesClient({ states }: { states: StateKpi[] }) {
             <LayoutGrid className="h-5 w-5" />
           </button>
           <GradeFilterMenu selected={grades} onChange={setGrades} />
+          <button onClick={() => setShowChart(o => !o)} className={cn('rounded-lg p-1.5 transition-colors', showChart ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')} title="Top 15 chart">
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">{filtered.length.toLocaleString()} results</span>
           </div>
         </div>
       </div>
+
+      {showChart && (
+        <SolarTopChart
+          rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
+          getLabel={r => (r as unknown as StateKpi).state_name}
+          getHref={r => `/states/${nameToSlug((r as unknown as StateKpi).state_name)}`}
+          yAxisWidth={120}
+        />
+      )}
 
       {/* Scroll area — handles both axes so sticky thead works */}
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">

@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, List, LayoutGrid, Plus, Check } from 'lucide-react'
+import { Search, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
+import { SolarTopChart } from '@/components/SolarTopChart'
 import { cn, fmtUsd, fmtGea } from '@/lib/utils'
 import { geaToSlug } from '@/lib/queries'
 import type { GeaKpi } from '@/lib/queries'
@@ -48,6 +49,7 @@ function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange:
 export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
+  const [showChart, setShowChart] = useState(false)
   const [sortCol, setSortCol] = useState<SortCol>('untapped_annual_value_usd')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
@@ -98,11 +100,23 @@ export default function GeaClient({ geas }: { geas: GeaKpi[] }) {
             <LayoutGrid className="h-5 w-5" />
           </button>
           <GradeFilterMenu selected={grades} onChange={setGrades} />
+          <button onClick={() => setShowChart(o => !o)} className={cn('rounded-lg p-1.5 transition-colors', showChart ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')} title="Top 15 chart">
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">{filtered.length} results</span>
           </div>
         </div>
       </div>
+
+      {showChart && (
+        <SolarTopChart
+          rows={filtered.map(g => ({ ...g, id: g.cambium_gea })) as unknown as import('@/components/SolarDataTable').SolarRow[]}
+          getLabel={r => fmtGea((r as unknown as GeaKpi).cambium_gea)}
+          getHref={r => `/gea-regions/${geaToSlug((r as unknown as GeaKpi).cambium_gea)}`}
+          yAxisWidth={100}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
         {viewMode === 'cards' && (

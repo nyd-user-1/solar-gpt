@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Search, Building2, List, LayoutGrid, Plus, Check } from 'lucide-react'
+import { Search, Building2, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
+import { SolarTopChart } from '@/components/SolarTopChart'
 import { cn, fmtUsd, fmtNum, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CityKpi } from '@/lib/queries'
@@ -49,6 +50,7 @@ function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange:
 export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
+  const [showChart, setShowChart] = useState(false)
   const [sortCol, setSortCol] = useState<SortCol>('region')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
@@ -129,6 +131,9 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             <LayoutGrid className="h-5 w-5" />
           </button>
           <GradeFilterMenu selected={grades} onChange={setGrades} />
+          <button onClick={() => setShowChart(o => !o)} className={cn('rounded-lg p-1.5 transition-colors', showChart ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')} title="Top 15 chart">
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">
               {visibleCount < filtered.length
@@ -138,6 +143,15 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
           </div>
         </div>
       </div>
+
+      {showChart && (
+        <SolarTopChart
+          rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
+          getLabel={r => (r as unknown as CityKpi).region_name}
+          getHref={r => `/cities/${nameToSlug((r as unknown as CityKpi).state_name)}/${nameToSlug((r as unknown as CityKpi).region_name)}`}
+          yAxisWidth={130}
+        />
+      )}
 
       {/* Scroll area */}
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">

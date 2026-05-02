@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, MapPin, List, LayoutGrid, Plus, Check } from 'lucide-react'
+import { Search, MapPin, List, LayoutGrid, Plus, Check, BarChart2 } from 'lucide-react'
+import { SolarTopChart } from '@/components/SolarTopChart'
 import { cn, fmtUsd, fmtGea, stateAbbr } from '@/lib/utils'
 import { nameToSlug } from '@/lib/queries'
 import type { CountyKpi } from '@/lib/queries'
@@ -48,6 +49,7 @@ function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange:
 export default function CountiesClient({ counties }: { counties: CountyKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
+  const [showChart, setShowChart] = useState(false)
   const [sortCol, setSortCol] = useState<SortCol>('region')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
@@ -105,11 +107,23 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
             <LayoutGrid className="h-5 w-5" />
           </button>
           <GradeFilterMenu selected={grades} onChange={setGrades} />
+          <button onClick={() => setShowChart(o => !o)} className={cn('rounded-lg p-1.5 transition-colors', showChart ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')} title="Top 15 chart">
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">{filtered.length.toLocaleString()} results</span>
           </div>
         </div>
       </div>
+
+      {showChart && (
+        <SolarTopChart
+          rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
+          getLabel={r => (r as unknown as CountyKpi).region_name}
+          getHref={r => `/counties/${nameToSlug((r as unknown as CountyKpi).state_name)}/${nameToSlug((r as unknown as CountyKpi).region_name)}`}
+          yAxisWidth={150}
+        />
+      )}
 
       {/* Scroll area */}
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Search, Plus, Check } from 'lucide-react'
+import { Search, Plus, Check, BarChart2 } from 'lucide-react'
+import { SolarTopChart } from '@/components/SolarTopChart'
 import { cn } from '@/lib/utils'
 import { SolarDataTable, SortableKey, SolarRow } from '@/components/SolarDataTable'
 import type { ZipKpi } from '@/lib/queries'
@@ -45,6 +46,7 @@ function GradeFilterMenu({ selected, onChange }: { selected: string[]; onChange:
 export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
   const [query, setQuery] = useState('')
   const [grades, setGrades] = useState<string[]>([])
+  const [showChart, setShowChart] = useState(false)
   const [sortCol, setSortCol] = useState<SortableKey | 'region' | 'state_name'>('count_qualified')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -87,11 +89,23 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         </div>
         <div className="flex items-center gap-1">
           <GradeFilterMenu selected={grades} onChange={setGrades} />
+          <button onClick={() => setShowChart(o => !o)} className={cn('rounded-lg p-1.5 transition-colors', showChart ? 'bg-[var(--inp-bg)] text-[var(--txt)]' : 'text-[var(--muted)] hover:text-[var(--txt)]')} title="Top 15 chart">
+            <BarChart2 className="h-5 w-5" />
+          </button>
           <div className="ml-auto">
             <span className="text-xs text-[var(--muted)]">{filtered.length.toLocaleString()} results</span>
           </div>
         </div>
       </div>
+
+      {showChart && (
+        <SolarTopChart
+          rows={filtered as import('@/components/SolarDataTable').SolarRow[]}
+          getLabel={r => (r as unknown as ZipKpi).zip_code}
+          getHref={r => `/zips/${(r as unknown as ZipKpi).zip_code}`}
+          yAxisWidth={60}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
         <SolarDataTable
