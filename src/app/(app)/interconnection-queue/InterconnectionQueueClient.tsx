@@ -1,47 +1,83 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Search, ChevronDown, ChevronUp, Plus, Check, Zap } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Plus, Check } from 'lucide-react'
 import { cn, formatNumber } from '@/lib/utils'
 import type { NyisoQueueRow } from '@/lib/queries'
 
 type SortCol =
   | 'queue_pos'
-  | 'project_name'
   | 'developer'
-  | 'sp_mw'
-  | 'type_fuel'
-  | 'county'
-  | 'zone'
+  | 'project_name'
   | 'date_of_ir'
+  | 'sp_mw'
+  | 'wp_mw'
+  | 'type_fuel'
+  | 'energy_storage_capability'
+  | 'minimum_duration_full_discharge'
+  | 'county'
+  | 'state'
+  | 'zone'
+  | 'points_of_interconnection'
+  | 'utility'
+  | 'affected_transmission_owner'
+  | 's'
+  | 'last_updated_date'
+  | 'availability_of_studies'
+  | 'ia_tender_date'
+  | 'cy_fs_complete_date'
+  | 'proposed_in_service_date'
+  | 'proposed_sync_date'
   | 'proposed_cod'
 
-const FUEL_LABELS: Record<string, string> = {
-  S: 'Solar',
-  W: 'Wind',
-  OSW: 'Offshore Wind',
-  ES: 'Battery Storage',
-  CR: 'Solar + Storage',
-  CW: 'Wind + Storage',
-  L: 'Load',
-  AC: 'Transmission (AC)',
-  DC: 'Transmission (DC)',
-  NG: 'Natural Gas',
-  CT: 'Combustion Turbine',
-  'CT-NG': 'Combustion Turbine NG',
-  'CC-NG': 'Combined Cycle NG',
-  'CC-D': 'Combined Cycle Dual',
-  'CT-D': 'Combustion Turbine Dual',
-  'ST-NG': 'Steam Turbine NG',
-  'ST-D': 'Steam Turbine Dual',
-  H: 'Hydro',
-  FC: 'Fuel Cell',
-  SW: 'Solid Waste',
+type Align = 'left' | 'right'
+
+interface ColDef {
+  key: SortCol
+  header: string
+  align?: Align
+  width?: string
+  numeric?: boolean
+  render: (r: NyisoQueueRow) => string
 }
 
-function fuelLabel(code: string | null): string {
-  if (!code) return '—'
-  return FUEL_LABELS[code] ?? code
+function fmtDate(s: string | null): string {
+  if (!s) return '—'
+  const d = new Date(s + 'T00:00:00Z')
+  if (isNaN(d.getTime())) return s
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+const COLS: ColDef[] = [
+  { key: 'developer',                       header: 'Developer',                width: 'min-w-[220px]', render: r => r.developer ?? '—' },
+  { key: 'project_name',                    header: 'Project Name',             width: 'min-w-[220px]', render: r => r.project_name ?? '—' },
+  { key: 'date_of_ir',                      header: 'Date of IR',               render: r => fmtDate(r.date_of_ir) },
+  { key: 'sp_mw',                           header: 'SP (MW)',                  align: 'right', numeric: true, render: r => r.sp_mw == null ? '—' : formatNumber(r.sp_mw) },
+  { key: 'wp_mw',                           header: 'WP (MW)',                  align: 'right', numeric: true, render: r => r.wp_mw == null ? '—' : formatNumber(r.wp_mw) },
+  { key: 'type_fuel',                       header: 'Type / Fuel',              render: r => r.type_fuel ?? '—' },
+  { key: 'energy_storage_capability',       header: 'Energy Storage Capability', render: r => r.energy_storage_capability ?? '—' },
+  { key: 'minimum_duration_full_discharge', header: 'Min Duration Full Discharge', render: r => r.minimum_duration_full_discharge ?? '—' },
+  { key: 'county',                          header: 'County',                   render: r => r.county ?? '—' },
+  { key: 'state',                           header: 'State',                    render: r => r.state ?? '—' },
+  { key: 'zone',                            header: 'Z',                        render: r => r.zone ?? '—' },
+  { key: 'points_of_interconnection',       header: 'Points of Interconnection', width: 'min-w-[260px]', render: r => r.points_of_interconnection ?? '—' },
+  { key: 'utility',                         header: 'Utility',                  render: r => r.utility ?? '—' },
+  { key: 'affected_transmission_owner',     header: 'Affected Transmission Owner (ATO)', width: 'min-w-[200px]', render: r => r.affected_transmission_owner ?? '—' },
+  { key: 's',                               header: 'S',                        render: r => r.s ?? '—' },
+  { key: 'last_updated_date',               header: 'Last Updated Date',        render: r => fmtDate(r.last_updated_date) },
+  { key: 'availability_of_studies',         header: 'Availability of Studies',  render: r => r.availability_of_studies ?? '—' },
+  { key: 'ia_tender_date',                  header: 'IA Tender Date',           render: r => fmtDate(r.ia_tender_date) },
+  { key: 'cy_fs_complete_date',             header: 'CY/FS Complete Date',      render: r => fmtDate(r.cy_fs_complete_date) },
+  { key: 'proposed_in_service_date',        header: 'Proposed In-Service / Initial Backfeed', width: 'min-w-[220px]', render: r => r.proposed_in_service_date ?? '—' },
+  { key: 'proposed_sync_date',              header: 'Proposed Sync Date',       render: r => r.proposed_sync_date ?? '—' },
+  { key: 'proposed_cod',                    header: 'Proposed COD',             render: r => r.proposed_cod ?? '—' },
+]
+
+const FUEL_LABELS: Record<string, string> = {
+  S: 'Solar', W: 'Wind', OSW: 'Offshore Wind', ES: 'Battery Storage',
+  CR: 'Solar + Storage', CW: 'Wind + Storage', L: 'Load',
+  AC: 'Transmission AC', DC: 'Transmission DC', NG: 'Natural Gas',
+  H: 'Hydro', FC: 'Fuel Cell', SW: 'Solid Waste',
 }
 
 function FuelFilterMenu({ selected, onChange, fuels }: { selected: string[]; onChange: (v: string[]) => void; fuels: string[] }) {
@@ -94,7 +130,7 @@ function FuelFilterMenu({ selected, onChange, fuels }: { selected: string[]; onC
                 i > 0 && 'border-t border-[var(--border)]'
               )}
             >
-              <span className="text-[var(--txt)]">{fuelLabel(f)}</span>
+              <span className="text-[var(--txt)]">{FUEL_LABELS[f] ?? f}</span>
               {selected.includes(f) && <Check className="h-4 w-4 text-solar" />}
             </button>
           ))}
@@ -104,36 +140,27 @@ function FuelFilterMenu({ selected, onChange, fuels }: { selected: string[]; onC
   )
 }
 
-function HeaderCell({ label, col, sortCol, sortDir, onSort, align = 'left' }: {
+function HeaderButton({ active, dir, onClick, label }: {
+  active: boolean
+  dir: 'asc' | 'desc'
+  onClick: () => void
   label: string
-  col: SortCol
-  sortCol: SortCol
-  sortDir: 'asc' | 'desc'
-  onSort: (c: SortCol) => void
-  align?: 'left' | 'right'
 }) {
-  const active = sortCol === col
   return (
-    <th
-      onClick={() => onSort(col)}
+    <button
+      onClick={onClick}
       className={cn(
-        'sticky top-0 z-10 cursor-pointer select-none whitespace-nowrap bg-[var(--surface)] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--txt)] border-b border-[var(--border)]',
-        align === 'right' ? 'text-right' : 'text-left'
+        'group/col inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--txt)]',
+        active ? 'text-[var(--txt)]' : 'text-[var(--muted)]',
       )}
     >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        {active && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-      </span>
-    </th>
+      {label}
+      {active
+        ? dir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+        : <ChevronUp className="h-3 w-3 opacity-0 group-hover/col:opacity-40" />
+      }
+    </button>
   )
-}
-
-function fmtDate(s: string | null): string {
-  if (!s) return '—'
-  const d = new Date(s + 'T00:00:00Z')
-  if (isNaN(d.getTime())) return s
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueRow[] }) {
@@ -180,7 +207,7 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortCol(col); setSortDir(col === 'sp_mw' || col === 'date_of_ir' ? 'desc' : 'asc') }
+    else { setSortCol(col); setSortDir(col === 'sp_mw' || col === 'wp_mw' || col === 'date_of_ir' ? 'desc' : 'asc') }
   }
 
   const snapshotLabel = rows[0]?.snapshot_date
@@ -218,52 +245,67 @@ export default function InterconnectionQueueClient({ rows }: { rows: NyisoQueueR
         </div>
       </div>
 
-      {/* Scroll area */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar">
-        <table className="w-full border-separate border-spacing-0">
-          <thead>
+      {/* Scroll area — full-bleed horizontal scroll, sticky thead + sticky queue col */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar mx-3 sm:mx-6 mb-8 rounded-lg border border-[var(--border)] scroll-smooth">
+        <table className="w-max min-w-full text-left text-sm">
+          <thead className="sticky top-0 z-20">
             <tr>
-              <HeaderCell label="Queue" col="queue_pos" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="Project" col="project_name" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="Developer" col="developer" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="MW" col="sp_mw" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} align="right" />
-              <HeaderCell label="Type" col="type_fuel" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="County" col="county" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="Zone" col="zone" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="Filed" col="date_of_ir" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
-              <HeaderCell label="Proposed COD" col="proposed_cod" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              {/* Sticky Queue column */}
+              <th className="w-[110px] px-4 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] sticky left-0 z-30">
+                <HeaderButton
+                  active={sortCol === 'queue_pos'}
+                  dir={sortDir}
+                  onClick={() => toggleSort('queue_pos')}
+                  label="Queue Pos."
+                />
+              </th>
+              {COLS.map(col => (
+                <th
+                  key={col.key}
+                  className={cn(
+                    'px-3 py-3 bg-[#f5f5f4] dark:bg-[#1a1a26] border-b border-[var(--border)] whitespace-nowrap',
+                    col.align === 'right' && 'text-right',
+                    col.width
+                  )}
+                >
+                  <HeaderButton
+                    active={sortCol === col.key}
+                    dir={sortDir}
+                    onClick={() => toggleSort(col.key)}
+                    label={col.header}
+                  />
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody>
-            {filtered.map((r, i) => (
+          <tbody className="divide-y divide-[var(--border)] align-middle">
+            {filtered.map(row => (
               <tr
-                key={`${r.queue_pos}-${r.snapshot_date}`}
-                className={cn(
-                  'group/row hover:bg-[var(--inp-bg)] transition-colors',
-                  i > 0 && '[&>td]:border-t [&>td]:border-[var(--border)]'
-                )}
+                key={`${row.queue_pos}-${row.snapshot_date}`}
+                className="group/row transition-colors hover:bg-[var(--inp-bg)]"
               >
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-mono text-[var(--muted)]">#{r.queue_pos}</td>
-                <td className="px-4 py-3 text-sm font-medium text-[var(--txt)] group-hover/row:text-solar transition-colors">
-                  <span className="inline-flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-solar shrink-0" />
-                    {r.project_name ?? '—'}
-                  </span>
+                <td className="px-4 py-3 font-medium text-[var(--txt)] tabular-nums whitespace-nowrap sticky left-0 z-[1] bg-[var(--surface)] group-hover/row:bg-[var(--inp-bg)] transition-colors border-r border-[var(--border)]">
+                  {row.queue_pos}
                 </td>
-                <td className="px-4 py-3 text-sm text-[var(--muted)] max-w-[260px] truncate" title={r.developer ?? ''}>{r.developer ?? '—'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-right font-semibold text-[var(--txt)]">
-                  {r.sp_mw != null ? formatNumber(Math.round(r.sp_mw)) : '—'}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{fuelLabel(r.type_fuel)}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{r.county ?? '—'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--muted)]">{r.zone ?? '—'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--muted)]">{fmtDate(r.date_of_ir)}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--txt)]">{r.proposed_cod ?? '—'}</td>
+                {COLS.map(col => (
+                  <td
+                    key={col.key}
+                    className={cn(
+                      'px-3 py-3 text-[var(--muted)] text-xs whitespace-nowrap transition-colors group-hover/row:text-solar',
+                      col.numeric && 'tabular-nums',
+                      col.align === 'right' && 'text-right',
+                    )}
+                  >
+                    {col.render(row)}
+                  </td>
+                ))}
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-sm text-[var(--muted)]">No projects match your filters.</td>
+                <td colSpan={COLS.length + 1} className="px-4 py-12 text-center text-sm text-[var(--muted)]">
+                  No projects match your filters.
+                </td>
               </tr>
             )}
           </tbody>

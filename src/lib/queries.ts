@@ -877,15 +877,21 @@ export type NyisoQueueRow = {
   sp_mw: number | null
   wp_mw: number | null
   type_fuel: string | null
+  energy_storage_capability: string | null
+  minimum_duration_full_discharge: string | null
   county: string | null
   state: string | null
   zone: string | null
   points_of_interconnection: string | null
   utility: string | null
+  affected_transmission_owner: string | null
   s: string | null
   last_updated_date: string | null
   availability_of_studies: string | null
+  ia_tender_date: string | null
+  cy_fs_complete_date: string | null
   proposed_in_service_date: string | null
+  proposed_sync_date: string | null
   proposed_cod: string | null
   status: string
 }
@@ -894,10 +900,15 @@ export async function getInterconnectionQueue(): Promise<NyisoQueueRow[]> {
   const rows = await sql`
     SELECT queue_pos, snapshot_date::text AS snapshot_date, developer, project_name,
            date_of_ir::text AS date_of_ir,
-           sp_mw, wp_mw, type_fuel, county, state, zone,
-           points_of_interconnection, utility, s,
+           sp_mw, wp_mw, type_fuel,
+           energy_storage_capability, minimum_duration_full_discharge,
+           county, state, zone,
+           points_of_interconnection, utility, affected_transmission_owner, s,
            last_updated_date::text AS last_updated_date,
-           availability_of_studies, proposed_in_service_date, proposed_cod, status
+           availability_of_studies,
+           ia_tender_date::text AS ia_tender_date,
+           cy_fs_complete_date::text AS cy_fs_complete_date,
+           proposed_in_service_date, proposed_sync_date, proposed_cod, status
       FROM solargpt.raw_nyiso_queue
      WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM solargpt.raw_nyiso_queue WHERE status = 'active')
        AND status = 'active'
