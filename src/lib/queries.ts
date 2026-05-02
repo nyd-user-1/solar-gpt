@@ -169,11 +169,24 @@ export type GeaKpi = {
   untapped_pct: number
   kw_total: number
   kw_median: number
+  number_of_panels_total?: number | null
+  number_of_panels_median?: number | null
   yearly_sunlight_kwh_total: number
+  untapped_kwh_yr?: number | null
+  carbon_offset_metric_tons?: number | null
+  untapped_carbon_tonnes_yr?: number | null
   untapped_annual_value_usd: number
   untapped_lifetime_value_usd: number
+  untapped_install_cost_usd?: number | null
+  median_annual_kwh_per_roof?: number | null
+  median_annual_savings_usd?: number | null
+  median_lifetime_savings_usd?: number | null
+  median_install_cost_usd?: number | null
+  median_payback_years?: number | null
   cars_off_road_equivalent: number
   homes_powered_equivalent: number
+  percent_covered?: number | null
+  percent_qualified?: number | null
   sunlight_grade: string
   sunlight_stars: number
 }

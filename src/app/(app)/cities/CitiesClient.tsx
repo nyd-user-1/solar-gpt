@@ -168,7 +168,7 @@ export default function CitiesClient({ cities }: { cities: CityKpi[] }) {
             extraCols={[{
               key: 'state',
               header: 'State',
-              mobile: true,
+
               render: (row) => {
                 const c = row as unknown as CityKpi
                 return <span>{stateAbbr(c.state_name)}</span>

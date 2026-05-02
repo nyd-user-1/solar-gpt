@@ -57,7 +57,7 @@ export default function ZipsClient({ zips }: { zips: ZipKpi[] }) {
         extraCols={[{
           key: 'state',
           header: 'STATE',
-          mobile: false,
+
           render: (row) => {
             const z = row as unknown as ZipKpi
             return <span>{stateAbbr(z.state_name)}</span>

@@ -137,7 +137,7 @@ export default function CountiesClient({ counties }: { counties: CountyKpi[] }) 
           extraCols={[{
             key: 'state',
             header: 'State',
-            mobile: true,
+
             render: (row) => {
               const c = row as unknown as CountyKpi
               return <span>{stateAbbr(c.state_name)}</span>
