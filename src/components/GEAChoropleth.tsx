@@ -246,29 +246,19 @@ function GEACambiumCountyLayer({
       const isPinnedRegion = pinnedGea !== null && gea === pinnedGea
       const isSelectedCounty = selectedCountyFips !== null && fips === selectedCountyFips
 
-      let strokeColor = '#374151'
-      let strokeWeight = dimmed ? 0.15 : 0.4
-      let strokeOpacity = dimmed ? 0.2 : 0.55
-
-      if (isPinnedRegion) {
-        // Region border: GEA's own color, visible on all counties in the region
-        strokeColor = color
-        strokeWeight = 1.5
-        strokeOpacity = 0.9
-      }
-      if (isSelectedCounty) {
-        // County focus border: same dark stroke as hover, persists after click
-        strokeColor = '#111827'
-        strokeWeight = 2.0
-        strokeOpacity = 1.0
-      }
+      // fillOpacity at 1.0 on selected county reads as a darker shade of the region
+      // color (white basemap shows through at 0.72, disappears at 1.0) — cleaner
+      // than any stroke approach which clips/doubles at shared polygon edges
+      const fillOpacity = isSelectedCounty
+        ? 1.0
+        : gea ? (dimmed ? 0.12 : 0.72) : 0.08
 
       return {
         fillColor: color,
-        fillOpacity: gea ? (dimmed ? 0.12 : 0.72) : 0.08,
-        strokeColor,
-        strokeWeight,
-        strokeOpacity,
+        fillOpacity,
+        strokeColor: '#374151',
+        strokeWeight: dimmed ? 0.15 : 0.4,
+        strokeOpacity: dimmed ? 0.2 : 0.55,
         clickable: true,
       }
     })
